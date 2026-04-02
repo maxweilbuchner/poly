@@ -213,6 +213,48 @@ pub fn print_orders(orders: &[Order]) {
     }
 }
 
+// ── Trade history ─────────────────────────────────────────────────────────────
+
+pub fn print_history(orders: &[Order]) {
+    if orders.is_empty() {
+        println!("{}", "No trade history found.".yellow());
+        return;
+    }
+
+    println!(
+        "{:<44}  {:<5}  {:>8}  {:>8}  {:>8}  {}",
+        "ORDER ID".bold(),
+        "SIDE".bold(),
+        "PRICE".bold(),
+        "SIZE".bold(),
+        "FILLED".bold(),
+        "TIME (UTC)".bold(),
+    );
+    println!("{}", "─".repeat(104).dimmed());
+
+    for o in orders {
+        let side_str = match o.side {
+            Side::Buy => "BUY".green().to_string(),
+            Side::Sell => "SELL".red().to_string(),
+        };
+        // Trim to "YYYY-MM-DDTHH:MM:SS" if longer
+        let time = o.created_at.get(..19).unwrap_or(&o.created_at);
+
+        println!(
+            "{:<44}  {:<5}  {:>8.4}  {:>8.2}  {:>8.2}  {}",
+            o.id,
+            side_str,
+            o.price,
+            o.original_size,
+            o.size_matched,
+            time.dimmed(),
+        );
+        if !o.market.is_empty() {
+            println!("  → {}", truncate(&o.market, 80).dimmed());
+        }
+    }
+}
+
 // ── Positions list ────────────────────────────────────────────────────────────
 
 pub fn print_positions(positions: &[Position]) {

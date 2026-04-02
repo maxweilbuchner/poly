@@ -381,6 +381,67 @@ impl PolyClient {
             .collect())
     }
 
+    /// Fetch filled order history for the authenticated user.
+    ///
+    /// Hits `/data/orders?status=matched` and returns up to `limit` orders,
+    /// most recent first (as returned by the CLOB API).
+    pub async fn get_order_history(&self, limit: usize) -> Result<Vec<Order>> {
+        let (auth, wallet) = self.require_auth()?;
+        let path = "/data/orders?status=matched";
+        let url = format!("{}{}", CLOB_API, path);
+        let signer_str = format!("{:#x}", wallet.address());
+        let headers = auth.headers("GET", path, None, &signer_str)?;
+
+        let resp = self.http.get(&url).headers(headers).send().await?;
+        if !resp.status().is_success() {
+            return Err(
+                format!("CLOB /data/orders?status=matched failed: {}", resp.status()).into(),
+            );
+        }
+
+        #[derive(Deserialize)]
+        struct RawOrder {
+            id: Option<String>,
+            #[serde(rename = "asset_id", default)]
+            asset_id: String,
+            side: Option<String>,
+            price: Option<serde_json::Value>,
+            #[serde(rename = "original_size", default)]
+            original_size: Option<serde_json::Value>,
+            #[serde(rename = "size_matched", default)]
+            size_matched: Option<serde_json::Value>,
+            status: Option<String>,
+            outcome: Option<String>,
+            market: Option<String>,
+            #[serde(rename = "created_at", default)]
+            created_at: Option<String>,
+        }
+
+        let raw: Vec<RawOrder> = resp.json().await?;
+        Ok(raw
+            .into_iter()
+            .filter_map(|o| {
+                Some(Order {
+                    id: o.id?,
+                    asset_id: o.asset_id,
+                    side: match o.side?.as_str() {
+                        "BUY" => Side::Buy,
+                        "SELL" => Side::Sell,
+                        _ => return None,
+                    },
+                    price: parse_value_f64(&o.price).unwrap_or(0.0),
+                    original_size: parse_value_f64(&o.original_size).unwrap_or(0.0),
+                    size_matched: parse_value_f64(&o.size_matched).unwrap_or(0.0),
+                    status: parse_order_status(o.status.as_deref()),
+                    outcome: o.outcome.unwrap_or_default(),
+                    market: o.market.unwrap_or_default(),
+                    created_at: o.created_at.unwrap_or_default(),
+                })
+            })
+            .take(limit)
+            .collect())
+    }
+
     /// Get a single order by ID (raw JSON for inspection).
     #[allow(dead_code)]
     pub async fn get_order(&self, order_id: &str) -> Result<serde_json::Value> {

@@ -126,6 +126,27 @@ enum Command {
         category: Option<String>,
     },
 
+    /// Show filled order history
+    History {
+        /// Maximum number of past orders to show (most recent first)
+        #[arg(short, long, default_value_t = 20)]
+        limit: usize,
+    },
+
+    /// Watch an order book, refreshing in-place until Ctrl+C
+    Watch {
+        /// CLOB token ID (from `poly market`)
+        token_id: String,
+
+        /// Label to display (e.g. "Yes", "No")
+        #[arg(long, default_value = "")]
+        label: String,
+
+        /// Refresh interval in seconds
+        #[arg(short, long, default_value_t = 2)]
+        interval: u64,
+    },
+
     /// Cancel all open orders for a specific market
     ///
     /// Looks up the market's outcome token IDs and cancels any open orders
@@ -160,6 +181,10 @@ async fn main() {
         Command::Cancel { order_id } => cmd_cancel(&client, &order_id).await,
         Command::CancelAll => cmd_cancel_all(&client).await,
         Command::Balance => cmd_balance(&client).await,
+        Command::History { limit } => cmd_history(&client, limit).await,
+        Command::Watch { token_id, label, interval } => {
+            cmd_watch(&client, &token_id, &label, interval).await
+        }
         Command::Top { limit, category } => cmd_top(&client, limit, category.as_deref()).await,
         Command::CancelMarket { condition_id } => {
             cmd_cancel_market(&client, &condition_id).await
@@ -328,6 +353,57 @@ async fn cmd_balance(client: &PolyClient) -> client::Result<()> {
     let balance = client.get_balance().await?;
     let allowance = client.get_allowance().await.unwrap_or(0.0);
     display::print_balance(balance, allowance);
+    Ok(())
+}
+
+async fn cmd_history(client: &PolyClient, limit: usize) -> client::Result<()> {
+    display::print_info(&format!("Fetching last {} filled orders…", limit));
+    let orders = client.get_order_history(limit).await?;
+    display::print_history(&orders);
+    Ok(())
+}
+
+async fn cmd_watch(
+    client: &PolyClient,
+    token_id: &str,
+    label: &str,
+    interval_secs: u64,
+) -> client::Result<()> {
+    use std::io::Write;
+
+    let name = if label.is_empty() { token_id } else { label };
+    let duration = std::time::Duration::from_secs(interval_secs);
+
+    loop {
+        let book_result = client.get_order_book(token_id).await;
+
+        // Clear screen and position cursor at top-left
+        print!("\x1b[2J\x1b[H");
+        std::io::stdout().flush().ok();
+
+        let now = chrono::Local::now();
+        println!(
+            "  Watching {}   refreshes every {}s   Ctrl+C to quit   {}",
+            name,
+            interval_secs,
+            now.format("%H:%M:%S"),
+        );
+
+        match book_result {
+            Ok(book) => display::print_order_book(&book, name),
+            Err(e) => display::print_error(&format!("Fetch failed: {}", e)),
+        }
+
+        tokio::select! {
+            _ = tokio::signal::ctrl_c() => {
+                print!("\x1b[2J\x1b[H");
+                std::io::stdout().flush().ok();
+                break;
+            }
+            _ = tokio::time::sleep(duration) => {}
+        }
+    }
+
     Ok(())
 }
 
