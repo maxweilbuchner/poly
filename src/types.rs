@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 // ── Market ────────────────────────────────────────────────────────────────────
 
 #[allow(dead_code)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Market {
     pub condition_id: String,
     pub question: String,
@@ -17,7 +17,7 @@ pub struct Market {
     pub tags: Vec<String>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub enum MarketStatus {
     Active,
     Closed,
@@ -35,7 +35,7 @@ impl std::fmt::Display for MarketStatus {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Outcome {
     pub name: String,
     pub token_id: String,
@@ -48,14 +48,14 @@ pub struct Outcome {
 
 // ── Order Book ────────────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct OrderBook {
     pub token_id: String,
     pub bids: Vec<PriceLevel>,
     pub asks: Vec<PriceLevel>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct PriceLevel {
     pub price: f64,
     pub size: f64,
@@ -64,7 +64,7 @@ pub struct PriceLevel {
 // ── Orders ────────────────────────────────────────────────────────────────────
 
 #[allow(dead_code)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Order {
     pub id: String,
     pub asset_id: String,
@@ -93,7 +93,7 @@ impl std::fmt::Display for Side {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub enum OrderStatus {
     Live,
     Filled,
@@ -118,7 +118,7 @@ impl std::fmt::Display for OrderStatus {
 // ── Positions ────────────────────────────────────────────────────────────────
 
 #[allow(dead_code)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Position {
     pub market_id: String,
     pub market_question: String,
@@ -133,7 +133,7 @@ pub struct Position {
 
 // ── Order Type ────────────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub enum OrderType {
     /// Good-til-cancelled limit order
     Gtc,

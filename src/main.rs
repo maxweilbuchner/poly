@@ -20,6 +20,10 @@ struct Cli {
     #[arg(long, global = true)]
     dry_run: bool,
 
+    /// Output result as JSON instead of formatted text
+    #[arg(long, global = true)]
+    json: bool,
+
     #[command(subcommand)]
     command: Command,
 }
@@ -185,30 +189,31 @@ async fn main() {
     let cli = Cli::parse();
     let client = build_client();
 
+    let json = cli.json;
     let result = match cli.command {
         Command::Search { query, limit, all } => {
-            cmd_search(&client, &query, limit, !all).await
+            cmd_search(&client, &query, limit, !all, json).await
         }
-        Command::Market { id, book } => cmd_market(&client, &id, book).await,
-        Command::Book { token_id, label } => cmd_book(&client, &token_id, &label).await,
+        Command::Market { id, book } => cmd_market(&client, &id, book, json).await,
+        Command::Book { token_id, label } => cmd_book(&client, &token_id, &label, json).await,
         Command::Buy { token_id, size, price, order_type, market, expiry } => {
-            cmd_trade(&client, &token_id, price, size, Side::Buy, &order_type, market, expiry, cli.dry_run).await
+            cmd_trade(&client, &token_id, price, size, Side::Buy, &order_type, market, expiry, cli.dry_run, json).await
         }
         Command::Sell { token_id, size, price, order_type, market, expiry } => {
-            cmd_trade(&client, &token_id, price, size, Side::Sell, &order_type, market, expiry, cli.dry_run).await
+            cmd_trade(&client, &token_id, price, size, Side::Sell, &order_type, market, expiry, cli.dry_run, json).await
         }
-        Command::Orders => cmd_orders(&client).await,
-        Command::Positions => cmd_positions(&client).await,
-        Command::Cancel { order_id } => cmd_cancel(&client, &order_id).await,
-        Command::CancelAll => cmd_cancel_all(&client).await,
-        Command::Balance => cmd_balance(&client).await,
-        Command::History { limit } => cmd_history(&client, limit).await,
+        Command::Orders => cmd_orders(&client, json).await,
+        Command::Positions => cmd_positions(&client, json).await,
+        Command::Cancel { order_id } => cmd_cancel(&client, &order_id, json).await,
+        Command::CancelAll => cmd_cancel_all(&client, json).await,
+        Command::Balance => cmd_balance(&client, json).await,
+        Command::History { limit } => cmd_history(&client, limit, json).await,
         Command::Watch { token_id, label, interval } => {
             cmd_watch(&client, &token_id, &label, interval).await
         }
-        Command::Top { limit, category } => cmd_top(&client, limit, category.as_deref()).await,
+        Command::Top { limit, category } => cmd_top(&client, limit, category.as_deref(), json).await,
         Command::CancelMarket { condition_id } => {
-            cmd_cancel_market(&client, &condition_id).await
+            cmd_cancel_market(&client, &condition_id, json).await
         }
     };
 
@@ -225,14 +230,21 @@ async fn cmd_search(
     query: &str,
     limit: usize,
     active_only: bool,
+    json: bool,
 ) -> client::Result<()> {
-    display::print_info(&format!("Searching for \"{}\"…", query));
+    if !json {
+        display::print_info(&format!("Searching for \"{}\"…", query));
+    }
     let markets = client.search_markets(query, active_only, limit).await?;
-    display::print_market_list(&markets);
+    if json {
+        println!("{}", serde_json::to_string_pretty(&markets).unwrap());
+    } else {
+        display::print_market_list(&markets);
+    }
     Ok(())
 }
 
-async fn cmd_market(client: &PolyClient, id: &str, show_book: bool) -> client::Result<()> {
+async fn cmd_market(client: &PolyClient, id: &str, show_book: bool, json: bool) -> client::Result<()> {
     // Accept full polymarket.com URLs, e.g.
     //   https://polymarket.com/event/will-trump-win-the-2024-us-presidential-election
     // Strip query string, fragment, and trailing slash, then take the last path segment.
@@ -252,7 +264,9 @@ async fn cmd_market(client: &PolyClient, id: &str, show_book: bool) -> client::R
         id
     };
 
-    display::print_info(&format!("Fetching market \"{}\"…", id));
+    if !json {
+        display::print_info(&format!("Fetching market \"{}\"…", id));
+    }
 
     // Try condition ID (64-char hex) first, then slug
     let markets = if id.len() == 66 || (id.len() == 64 && id.chars().all(|c| c.is_ascii_hexdigit()))
@@ -273,16 +287,39 @@ async fn cmd_market(client: &PolyClient, id: &str, show_book: bool) -> client::R
         return Ok(());
     }
 
-    for market in &markets {
-        display::print_market_detail(market);
-
+    if json {
         if show_book {
-            for outcome in &market.outcomes {
-                if outcome.token_id.is_empty() {
-                    continue;
+            let mut out = Vec::new();
+            for market in &markets {
+                let mut books = Vec::new();
+                for outcome in &market.outcomes {
+                    if outcome.token_id.is_empty() {
+                        continue;
+                    }
+                    let book = client.get_order_book(&outcome.token_id).await?;
+                    books.push(serde_json::json!({
+                        "outcome": outcome.name,
+                        "book": book,
+                    }));
                 }
-                let book = client.get_order_book(&outcome.token_id).await?;
-                display::print_order_book(&book, &outcome.name);
+                out.push(serde_json::json!({ "market": market, "books": books }));
+            }
+            println!("{}", serde_json::to_string_pretty(&out).unwrap());
+        } else {
+            println!("{}", serde_json::to_string_pretty(&markets).unwrap());
+        }
+    } else {
+        for market in &markets {
+            display::print_market_detail(market);
+
+            if show_book {
+                for outcome in &market.outcomes {
+                    if outcome.token_id.is_empty() {
+                        continue;
+                    }
+                    let book = client.get_order_book(&outcome.token_id).await?;
+                    display::print_order_book(&book, &outcome.name);
+                }
             }
         }
     }
@@ -290,10 +327,14 @@ async fn cmd_market(client: &PolyClient, id: &str, show_book: bool) -> client::R
     Ok(())
 }
 
-async fn cmd_book(client: &PolyClient, token_id: &str, label: &str) -> client::Result<()> {
+async fn cmd_book(client: &PolyClient, token_id: &str, label: &str, json: bool) -> client::Result<()> {
     let book = client.get_order_book(token_id).await?;
-    let name = if label.is_empty() { token_id } else { label };
-    display::print_order_book(&book, name);
+    if json {
+        println!("{}", serde_json::to_string_pretty(&book).unwrap());
+    } else {
+        let name = if label.is_empty() { token_id } else { label };
+        display::print_order_book(&book, name);
+    }
     Ok(())
 }
 
@@ -307,6 +348,7 @@ async fn cmd_trade(
     market: bool,
     expiry: Option<u64>,
     dry_run: bool,
+    json: bool,
 ) -> client::Result<()> {
     // Resolve price and order type: market orders fetch best price from the book
     // and always use FOK; limit orders require an explicit price.
@@ -351,67 +393,118 @@ async fn cmd_trade(
 
     if dry_run {
         let cost = size * price;
-        let expiry_note = expiry
-            .map(|e| format!("  expiry: {}", e))
-            .unwrap_or_default();
-        display::print_info(&format!(
-            "DRY RUN — {} {} shares of {} @ {:.4} (cost: ${:.4}){}",
-            side, size, token_id, price, cost, expiry_note
-        ));
+        if json {
+            println!("{}", serde_json::json!({
+                "dry_run": true,
+                "side": side.to_string(),
+                "token_id": token_id,
+                "price": price,
+                "size": size,
+                "cost": cost,
+                "expiry": expiry,
+            }));
+        } else {
+            let expiry_note = expiry
+                .map(|e| format!("  expiry: {}", e))
+                .unwrap_or_default();
+            display::print_info(&format!(
+                "DRY RUN — {} {} shares of {} @ {:.4} (cost: ${:.4}){}",
+                side, size, token_id, price, cost, expiry_note
+            ));
+        }
         return Ok(());
     }
 
     let order_id = client
         .place_order(token_id, price, size, side.clone(), order_type, expiry)
         .await?;
-    display::print_order_placed(&order_id, &side, token_id, price, size);
+    if json {
+        println!("{}", serde_json::json!({ "order_id": order_id }));
+    } else {
+        display::print_order_placed(&order_id, &side, token_id, price, size);
+    }
     Ok(())
 }
 
-async fn cmd_orders(client: &PolyClient) -> client::Result<()> {
-    display::print_info("Fetching open orders…");
+async fn cmd_orders(client: &PolyClient, json: bool) -> client::Result<()> {
+    if !json {
+        display::print_info("Fetching open orders…");
+    }
     let orders = client.get_open_orders().await?;
-    display::print_orders(&orders);
+    if json {
+        println!("{}", serde_json::to_string_pretty(&orders).unwrap());
+    } else {
+        display::print_orders(&orders);
+    }
     Ok(())
 }
 
-async fn cmd_positions(client: &PolyClient) -> client::Result<()> {
-    display::print_info("Fetching positions…");
+async fn cmd_positions(client: &PolyClient, json: bool) -> client::Result<()> {
+    if !json {
+        display::print_info("Fetching positions…");
+    }
     let positions = client.get_positions().await?;
-    display::print_positions(&positions);
+    if json {
+        println!("{}", serde_json::to_string_pretty(&positions).unwrap());
+    } else {
+        display::print_positions(&positions);
+    }
     Ok(())
 }
 
-async fn cmd_cancel(client: &PolyClient, order_id: &str) -> client::Result<()> {
+async fn cmd_cancel(client: &PolyClient, order_id: &str, json: bool) -> client::Result<()> {
     client.cancel_order(order_id).await?;
-    display::print_cancelled(order_id);
+    if json {
+        println!("{}", serde_json::json!({ "cancelled": order_id }));
+    } else {
+        display::print_cancelled(order_id);
+    }
     Ok(())
 }
 
-async fn cmd_cancel_all(client: &PolyClient) -> client::Result<()> {
-    // List first so the user knows what was cancelled
+async fn cmd_cancel_all(client: &PolyClient, json: bool) -> client::Result<()> {
     let orders = client.get_open_orders().await.unwrap_or_default();
     if orders.is_empty() {
-        println!("{}", colored::Colorize::yellow("No open orders to cancel."));
+        if json {
+            println!("{}", serde_json::json!({ "cancelled_count": 0 }));
+        } else {
+            println!("{}", colored::Colorize::yellow("No open orders to cancel."));
+        }
         return Ok(());
     }
-    display::print_info(&format!("Cancelling {} open order(s)…", orders.len()));
+    if !json {
+        display::print_info(&format!("Cancelling {} open order(s)…", orders.len()));
+    }
     client.cancel_all_orders().await?;
-    display::print_cancelled_all();
+    if json {
+        println!("{}", serde_json::json!({ "cancelled_count": orders.len() }));
+    } else {
+        display::print_cancelled_all();
+    }
     Ok(())
 }
 
-async fn cmd_balance(client: &PolyClient) -> client::Result<()> {
+async fn cmd_balance(client: &PolyClient, json: bool) -> client::Result<()> {
     let balance = client.get_balance().await?;
     let allowance = client.get_allowance().await.unwrap_or(0.0);
-    display::print_balance(balance, allowance);
+    if json {
+        println!("{}", serde_json::json!({ "balance": balance, "allowance": allowance }));
+    } else {
+        display::print_balance(balance, allowance);
+    }
     Ok(())
 }
 
-async fn cmd_history(client: &PolyClient, limit: usize) -> client::Result<()> {
-    display::print_info(&format!("Fetching last {} filled orders…", limit));
+async fn cmd_history(client: &PolyClient, limit: usize, json: bool) -> client::Result<()> {
+    if !json {
+        display::print_info(&format!("Fetching last {} filled orders…", limit));
+    }
     let orders = client.get_order_history(limit).await?;
-    display::print_history(&orders);
+    if json {
+        println!("{}", serde_json::to_string_pretty(&orders).unwrap());
+    } else {
+        display::print_history(&orders);
+    }
     Ok(())
 }
 
@@ -463,18 +556,25 @@ async fn cmd_top(
     client: &PolyClient,
     limit: usize,
     category: Option<&str>,
+    json: bool,
 ) -> client::Result<()> {
-    let label = match category {
-        Some(c) => format!("top {} markets in \"{}\" by volume…", limit, c),
-        None => format!("top {} markets by volume…", limit),
-    };
-    display::print_info(&label);
+    if !json {
+        let label = match category {
+            Some(c) => format!("top {} markets in \"{}\" by volume…", limit, c),
+            None => format!("top {} markets by volume…", limit),
+        };
+        display::print_info(&label);
+    }
     let markets = client.get_top_markets(limit, category).await?;
-    display::print_market_list(&markets);
+    if json {
+        println!("{}", serde_json::to_string_pretty(&markets).unwrap());
+    } else {
+        display::print_market_list(&markets);
+    }
     Ok(())
 }
 
-async fn cmd_cancel_market(client: &PolyClient, condition_id: &str) -> client::Result<()> {
+async fn cmd_cancel_market(client: &PolyClient, condition_id: &str, json: bool) -> client::Result<()> {
     // Normalise to 0x-prefixed hex
     let cid = if condition_id.starts_with("0x") {
         condition_id.to_string()
@@ -483,7 +583,9 @@ async fn cmd_cancel_market(client: &PolyClient, condition_id: &str) -> client::R
     };
 
     // Resolve market to get its outcome token IDs
-    display::print_info(&format!("Fetching market {}…", cid));
+    if !json {
+        display::print_info(&format!("Fetching market {}…", cid));
+    }
     let market = client
         .get_market_by_id(&cid)
         .await?
@@ -493,7 +595,9 @@ async fn cmd_cancel_market(client: &PolyClient, condition_id: &str) -> client::R
         market.outcomes.iter().map(|o| o.token_id.as_str()).collect();
 
     // Find open orders whose asset_id matches one of the market's outcome tokens
-    display::print_info("Fetching open orders…");
+    if !json {
+        display::print_info("Fetching open orders…");
+    }
     let all_orders = client.get_open_orders().await?;
     let matching: Vec<_> = all_orders
         .into_iter()
@@ -501,17 +605,32 @@ async fn cmd_cancel_market(client: &PolyClient, condition_id: &str) -> client::R
         .collect();
 
     if matching.is_empty() {
-        println!("{}", colored::Colorize::yellow("No open orders for that market."));
+        if json {
+            println!("{}", serde_json::json!({ "cancelled": serde_json::Value::Array(vec![]) }));
+        } else {
+            println!("{}", colored::Colorize::yellow("No open orders for that market."));
+        }
         return Ok(());
     }
 
-    println!("Market : {}", market.question);
-    display::print_info(&format!("Cancelling {} order(s)…", matching.len()));
-    display::print_orders(&matching);
+    if !json {
+        println!("Market : {}", market.question);
+        display::print_info(&format!("Cancelling {} order(s)…", matching.len()));
+        display::print_orders(&matching);
+    }
 
+    let mut cancelled_ids = Vec::new();
     for order in &matching {
         client.cancel_order(&order.id).await?;
-        display::print_cancelled(&order.id);
+        if json {
+            cancelled_ids.push(order.id.clone());
+        } else {
+            display::print_cancelled(&order.id);
+        }
+    }
+
+    if json {
+        println!("{}", serde_json::json!({ "cancelled": cancelled_ids }));
     }
 
     Ok(())
