@@ -114,6 +114,26 @@ enum Command {
 
     /// Show on-chain USDC balance and CTF allowance
     Balance,
+
+    /// List top markets by trading volume
+    Top {
+        /// Maximum number of results to show
+        #[arg(short, long, default_value_t = 20)]
+        limit: usize,
+
+        /// Filter by category (e.g. "politics", "crypto", "sports")
+        #[arg(long)]
+        category: Option<String>,
+    },
+
+    /// Cancel all open orders for a specific market
+    ///
+    /// Looks up the market's outcome token IDs and cancels any open orders
+    /// whose asset matches. Accepts a condition ID (hex).
+    CancelMarket {
+        /// Market condition ID (hex, with or without 0x prefix)
+        condition_id: String,
+    },
 }
 
 #[tokio::main]
@@ -140,6 +160,10 @@ async fn main() {
         Command::Cancel { order_id } => cmd_cancel(&client, &order_id).await,
         Command::CancelAll => cmd_cancel_all(&client).await,
         Command::Balance => cmd_balance(&client).await,
+        Command::Top { limit, category } => cmd_top(&client, limit, category.as_deref()).await,
+        Command::CancelMarket { condition_id } => {
+            cmd_cancel_market(&client, &condition_id).await
+        }
     };
 
     if let Err(e) = result {
@@ -163,6 +187,25 @@ async fn cmd_search(
 }
 
 async fn cmd_market(client: &PolyClient, id: &str, show_book: bool) -> client::Result<()> {
+    // Accept full polymarket.com URLs, e.g.
+    //   https://polymarket.com/event/will-trump-win-the-2024-us-presidential-election
+    // Strip query string, fragment, and trailing slash, then take the last path segment.
+    let slug_buf: String;
+    let id: &str = if id.starts_with("http") {
+        slug_buf = id
+            .split(|c| c == '?' || c == '#')
+            .next()
+            .unwrap_or(id)
+            .trim_end_matches('/')
+            .rsplit('/')
+            .next()
+            .unwrap_or(id)
+            .to_string();
+        &slug_buf
+    } else {
+        id
+    };
+
     display::print_info(&format!("Fetching market \"{}\"…", id));
 
     // Try condition ID (64-char hex) first, then slug
@@ -285,6 +328,64 @@ async fn cmd_balance(client: &PolyClient) -> client::Result<()> {
     let balance = client.get_balance().await?;
     let allowance = client.get_allowance().await.unwrap_or(0.0);
     display::print_balance(balance, allowance);
+    Ok(())
+}
+
+async fn cmd_top(
+    client: &PolyClient,
+    limit: usize,
+    category: Option<&str>,
+) -> client::Result<()> {
+    let label = match category {
+        Some(c) => format!("top {} markets in \"{}\" by volume…", limit, c),
+        None => format!("top {} markets by volume…", limit),
+    };
+    display::print_info(&label);
+    let markets = client.get_top_markets(limit, category).await?;
+    display::print_market_list(&markets);
+    Ok(())
+}
+
+async fn cmd_cancel_market(client: &PolyClient, condition_id: &str) -> client::Result<()> {
+    // Normalise to 0x-prefixed hex
+    let cid = if condition_id.starts_with("0x") {
+        condition_id.to_string()
+    } else {
+        format!("0x{}", condition_id)
+    };
+
+    // Resolve market to get its outcome token IDs
+    display::print_info(&format!("Fetching market {}…", cid));
+    let market = client
+        .get_market_by_id(&cid)
+        .await?
+        .ok_or_else(|| format!("Market not found: {}", cid))?;
+
+    let token_ids: std::collections::HashSet<&str> =
+        market.outcomes.iter().map(|o| o.token_id.as_str()).collect();
+
+    // Find open orders whose asset_id matches one of the market's outcome tokens
+    display::print_info("Fetching open orders…");
+    let all_orders = client.get_open_orders().await?;
+    let matching: Vec<_> = all_orders
+        .into_iter()
+        .filter(|o| token_ids.contains(o.asset_id.as_str()))
+        .collect();
+
+    if matching.is_empty() {
+        println!("{}", colored::Colorize::yellow("No open orders for that market."));
+        return Ok(());
+    }
+
+    println!("Market : {}", market.question);
+    display::print_info(&format!("Cancelling {} order(s)…", matching.len()));
+    display::print_orders(&matching);
+
+    for order in &matching {
+        client.cancel_order(&order.id).await?;
+        display::print_cancelled(&order.id);
+    }
+
     Ok(())
 }
 

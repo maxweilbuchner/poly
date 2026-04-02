@@ -170,6 +170,44 @@ impl PolyClient {
         Ok(markets)
     }
 
+    /// Fetch top markets by volume (active only).
+    ///
+    /// Over-fetches from the Gamma API (which returns by volume desc by default)
+    /// and drops any markets that fail to deserialise, returning up to `limit` results.
+    pub async fn get_top_markets(&self, limit: usize, category: Option<&str>) -> Result<Vec<Market>> {
+        // Over-fetch so category filtering still yields `limit` results.
+        let fetch_limit = if category.is_some() { (limit * 4).max(100) } else { limit };
+        let url = format!(
+            "{}/markets?active=true&closed=false&order=volume&ascending=false&limit={}",
+            GAMMA_API, fetch_limit
+        );
+
+        let resp = self.http.get(&url).send().await?;
+        if !resp.status().is_success() {
+            return Err(format!("Gamma /markets failed: {}", resp.status()).into());
+        }
+
+        let raw: Vec<GammaMarket> = resp.json().await?;
+        let cat_lower = category.map(|c| c.to_lowercase());
+
+        let mut markets = Vec::new();
+        for gm in raw {
+            if let Some(ref cat) = cat_lower {
+                let gm_cat = gm.category.as_deref().unwrap_or("").to_lowercase();
+                if !gm_cat.contains(cat.as_str()) {
+                    continue;
+                }
+            }
+            if let Some(m) = self.gamma_to_market(gm, false).await {
+                markets.push(m);
+                if markets.len() >= limit {
+                    break;
+                }
+            }
+        }
+        Ok(markets)
+    }
+
     /// Fetch a single market by its condition ID (hex string).
     pub async fn get_market_by_id(&self, condition_id: &str) -> Result<Option<Market>> {
         let url = format!("{}/markets/{}", GAMMA_API, condition_id);
