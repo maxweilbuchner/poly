@@ -1,0 +1,21 @@
+# ~/.poly/config.toml — user-level credentials for poly
+#
+# Copy this file to ~/.poly/config.toml and fill in your values.
+# Environment variables always take priority over this file.
+# .env in the current directory is loaded before this file.
+#
+# Create the directory first:  mkdir -p ~/.poly && chmod 700 ~/.poly
+
+# Wallet private key (EOA that signs EIP-712 orders)
+private_key = "0x..."
+
+# CLOB API credentials (from https://polymarket.com/profile)
+api_key = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+api_secret = "..."
+api_passphrase = "..."
+
+# Polygon mainnet RPC — required for balance/allowance checks
+rpc_url = "https://polygon-mainnet.g.alchemy.com/v2/YOUR_KEY"
+
+# Optional: proxy/funder address if using a Gnosis Safe or proxy wallet
+# funder_address = "0x..."

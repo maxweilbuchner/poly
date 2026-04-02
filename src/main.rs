@@ -636,21 +636,47 @@ async fn cmd_cancel_market(client: &PolyClient, condition_id: &str, json: bool) 
     Ok(())
 }
 
+// ── Config file ───────────────────────────────────────────────────────────────
+
+#[derive(serde::Deserialize, Default)]
+struct PolyConfig {
+    private_key: Option<String>,
+    api_key: Option<String>,
+    api_secret: Option<String>,
+    api_passphrase: Option<String>,
+    rpc_url: Option<String>,
+    funder_address: Option<String>,
+}
+
+/// Load `~/.poly/config.toml` if it exists; silently return defaults otherwise.
+fn load_config() -> PolyConfig {
+    dirs::home_dir()
+        .map(|h| h.join(".poly").join("config.toml"))
+        .and_then(|p| std::fs::read_to_string(p).ok())
+        .and_then(|s| toml::from_str(&s).ok())
+        .unwrap_or_default()
+}
+
 // ── Client construction ───────────────────────────────────────────────────────
 
 fn build_client() -> PolyClient {
-    let private_key = env::var("POLY_PRIVATE_KEY")
-        .or_else(|_| env::var("POLY_MARKET_KEY"))
-        .ok();
-    let funder = env::var("POLY_FUNDER_ADDRESS").ok();
-    let rpc = env::var("POLYGON_RPC_URL").ok();
+    let cfg = load_config();
 
-    let auth = match (
-        env::var("POLY_API_KEY").or_else(|_| env::var("POLY_KEY")),
-        env::var("POLY_API_SECRET"),
-        env::var("POLY_API_PASSPHRASE"),
-    ) {
-        (Ok(k), Ok(s), Ok(p)) => Some(auth::ClobAuth::new(k, s, p)),
+    // Helper: env var takes priority, config file is the fallback.
+    let ev = |key: &str| env::var(key).ok();
+
+    let private_key = ev("POLY_PRIVATE_KEY")
+        .or_else(|| ev("POLY_MARKET_KEY"))
+        .or(cfg.private_key);
+    let funder = ev("POLY_FUNDER_ADDRESS").or(cfg.funder_address);
+    let rpc = ev("POLYGON_RPC_URL").or(cfg.rpc_url);
+
+    let api_key = ev("POLY_API_KEY").or_else(|| ev("POLY_KEY")).or(cfg.api_key);
+    let api_secret = ev("POLY_API_SECRET").or(cfg.api_secret);
+    let api_passphrase = ev("POLY_API_PASSPHRASE").or(cfg.api_passphrase);
+
+    let auth = match (api_key, api_secret, api_passphrase) {
+        (Some(k), Some(s), Some(p)) => Some(auth::ClobAuth::new(k, s, p)),
         _ => None,
     };
 
