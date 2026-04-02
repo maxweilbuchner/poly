@@ -133,8 +133,9 @@ pub struct Position {
 
 // ── Order Type ────────────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Default)]
 pub enum OrderType {
+    #[default]
     /// Good-til-cancelled limit order
     Gtc,
     /// Fill-or-kill (market-style)

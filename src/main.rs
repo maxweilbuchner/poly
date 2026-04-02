@@ -2,6 +2,7 @@ mod auth;
 mod client;
 mod display;
 mod error;
+mod tui;
 mod types;
 
 use clap::{Parser, Subcommand};
@@ -26,7 +27,7 @@ struct Cli {
     json: bool,
 
     #[command(subcommand)]
-    command: Command,
+    command: Option<Command>,
 }
 
 #[derive(Subcommand)]
@@ -181,6 +182,9 @@ enum Command {
         /// Market condition ID (hex, with or without 0x prefix)
         condition_id: String,
     },
+
+    /// Open the interactive TUI dashboard (default when no subcommand is given)
+    Tui,
 }
 
 #[tokio::main]
@@ -191,7 +195,8 @@ async fn main() {
     let client = build_client();
 
     let json = cli.json;
-    let result = match cli.command {
+    let result = match cli.command.unwrap_or(Command::Tui) {
+        Command::Tui => tui::run(client.clone()).await,
         Command::Search { query, limit, all } => {
             cmd_search(&client, &query, limit, !all, json).await
         }
