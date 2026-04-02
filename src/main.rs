@@ -1,6 +1,7 @@
 mod auth;
 mod client;
 mod display;
+mod error;
 mod types;
 
 use clap::{Parser, Subcommand};

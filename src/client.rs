@@ -7,10 +7,23 @@ use serde::Deserialize;
 use std::str::FromStr;
 
 use crate::auth::ClobAuth;
+use crate::error::AppError;
 use crate::types::{Market, MarketStatus, Order, OrderBook, OrderStatus, OrderType, Outcome,
                    Position, PriceLevel, Side};
 
 pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
+
+/// Convert a reqwest transport error to a boxed AppError::Network / Other.
+fn net_err(e: reqwest::Error) -> Box<dyn std::error::Error + Send + Sync> {
+    AppError::from_reqwest(e).into()
+}
+
+/// Read the response body and build a boxed AppError::Api.
+async fn api_err(resp: reqwest::Response) -> Box<dyn std::error::Error + Send + Sync> {
+    let status = resp.status().as_u16();
+    let body = resp.text().await.unwrap_or_default();
+    AppError::from_api_body(status, &body).into()
+}
 
 const GAMMA_API: &str = "https://gamma-api.polymarket.com";
 const CLOB_API: &str = "https://clob.polymarket.com";
@@ -137,9 +150,9 @@ impl PolyClient {
             active_param
         );
 
-        let resp = self.http.get(&url).send().await?;
+        let resp = self.http.get(&url).send().await.map_err(net_err)?;
         if !resp.status().is_success() {
-            return Err(format!("Gamma search failed: {}", resp.status()).into());
+            return Err(api_err(resp).await);
         }
 
         let raw: Vec<GammaMarket> = resp.json().await?;
@@ -182,9 +195,9 @@ impl PolyClient {
             GAMMA_API, fetch_limit
         );
 
-        let resp = self.http.get(&url).send().await?;
+        let resp = self.http.get(&url).send().await.map_err(net_err)?;
         if !resp.status().is_success() {
-            return Err(format!("Gamma /markets failed: {}", resp.status()).into());
+            return Err(api_err(resp).await);
         }
 
         let raw: Vec<GammaMarket> = resp.json().await?;
@@ -211,12 +224,12 @@ impl PolyClient {
     /// Fetch a single market by its condition ID (hex string).
     pub async fn get_market_by_id(&self, condition_id: &str) -> Result<Option<Market>> {
         let url = format!("{}/markets/{}", GAMMA_API, condition_id);
-        let resp = self.http.get(&url).send().await?;
+        let resp = self.http.get(&url).send().await.map_err(net_err)?;
         if resp.status().as_u16() == 404 {
             return Ok(None);
         }
         if !resp.status().is_success() {
-            return Err(format!("Gamma markets/{} failed: {}", condition_id, resp.status()).into());
+            return Err(api_err(resp).await);
         }
         let gm: GammaMarket = resp.json().await?;
         Ok(self.gamma_to_market(gm, true).await)
@@ -227,7 +240,7 @@ impl PolyClient {
     pub async fn get_market_by_slug(&self, slug: &str) -> Result<Vec<Market>> {
         // Try as an event slug first
         let url = format!("{}/events?slug={}", GAMMA_API, urlencoded(slug));
-        let resp = self.http.get(&url).send().await?;
+        let resp = self.http.get(&url).send().await.map_err(net_err)?;
         if resp.status().is_success() {
             let events: Vec<GammaEvent> = resp.json().await?;
             let mut markets = Vec::new();
@@ -245,7 +258,7 @@ impl PolyClient {
 
         // Try as a direct market slug (correct param name is `slug`, not `market_slug`)
         let url2 = format!("{}/markets?slug={}", GAMMA_API, urlencoded(slug));
-        let resp2 = self.http.get(&url2).send().await?;
+        let resp2 = self.http.get(&url2).send().await.map_err(net_err)?;
         if resp2.status().is_success() {
             let raw: Vec<GammaMarket> = resp2.json().await?;
             let mut markets = Vec::new();
@@ -265,9 +278,9 @@ impl PolyClient {
     /// Fetch the full order book for a token ID.
     pub async fn get_order_book(&self, token_id: &str) -> Result<OrderBook> {
         let url = format!("{}/book?token_id={}", CLOB_API, token_id);
-        let resp = self.http.get(&url).send().await?;
+        let resp = self.http.get(&url).send().await.map_err(net_err)?;
         if !resp.status().is_success() {
-            return Err(format!("CLOB /book failed: {}", resp.status()).into());
+            return Err(api_err(resp).await);
         }
         let book: BookResponse = resp.json().await?;
 
@@ -297,11 +310,15 @@ impl PolyClient {
 
     /// USDC balance on-chain (Polygon mainnet).
     pub async fn get_balance(&self) -> Result<f64> {
-        let provider = self.provider.as_ref().ok_or("No RPC URL configured")?;
+        let provider = self.provider.as_ref().ok_or_else(|| -> Box<dyn std::error::Error + Send + Sync> {
+            AppError::Auth("No RPC URL configured (POLYGON_RPC_URL)".into()).into()
+        })?;
         let address = self
             .funder_address
             .or_else(|| self.wallet.as_ref().map(|w| w.address()))
-            .ok_or("No wallet or funder address configured")?;
+            .ok_or_else(|| -> Box<dyn std::error::Error + Send + Sync> {
+                AppError::Auth("No wallet or funder address configured (POLY_PRIVATE_KEY)".into()).into()
+            })?;
 
         let usdc: H160 = USDC_ADDRESS.parse()?;
         let contract = ERC20::new(usdc, provider.clone().into());
@@ -311,11 +328,15 @@ impl PolyClient {
 
     /// USDC allowance granted to the CTF Exchange.
     pub async fn get_allowance(&self) -> Result<f64> {
-        let provider = self.provider.as_ref().ok_or("No RPC URL configured")?;
+        let provider = self.provider.as_ref().ok_or_else(|| -> Box<dyn std::error::Error + Send + Sync> {
+            AppError::Auth("No RPC URL configured (POLYGON_RPC_URL)".into()).into()
+        })?;
         let address = self
             .funder_address
             .or_else(|| self.wallet.as_ref().map(|w| w.address()))
-            .ok_or("No wallet or funder address configured")?;
+            .ok_or_else(|| -> Box<dyn std::error::Error + Send + Sync> {
+                AppError::Auth("No wallet or funder address configured (POLY_PRIVATE_KEY)".into()).into()
+            })?;
 
         let usdc: H160 = USDC_ADDRESS.parse()?;
         let spender: H160 = CTF_EXCHANGE.parse()?;
@@ -334,9 +355,9 @@ impl PolyClient {
         let signer_str = format!("{:#x}", wallet.address());
         let headers = auth.headers("GET", path, None, &signer_str)?;
 
-        let resp = self.http.get(&url).headers(headers).send().await?;
+        let resp = self.http.get(&url).headers(headers).send().await.map_err(net_err)?;
         if !resp.status().is_success() {
-            return Err(format!("CLOB /data/orders failed: {}", resp.status()).into());
+            return Err(api_err(resp).await);
         }
 
         #[derive(Deserialize)]
@@ -392,11 +413,9 @@ impl PolyClient {
         let signer_str = format!("{:#x}", wallet.address());
         let headers = auth.headers("GET", path, None, &signer_str)?;
 
-        let resp = self.http.get(&url).headers(headers).send().await?;
+        let resp = self.http.get(&url).headers(headers).send().await.map_err(net_err)?;
         if !resp.status().is_success() {
-            return Err(
-                format!("CLOB /data/orders?status=matched failed: {}", resp.status()).into(),
-            );
+            return Err(api_err(resp).await);
         }
 
         #[derive(Deserialize)]
@@ -451,9 +470,9 @@ impl PolyClient {
         let signer_str = format!("{:#x}", wallet.address());
         let headers = auth.headers("GET", &path, None, &signer_str)?;
 
-        let resp = self.http.get(&url).headers(headers).send().await?;
+        let resp = self.http.get(&url).headers(headers).send().await.map_err(net_err)?;
         if !resp.status().is_success() {
-            return Err(format!("CLOB /data/order/{} failed: {}", order_id, resp.status()).into());
+            return Err(api_err(resp).await);
         }
         Ok(resp.json().await?)
     }
@@ -471,9 +490,9 @@ impl PolyClient {
         let url = format!("{}{}", CLOB_API, path);
         let headers = auth.headers("GET", &path, None, &signer_str)?;
 
-        let resp = self.http.get(&url).headers(headers).send().await?;
+        let resp = self.http.get(&url).headers(headers).send().await.map_err(net_err)?;
         if !resp.status().is_success() {
-            return Err(format!("CLOB /data/positions failed: {}", resp.status()).into());
+            return Err(api_err(resp).await);
         }
 
         #[derive(Deserialize)]
@@ -653,11 +672,11 @@ impl PolyClient {
             .headers(headers)
             .body(body_str)
             .send()
-            .await?;
+            .await
+            .map_err(net_err)?;
 
         if !resp.status().is_success() {
-            let text = resp.text().await?;
-            return Err(format!("Order placement failed: {}", text).into());
+            return Err(api_err(resp).await);
         }
 
         let json: serde_json::Value = resp.json().await?;
@@ -685,11 +704,11 @@ impl PolyClient {
             .headers(headers)
             .body(body_str)
             .send()
-            .await?;
+            .await
+            .map_err(net_err)?;
 
         if !resp.status().is_success() {
-            let text = resp.text().await?;
-            return Err(format!("Cancel failed: {}", text).into());
+            return Err(api_err(resp).await);
         }
         Ok(())
     }
@@ -705,11 +724,11 @@ impl PolyClient {
             .delete(format!("{}/orders", CLOB_API))
             .headers(headers)
             .send()
-            .await?;
+            .await
+            .map_err(net_err)?;
 
         if !resp.status().is_success() {
-            let text = resp.text().await?;
-            return Err(format!("Cancel-all failed: {}", text).into());
+            return Err(api_err(resp).await);
         }
         Ok(())
     }
@@ -813,12 +832,14 @@ impl PolyClient {
         &self,
     ) -> std::result::Result<(&ClobAuth, &LocalWallet), Box<dyn std::error::Error + Send + Sync>>
     {
-        let auth = self.auth.as_ref().ok_or(
-            "No CLOB credentials. Set POLY_API_KEY, POLY_API_SECRET, POLY_API_PASSPHRASE in .env",
-        )?;
-        let wallet = self.wallet.as_ref().ok_or(
-            "No wallet key. Set POLY_PRIVATE_KEY in .env",
-        )?;
+        let auth = self.auth.as_ref().ok_or_else(|| -> Box<dyn std::error::Error + Send + Sync> {
+            AppError::Auth(
+                "No CLOB credentials configured (POLY_API_KEY / POLY_API_SECRET / POLY_API_PASSPHRASE)".into()
+            ).into()
+        })?;
+        let wallet = self.wallet.as_ref().ok_or_else(|| -> Box<dyn std::error::Error + Send + Sync> {
+            AppError::Auth("No wallet private key configured (POLY_PRIVATE_KEY)".into()).into()
+        })?;
         Ok((auth, wallet))
     }
 }
