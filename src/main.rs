@@ -64,37 +64,58 @@ enum Command {
 
     /// Place a limit buy order
     ///
-    /// Example: poly buy 12345...789 0.65 10
-    ///   buys 10 shares of token 12345...789 at $0.65 each
+    /// Limit:  poly buy <token-id> <size> <price>
+    ///   e.g.  poly buy 12345...789 10 0.65   — 10 shares at $0.65
+    /// Market: poly buy <token-id> <size> --market
+    ///   e.g.  poly buy 12345...789 10 --market — 10 shares at best ask (FOK)
     Buy {
         /// CLOB token ID (from `poly market`)
         token_id: String,
 
-        /// Limit price in USD (0.01 – 0.99)
-        price: f64,
-
         /// Number of shares (min 5, min $1 total)
         size: f64,
 
-        /// Order type: GTC (default), FOK, IOC
+        /// Limit price in USD (0.01 – 0.99); omit when using --market
+        price: Option<f64>,
+
+        /// Order type: GTC (default), FOK, IOC; ignored when --market is used
         #[arg(long, default_value = "GTC")]
         order_type: String,
+
+        /// Buy at the best available ask price; submits as FOK
+        #[arg(long)]
+        market: bool,
+
+        /// Order expiry as a Unix timestamp (seconds); omit for no expiry
+        #[arg(long)]
+        expiry: Option<u64>,
     },
 
     /// Place a limit sell order
+    ///
+    /// Limit:  poly sell <token-id> <size> <price>
+    /// Market: poly sell <token-id> <size> --market   — sells at best bid (FOK)
     Sell {
         /// CLOB token ID (from `poly market` or `poly positions`)
         token_id: String,
 
-        /// Limit price in USD (0.01 – 0.99)
-        price: f64,
-
         /// Number of shares to sell
         size: f64,
 
-        /// Order type: GTC (default), FOK, IOC
+        /// Limit price in USD (0.01 – 0.99); omit when using --market
+        price: Option<f64>,
+
+        /// Order type: GTC (default), FOK, IOC; ignored when --market is used
         #[arg(long, default_value = "GTC")]
         order_type: String,
+
+        /// Sell at the best available bid price; submits as FOK
+        #[arg(long)]
+        market: bool,
+
+        /// Order expiry as a Unix timestamp (seconds); omit for no expiry
+        #[arg(long)]
+        expiry: Option<u64>,
     },
 
     /// List your open orders
@@ -170,11 +191,11 @@ async fn main() {
         }
         Command::Market { id, book } => cmd_market(&client, &id, book).await,
         Command::Book { token_id, label } => cmd_book(&client, &token_id, &label).await,
-        Command::Buy { token_id, price, size, order_type } => {
-            cmd_trade(&client, &token_id, price, size, Side::Buy, &order_type, cli.dry_run).await
+        Command::Buy { token_id, size, price, order_type, market, expiry } => {
+            cmd_trade(&client, &token_id, price, size, Side::Buy, &order_type, market, expiry, cli.dry_run).await
         }
-        Command::Sell { token_id, price, size, order_type } => {
-            cmd_trade(&client, &token_id, price, size, Side::Sell, &order_type, cli.dry_run).await
+        Command::Sell { token_id, size, price, order_type, market, expiry } => {
+            cmd_trade(&client, &token_id, price, size, Side::Sell, &order_type, market, expiry, cli.dry_run).await
         }
         Command::Orders => cmd_orders(&client).await,
         Command::Positions => cmd_positions(&client).await,
@@ -279,13 +300,45 @@ async fn cmd_book(client: &PolyClient, token_id: &str, label: &str) -> client::R
 async fn cmd_trade(
     client: &PolyClient,
     token_id: &str,
-    price: f64,
+    price_arg: Option<f64>,
     size: f64,
     side: Side,
     order_type_str: &str,
+    market: bool,
+    expiry: Option<u64>,
     dry_run: bool,
 ) -> client::Result<()> {
-    // Validate inputs
+    // Resolve price and order type: market orders fetch best price from the book
+    // and always use FOK; limit orders require an explicit price.
+    let (price, order_type) = if market {
+        let book = client.get_order_book(token_id).await?;
+        let best = match &side {
+            Side::Buy => book.asks.first().map(|l| l.price),
+            Side::Sell => book.bids.first().map(|l| l.price),
+        };
+        match best {
+            Some(p) => (p, OrderType::Fok),
+            None => return Err("Order book is empty — cannot place market order".into()),
+        }
+    } else {
+        match price_arg {
+            Some(p) => (p, parse_order_type(order_type_str)?),
+            None => return Err("Price is required unless --market is used".into()),
+        }
+    };
+
+    // Validate expiry is in the future when provided
+    if let Some(exp) = expiry {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+        if exp <= now {
+            return Err("--expiry timestamp must be in the future".into());
+        }
+    }
+
+    // Validate price and size
     if price <= 0.0 || price >= 1.0 {
         return Err("Price must be between 0.01 and 0.99".into());
     }
@@ -296,22 +349,21 @@ async fn cmd_trade(
         return Err("Minimum order value is $1.00 USDC".into());
     }
 
-    let order_type = parse_order_type(order_type_str)?;
-
     if dry_run {
         let cost = size * price;
+        let expiry_note = expiry
+            .map(|e| format!("  expiry: {}", e))
+            .unwrap_or_default();
         display::print_info(&format!(
-            "DRY RUN — {} {} shares of {} @ {:.4} (cost: ${:.4})",
-            side,
-            size,
-            token_id,
-            price,
-            cost
+            "DRY RUN — {} {} shares of {} @ {:.4} (cost: ${:.4}){}",
+            side, size, token_id, price, cost, expiry_note
         ));
         return Ok(());
     }
 
-    let order_id = client.place_order(token_id, price, size, side.clone(), order_type).await?;
+    let order_id = client
+        .place_order(token_id, price, size, side.clone(), order_type, expiry)
+        .await?;
     display::print_order_placed(&order_id, &side, token_id, price, size);
     Ok(())
 }

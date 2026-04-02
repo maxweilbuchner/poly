@@ -530,6 +530,7 @@ impl PolyClient {
         size: f64,
         side: Side,
         order_type: OrderType,
+        expiry: Option<u64>,
     ) -> Result<String> {
         let fee_rate_bps = self.get_fee_rate(token_id).await.unwrap_or(0);
         let (auth, wallet) = self.require_auth()?;
@@ -600,7 +601,7 @@ impl PolyClient {
             let mut v = [0u8; 32]; token_id_u256.to_big_endian(&mut v); enc.extend_from_slice(&v);
             let mut v = [0u8; 32]; U256::from(maker_amount).to_big_endian(&mut v); enc.extend_from_slice(&v);
             let mut v = [0u8; 32]; U256::from(taker_amount).to_big_endian(&mut v); enc.extend_from_slice(&v);
-            enc.extend_from_slice(&[0u8; 32]); // expiration = 0
+            let mut v = [0u8; 32]; U256::from(expiry.unwrap_or(0)).to_big_endian(&mut v); enc.extend_from_slice(&v); // expiration
             enc.extend_from_slice(&[0u8; 32]); // nonce = 0
             let mut v = [0u8; 32]; U256::from(fee_rate_bps).to_big_endian(&mut v); enc.extend_from_slice(&v);
             let mut v = [0u8; 32]; v[31] = side_u8; enc.extend_from_slice(&v);
@@ -629,7 +630,7 @@ impl PolyClient {
                 "tokenId": token_id_u256.to_string(),
                 "makerAmount": U256::from(maker_amount).to_string(),
                 "takerAmount": U256::from(taker_amount).to_string(),
-                "expiration": "0",
+                "expiration": expiry.unwrap_or(0).to_string(),
                 "nonce": "0",
                 "feeRateBps": fee_rate_bps.to_string(),
                 "side": match side { Side::Buy => "BUY", Side::Sell => "SELL" },
