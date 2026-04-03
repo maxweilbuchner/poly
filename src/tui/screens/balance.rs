@@ -6,7 +6,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::tui::{theme, App};
+use crate::tui::{is_auth_error, theme, App};
 
 pub fn render(f: &mut Frame, area: Rect, app: &App) {
     let chunks = Layout::vertical([
@@ -32,10 +32,45 @@ fn render_balance_panel(f: &mut Frame, area: Rect, app: &App) {
     let lines = if app.loading && app.balance.is_none() {
         vec![
             Line::from(""),
-            Line::from(Span::styled(
-                "  Loading…",
-                Style::default().fg(theme::DIM),
-            )),
+            Line::from(Span::styled("  Loading…", Style::default().fg(theme::DIM))),
+        ]
+    } else if app.balance.is_none() {
+        if let Some(err) = &app.last_error {
+            if is_auth_error(err) {
+                let mut lines = vec![Line::from("")];
+                for raw in err.lines() {
+                    let line = raw.trim_start_matches("  ");
+                    if line.starts_with("Hint:") {
+                        lines.push(Line::from(vec![
+                            Span::styled("  ", Style::default()),
+                            Span::styled(line.to_string(), Style::default().fg(theme::YELLOW)),
+                        ]));
+                    } else {
+                        lines.push(Line::from(vec![
+                            Span::styled("  ", Style::default()),
+                            Span::styled(
+                                line.to_string(),
+                                Style::default()
+                                    .fg(theme::ERROR)
+                                    .add_modifier(Modifier::BOLD),
+                            ),
+                        ]));
+                    }
+                }
+                lines.push(Line::from(""));
+                lines.push(Line::from(vec![Span::styled(
+                    "  r to retry after adding credentials",
+                    Style::default().fg(theme::VERY_DIM),
+                )]));
+                // render immediately with this lines vec
+                let para = Paragraph::new(lines).block(block);
+                f.render_widget(para, area);
+                return;
+            }
+        }
+        vec![
+            Line::from(""),
+            Line::from(Span::styled("  No data. Press r to refresh.", Style::default().fg(theme::DIM))),
         ]
     } else {
         let balance_str = match app.balance {

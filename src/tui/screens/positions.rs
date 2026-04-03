@@ -6,7 +6,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::tui::{theme, App};
+use crate::tui::{is_auth_error, theme, App};
 
 pub fn render(f: &mut Frame, area: Rect, app: &mut App) {
     let chunks = Layout::vertical([
@@ -32,8 +32,17 @@ fn render_positions(f: &mut Frame, area: Rect, app: &mut App) {
         .style(Style::default().bg(theme::PANEL_BG));
 
     if app.positions.is_empty() {
-        let msg = if app.loading { "Loading…" } else { "No open positions." };
-        let para = Paragraph::new(Span::styled(msg, Style::default().fg(theme::DIM))).block(block);
+        let para = if app.loading {
+            Paragraph::new(Span::styled("Loading…", Style::default().fg(theme::DIM))).block(block)
+        } else if let Some(err) = &app.last_error {
+            if is_auth_error(err) {
+                auth_error_paragraph(err, block)
+            } else {
+                Paragraph::new(Span::styled("No open positions.", Style::default().fg(theme::DIM))).block(block)
+            }
+        } else {
+            Paragraph::new(Span::styled("No open positions.", Style::default().fg(theme::DIM))).block(block)
+        };
         f.render_widget(para, area);
         return;
     }
@@ -102,8 +111,17 @@ fn render_orders(f: &mut Frame, area: Rect, app: &mut App) {
         .style(Style::default().bg(theme::PANEL_BG));
 
     if app.orders.is_empty() {
-        let msg = if app.loading { "Loading…" } else { "No open orders." };
-        let para = Paragraph::new(Span::styled(msg, Style::default().fg(theme::DIM))).block(block);
+        let para = if app.loading {
+            Paragraph::new(Span::styled("Loading…", Style::default().fg(theme::DIM))).block(block)
+        } else if let Some(err) = &app.last_error {
+            if is_auth_error(err) {
+                auth_error_paragraph(err, block)
+            } else {
+                Paragraph::new(Span::styled("No open orders.", Style::default().fg(theme::DIM))).block(block)
+            }
+        } else {
+            Paragraph::new(Span::styled("No open orders.", Style::default().fg(theme::DIM))).block(block)
+        };
         f.render_widget(para, area);
         return;
     }
@@ -157,6 +175,32 @@ fn render_orders(f: &mut Frame, area: Rect, app: &mut App) {
         .highlight_symbol("▸ ");
 
     f.render_stateful_widget(list, area, &mut app.orders_list_state);
+}
+
+/// Build a Paragraph that shows an auth/credentials error persistently inside a panel.
+fn auth_error_paragraph<'a>(err: &'a str, block: Block<'a>) -> Paragraph<'a> {
+    // Split on the hint line so we can colour them differently.
+    let mut lines = vec![Line::from("")];
+    for raw in err.lines() {
+        let line = raw.trim_start_matches("  ");
+        if line.starts_with("Hint:") {
+            lines.push(Line::from(vec![
+                Span::styled("  ", Style::default()),
+                Span::styled(line.to_string(), Style::default().fg(theme::YELLOW)),
+            ]));
+        } else {
+            lines.push(Line::from(vec![
+                Span::styled("  ", Style::default()),
+                Span::styled(
+                    line.to_string(),
+                    Style::default()
+                        .fg(theme::ERROR)
+                        .add_modifier(Modifier::BOLD),
+                ),
+            ]));
+        }
+    }
+    Paragraph::new(lines).block(block)
 }
 
 fn truncate(s: &str, max: usize) -> String {

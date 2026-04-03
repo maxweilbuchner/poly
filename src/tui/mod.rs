@@ -279,6 +279,7 @@ fn handle_event(
         AppEvent::MarketsLoaded(markets) => {
             app.markets = markets;
             app.loading = false;
+            app.last_error = None;
             if app.market_list_state.selected().is_none() && !app.markets.is_empty() {
                 app.market_list_state.select(Some(0));
             }
@@ -288,10 +289,12 @@ fn handle_event(
             app.selected_market = Some(market);
             app.order_books = books;
             app.loading = false;
+            app.last_error = None;
         }
 
         AppEvent::PositionsLoaded(positions) => {
             app.positions = positions;
+            app.last_error = None;
             if app.positions_list_state.selected().is_none() && !app.positions.is_empty() {
                 app.positions_list_state.select(Some(0));
             }
@@ -300,6 +303,7 @@ fn handle_event(
         AppEvent::OrdersLoaded(orders) => {
             app.orders = orders;
             app.loading = false;
+            app.last_error = None;
             if app.orders_list_state.selected().is_none() && !app.orders.is_empty() {
                 app.orders_list_state.select(Some(0));
             }
@@ -309,12 +313,13 @@ fn handle_event(
             app.balance = Some(balance);
             app.allowance = Some(allowance);
             app.loading = false;
+            app.last_error = None;
         }
 
         AppEvent::OrderPlaced(order_id) => {
             app.loading = false;
+            app.last_error = None;
             app.set_flash(format!("Order placed: {}", order_id));
-            // Refresh orders
             spawn_load_orders(Arc::clone(&client), tx.clone());
         }
 
@@ -327,7 +332,10 @@ fn handle_event(
         AppEvent::Error(msg) => {
             app.loading = false;
             app.last_error = Some(msg.clone());
-            app.set_flash(format!("Error: {}", msg));
+            // Only flash non-auth errors — auth errors are shown persistently in the screen
+            if !is_auth_error(&msg) {
+                app.set_flash(format!("Error: {}", msg));
+            }
         }
     }
     false
@@ -367,10 +375,24 @@ fn handle_key(
 
 // ── Global tab / navigation helpers ──────────────────────────────────────────
 
+/// Returns true when an error message originates from a missing-credentials condition.
+/// Used to decide whether to show a persistent error panel vs. a transient flash.
+pub fn is_auth_error(msg: &str) -> bool {
+    msg.contains("POLY_API_KEY")
+        || msg.contains("POLY_PRIVATE_KEY")
+        || msg.contains("POLYGON_RPC_URL")
+        || msg.contains("No CLOB credentials")
+        || msg.contains("No wallet")
+        || msg.contains("No RPC URL")
+        || msg.contains("credentials")
+        || msg.contains("config.toml")
+}
+
 fn switch_tab(app: &mut App, tab: Tab, client: Arc<PolyClient>, tx: &UnboundedSender<AppEvent>) {
     if app.active_tab == tab {
         return;
     }
+    app.last_error = None; // clear stale errors from previous tab
     app.active_tab = tab.clone();
     app.screen_stack = match &tab {
         Tab::Markets => vec![Screen::MarketList],
