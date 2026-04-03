@@ -1,10 +1,15 @@
 use ratatui::{
-    layout::{Constraint, Layout, Rect},
+    layout::{Alignment, Constraint, Layout, Rect},
+    style::{Color, Modifier, Style},
+    text::{Line, Span},
+    widgets::{Block, Clear, Paragraph},
     Frame,
 };
 
 use super::{
+    root_menu_items,
     screens::{balance, detail, markets, order, positions},
+    theme,
     widgets::{status_bar, tab_bar},
     App, Screen, Tab,
 };
@@ -34,7 +39,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
     // Render global modal overlays on top of everything
     let full = f.size();
     match app.current_screen() {
-        Some(Screen::QuitConfirm) => render_quit_confirm(f, full, app),
+        Some(Screen::QuitConfirm) => render_root_menu(f, full, app),
         Some(Screen::Help) => render_help(f, full),
         _ => {}
     }
@@ -72,55 +77,73 @@ pub fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
     .split(popup_layout[1])[1]
 }
 
-fn render_quit_confirm(f: &mut Frame, area: Rect, _app: &App) {
-    use ratatui::{
-        style::{Modifier, Style},
-        text::{Line, Span},
-        widgets::{Block, Clear, Paragraph},
-    };
-    use super::theme;
-
-    let modal = centered_rect(40, 20, area);
+fn render_root_menu(f: &mut Frame, area: Rect, app: &App) {
+    let modal = centered_rect(38, 14, area);
     f.render_widget(Clear, modal);
 
     let block = Block::bordered()
         .title(Span::styled(
-            " Quit poly? ",
+            " Menu ",
             Style::default().fg(theme::CYAN).add_modifier(Modifier::BOLD),
         ))
-        .border_style(Style::default().fg(theme::CYAN))
+        .border_style(Style::default().fg(theme::BORDER))
         .style(Style::default().bg(theme::PANEL_BG));
 
-    let text = vec![
-        Line::from(""),
-        Line::from(vec![
-            Span::styled("  Press ", Style::default().fg(theme::DIM)),
-            Span::styled("y", Style::default().fg(theme::GREEN).add_modifier(Modifier::BOLD)),
-            Span::styled(" or ", Style::default().fg(theme::DIM)),
-            Span::styled("Enter", Style::default().fg(theme::GREEN).add_modifier(Modifier::BOLD)),
-            Span::styled(" to quit", Style::default().fg(theme::DIM)),
-        ]),
-        Line::from(vec![
-            Span::styled("  Press ", Style::default().fg(theme::DIM)),
-            Span::styled("n", Style::default().fg(theme::RED).add_modifier(Modifier::BOLD)),
-            Span::styled(" or ", Style::default().fg(theme::DIM)),
-            Span::styled("Esc", Style::default().fg(theme::RED).add_modifier(Modifier::BOLD)),
-            Span::styled(" to cancel", Style::default().fg(theme::DIM)),
-        ]),
-    ];
+    let inner = block.inner(modal);
+    f.render_widget(block, modal);
 
-    let para = Paragraph::new(text).block(block);
-    f.render_widget(para, modal);
+    let sections = Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Min(1),
+        Constraint::Length(1),
+    ])
+    .split(inner);
+
+    let items = root_menu_items(app);
+    let mut lines = vec![Line::from("")];
+    for (i, (label, key_hint, color)) in items.iter().enumerate() {
+        if i == app.menu_index {
+            lines.push(Line::from(vec![
+                Span::styled(
+                    " ▸ ",
+                    Style::default().fg(*color).add_modifier(Modifier::BOLD),
+                ),
+                Span::styled(
+                    format!("{:<18}", label),
+                    Style::default().fg(*color).add_modifier(Modifier::BOLD),
+                ),
+                Span::styled(
+                    format!(" {}", key_hint),
+                    Style::default().fg(Color::Rgb(70, 70, 95)),
+                ),
+            ]));
+        } else {
+            lines.push(Line::from(vec![
+                Span::raw("   "),
+                Span::styled(
+                    format!("{:<18}", label),
+                    Style::default().fg(Color::Rgb(140, 140, 165)),
+                ),
+                Span::styled(
+                    format!(" {}", key_hint),
+                    Style::default().fg(Color::Rgb(50, 50, 70)),
+                ),
+            ]));
+        }
+    }
+    f.render_widget(Paragraph::new(lines), sections[1]);
+
+    let footer = Paragraph::new(Line::from(vec![
+        Span::styled("↑↓", Style::default().fg(theme::CYAN)),
+        Span::styled(" navigate   ", Style::default().fg(Color::Rgb(90, 90, 110))),
+        Span::styled("↵", Style::default().fg(theme::CYAN)),
+        Span::styled(" select", Style::default().fg(Color::Rgb(90, 90, 110))),
+    ]))
+    .alignment(Alignment::Center);
+    f.render_widget(footer, sections[2]);
 }
 
 fn render_help(f: &mut Frame, area: Rect) {
-    use ratatui::{
-        style::{Modifier, Style},
-        text::{Line, Span},
-        widgets::{Block, Clear, Paragraph},
-    };
-    use super::theme;
-
     let modal = centered_rect(60, 70, area);
     f.render_widget(Clear, modal);
 

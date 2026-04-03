@@ -117,6 +117,9 @@ pub struct App {
     pub loading: bool,
     pub last_error: Option<String>,
 
+    // Root menu cursor position
+    pub menu_index: usize,
+
     // Spinner frame counter (incremented on each Tick)
     pub tick: u64,
 }
@@ -151,6 +154,7 @@ impl App {
             loading: false,
             last_error: None,
 
+            menu_index: 0,
             tick: 0,
         }
     }
@@ -454,6 +458,7 @@ fn handle_markets_key(
         KeyCode::Char('3') => switch_tab(app, Tab::Balance, client, tx),
         KeyCode::Tab => switch_tab(app, Tab::Positions, client, tx),
         KeyCode::Char('q') => {
+            app.menu_index = 0;
             app.screen_stack.push(Screen::QuitConfirm);
         }
         KeyCode::Char('?') => {
@@ -509,6 +514,7 @@ fn handle_detail_key(
             app.screen_stack.pop();
         }
         KeyCode::Char('q') => {
+            app.menu_index = 0;
             app.screen_stack.push(Screen::QuitConfirm);
         }
         KeyCode::Char('?') => {
@@ -685,6 +691,7 @@ pub fn handle_positions_key(
             app.positions_focus_orders = !app.positions_focus_orders;
         }
         KeyCode::Char('q') => {
+            app.menu_index = 0;
             app.screen_stack.push(Screen::QuitConfirm);
         }
         KeyCode::Char('?') => {
@@ -755,6 +762,7 @@ pub fn handle_balance_key(
             spawn_load_balance(client, tx.clone());
         }
         KeyCode::Char('q') => {
+            app.menu_index = 0;
             app.screen_stack.push(Screen::QuitConfirm);
         }
         KeyCode::Char('?') => {
@@ -764,11 +772,73 @@ pub fn handle_balance_key(
     }
 }
 
-// ── Quit confirm key handler ──────────────────────────────────────────────────
+// ── Root menu (triggered by q) ────────────────────────────────────────────────
+
+/// Returns the items for the root menu depending on navigation context.
+/// Each entry is (label, key_hint, color).
+pub fn root_menu_items(
+    app: &App,
+) -> Vec<(&'static str, &'static str, ratatui::style::Color)> {
+    let can_go_back = app.screen_stack.len() >= 2
+        && matches!(
+            app.screen_stack.get(app.screen_stack.len() - 2),
+            Some(Screen::MarketDetail) | Some(Screen::OrderEntry)
+        );
+
+    let mut items: Vec<(&'static str, &'static str, ratatui::style::Color)> =
+        vec![("Quit", "q", theme::RED)];
+    if can_go_back {
+        items.push(("Back", "h", ratatui::style::Color::Rgb(100, 150, 220)));
+    }
+    items.push(("Help", "?", theme::CYAN));
+    items.push(("Cancel", "Esc", ratatui::style::Color::Rgb(140, 140, 165)));
+    items
+}
+
+fn execute_menu_item(app: &mut App, index: usize) -> bool {
+    let items = root_menu_items(app);
+    match items.get(index).map(|(label, ..)| *label) {
+        Some("Quit") => return true,
+        Some("Back") => {
+            app.screen_stack.pop(); // remove QuitConfirm
+            app.screen_stack.pop(); // go back one real screen
+        }
+        Some("Help") => {
+            app.screen_stack.pop();
+            app.screen_stack.push(Screen::Help);
+        }
+        Some("Cancel") => {
+            app.screen_stack.pop();
+        }
+        _ => {}
+    }
+    false
+}
 
 fn handle_quit_confirm_key(app: &mut App, key: KeyEvent) -> bool {
+    let n = root_menu_items(app).len();
+
     match key.code {
-        KeyCode::Char('y') | KeyCode::Char('Y') | KeyCode::Enter => return true,
+        KeyCode::Up | KeyCode::Char('k') => {
+            app.menu_index = (app.menu_index + n - 1) % n;
+        }
+        KeyCode::Down | KeyCode::Char('j') => {
+            app.menu_index = (app.menu_index + 1) % n;
+        }
+        KeyCode::Enter => return execute_menu_item(app, app.menu_index),
+        // Direct shortcuts
+        KeyCode::Char('q') | KeyCode::Char('Q') => return true,
+        KeyCode::Char('?') => {
+            app.screen_stack.pop();
+            app.screen_stack.push(Screen::Help);
+        }
+        KeyCode::Char('h') => {
+            // Back — only acts if Back item is present
+            if root_menu_items(app).iter().any(|(l, ..)| *l == "Back") {
+                app.screen_stack.pop();
+                app.screen_stack.pop();
+            }
+        }
         KeyCode::Char('n') | KeyCode::Char('N') | KeyCode::Esc => {
             app.screen_stack.pop();
         }
