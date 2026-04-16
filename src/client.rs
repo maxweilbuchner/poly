@@ -5,6 +5,8 @@ use rand::Rng;
 use reqwest::Client;
 use serde::Deserialize;
 use std::str::FromStr;
+use std::sync::Arc;
+use tokio::sync::Semaphore;
 
 use crate::auth::ClobAuth;
 use crate::error::AppError;
@@ -321,6 +323,11 @@ struct BookResponse {
 
 // ── PolyClient ────────────────────────────────────────────────────────────────
 
+/// Maximum number of API requests the client will have in-flight at once.
+/// This prevents the TUI's parallel refresh tasks from overwhelming the
+/// Polymarket API and triggering 429 rate-limit responses.
+const MAX_CONCURRENT_REQUESTS: usize = 8;
+
 #[derive(Clone)]
 pub struct PolyClient {
     http: Client,
@@ -331,6 +338,8 @@ pub struct PolyClient {
     gamma_url: String,
     clob_url: String,
     data_url: String,
+    /// Semaphore that limits concurrent HTTP requests to the Polymarket APIs.
+    api_semaphore: Arc<Semaphore>,
 }
 
 impl PolyClient {
@@ -356,6 +365,7 @@ impl PolyClient {
             gamma_url: GAMMA_API.to_string(),
             clob_url: CLOB_API.to_string(),
             data_url: DATA_API.to_string(),
+            api_semaphore: Arc::new(Semaphore::new(MAX_CONCURRENT_REQUESTS)),
         }
     }
 
@@ -375,7 +385,19 @@ impl PolyClient {
             gamma_url: gamma_url.to_string(),
             clob_url: clob_url.to_string(),
             data_url: data_url.to_string(),
+            api_semaphore: Arc::new(Semaphore::new(MAX_CONCURRENT_REQUESTS)),
         }
+    }
+
+    /// Send an HTTP request with retry logic, respecting the concurrency limit.
+    /// Acquires a semaphore permit before sending so that at most
+    /// [`MAX_CONCURRENT_REQUESTS`] requests are in-flight at any time.
+    async fn throttled_send<F>(&self, build: F) -> reqwest::Result<reqwest::Response>
+    where
+        F: Fn() -> reqwest::RequestBuilder,
+    {
+        let _permit = self.api_semaphore.acquire().await.expect("semaphore closed");
+        send_with_retry(build).await
     }
 
     // ── Market search / discovery ─────────────────────────────────────────────
@@ -408,7 +430,8 @@ impl PolyClient {
             active_param
         );
 
-        let resp = send_with_retry(|| self.http.get(&url))
+        let resp = self
+            .throttled_send(|| self.http.get(&url))
             .await
             .map_err(net_err)?;
         if !resp.status().is_success() {
@@ -463,7 +486,8 @@ impl PolyClient {
             self.gamma_url, fetch_limit
         );
 
-        let resp = send_with_retry(|| self.http.get(&url))
+        let resp = self
+            .throttled_send(|| self.http.get(&url))
             .await
             .map_err(net_err)?;
         if !resp.status().is_success() {
@@ -499,7 +523,8 @@ impl PolyClient {
             self.gamma_url, limit, offset
         );
 
-        let resp = send_with_retry(|| self.http.get(&url))
+        let resp = self
+            .throttled_send(|| self.http.get(&url))
             .await
             .map_err(net_err)?;
         if !resp.status().is_success() {
@@ -526,7 +551,8 @@ impl PolyClient {
             "{}/markets?active=true&closed=false&order=volume&ascending=false&limit={}&offset={}",
             self.gamma_url, limit, offset
         );
-        let resp = send_with_retry(|| self.http.get(&url))
+        let resp = self
+            .throttled_send(|| self.http.get(&url))
             .await
             .map_err(net_err)?;
         if !resp.status().is_success() {
@@ -553,7 +579,8 @@ impl PolyClient {
             "{}/markets?closed=true&order=endDate&ascending=false&limit={}&offset={}",
             self.gamma_url, limit, offset
         );
-        let resp = send_with_retry(|| self.http.get(&url))
+        let resp = self
+            .throttled_send(|| self.http.get(&url))
             .await
             .map_err(net_err)?;
         if !resp.status().is_success() {
@@ -592,7 +619,8 @@ impl PolyClient {
         condition_id: &str,
     ) -> Result<Option<MarketResolution>> {
         let url = format!("{}/markets/{}", self.gamma_url, condition_id);
-        let resp = send_with_retry(|| self.http.get(&url))
+        let resp = self
+            .throttled_send(|| self.http.get(&url))
             .await
             .map_err(net_err)?;
         if resp.status().as_u16() == 404 {
@@ -627,7 +655,8 @@ impl PolyClient {
     /// Fetch a single market by its condition ID (hex string).
     pub async fn get_market_by_id(&self, condition_id: &str) -> Result<Option<Market>> {
         let url = format!("{}/markets/{}", self.gamma_url, condition_id);
-        let resp = send_with_retry(|| self.http.get(&url))
+        let resp = self
+            .throttled_send(|| self.http.get(&url))
             .await
             .map_err(net_err)?;
         if resp.status().as_u16() == 404 {
@@ -645,7 +674,8 @@ impl PolyClient {
     pub async fn get_market_by_slug(&self, slug: &str) -> Result<Vec<Market>> {
         // Try as an event slug first
         let url = format!("{}/events?slug={}", self.gamma_url, urlencoded(slug));
-        let resp = send_with_retry(|| self.http.get(&url))
+        let resp = self
+            .throttled_send(|| self.http.get(&url))
             .await
             .map_err(net_err)?;
         if resp.status().is_success() {
@@ -665,7 +695,8 @@ impl PolyClient {
 
         // Try as a direct market slug (correct param name is `slug`, not `market_slug`)
         let url2 = format!("{}/markets?slug={}", self.gamma_url, urlencoded(slug));
-        let resp2 = send_with_retry(|| self.http.get(&url2))
+        let resp2 = self
+            .throttled_send(|| self.http.get(&url2))
             .await
             .map_err(net_err)?;
         if resp2.status().is_success() {
@@ -687,7 +718,8 @@ impl PolyClient {
     /// Fetch the full order book for a token ID.
     pub async fn get_order_book(&self, token_id: &str) -> Result<OrderBook> {
         let url = format!("{}/book?token_id={}", self.clob_url, token_id);
-        let resp = send_with_retry(|| self.http.get(&url))
+        let resp = self
+            .throttled_send(|| self.http.get(&url))
             .await
             .map_err(net_err)?;
         if !resp.status().is_success() {
@@ -780,7 +812,8 @@ impl PolyClient {
         let signer_str = format!("{:#x}", wallet.address());
         let headers = auth.headers("GET", sign_path, None, &signer_str)?;
 
-        let resp = send_with_retry(|| self.http.get(&url).headers(headers.clone()))
+        let resp = self
+            .throttled_send(|| self.http.get(&url).headers(headers.clone()))
             .await
             .map_err(net_err)?;
         if !resp.status().is_success() {
@@ -844,7 +877,8 @@ impl PolyClient {
         let signer_str = format!("{:#x}", wallet.address());
         let headers = auth.headers("GET", sign_path, None, &signer_str)?;
 
-        let resp = send_with_retry(|| self.http.get(&url).headers(headers.clone()))
+        let resp = self
+            .throttled_send(|| self.http.get(&url).headers(headers.clone()))
             .await
             .map_err(net_err)?;
         if !resp.status().is_success() {
@@ -906,7 +940,8 @@ impl PolyClient {
         let signer_str = format!("{:#x}", wallet.address());
         let headers = auth.headers("GET", &path, None, &signer_str)?;
 
-        let resp = send_with_retry(|| self.http.get(&url).headers(headers.clone()))
+        let resp = self
+            .throttled_send(|| self.http.get(&url).headers(headers.clone()))
             .await
             .map_err(net_err)?;
         if !resp.status().is_success() {
@@ -927,7 +962,8 @@ impl PolyClient {
             "{}/positions?user={}&sizeThreshold=0.1&limit=500",
             self.data_url, address_str
         );
-        let resp = send_with_retry(|| self.http.get(&url))
+        let resp = self
+            .throttled_send(|| self.http.get(&url))
             .await
             .map_err(net_err)?;
         if !resp.status().is_success() {
@@ -994,9 +1030,11 @@ impl PolyClient {
             .map(|cid| {
                 let url = format!("{}/markets/{}", self.gamma_url, cid);
                 let http = self.http.clone();
+                let sem = self.api_semaphore.clone();
                 let cid = cid.clone();
                 async move {
                     let result: Option<(Option<String>, bool, bool)> = async {
+                        let _permit = sem.acquire().await.expect("semaphore closed");
                         let r = send_with_retry(|| http.get(&url)).await.ok()?;
                         if !r.status().is_success() {
                             return None;
@@ -1174,12 +1212,13 @@ impl PolyClient {
         );
 
         let clob_url = self.clob_url.clone();
-        let resp = send_with_retry(|| {
-            self.http
-                .post(format!("{}/order", clob_url))
-                .headers(headers.clone())
-                .body(body_str.clone())
-        })
+        let resp = self
+            .throttled_send(|| {
+                self.http
+                    .post(format!("{}/order", clob_url))
+                    .headers(headers.clone())
+                    .body(body_str.clone())
+            })
         .await
         .map_err(net_err)?;
 
@@ -1226,12 +1265,13 @@ impl PolyClient {
         );
 
         let clob_url = self.clob_url.clone();
-        let resp = send_with_retry(|| {
-            self.http
-                .delete(format!("{}/order", clob_url))
-                .headers(headers.clone())
-                .body(body_str.clone())
-        })
+        let resp = self
+            .throttled_send(|| {
+                self.http
+                    .delete(format!("{}/order", clob_url))
+                    .headers(headers.clone())
+                    .body(body_str.clone())
+            })
         .await
         .map_err(net_err)?;
 
@@ -1248,11 +1288,12 @@ impl PolyClient {
         let headers = auth.headers("DELETE", "/orders", None, &signer_str)?;
 
         let clob_url = self.clob_url.clone();
-        let resp = send_with_retry(|| {
-            self.http
-                .delete(format!("{}/orders", clob_url))
-                .headers(headers.clone())
-        })
+        let resp = self
+            .throttled_send(|| {
+                self.http
+                    .delete(format!("{}/orders", clob_url))
+                    .headers(headers.clone())
+            })
         .await
         .map_err(net_err)?;
 
@@ -1324,7 +1365,7 @@ impl PolyClient {
 
     pub async fn get_fee_rate(&self, token_id: &str) -> Option<u64> {
         let url = format!("{}/fee-rate?token_id={}", self.clob_url, token_id);
-        let resp = send_with_retry(|| self.http.get(&url)).await.ok()?;
+        let resp = self.throttled_send(|| self.http.get(&url)).await.ok()?;
         if !resp.status().is_success() {
             return None;
         }
@@ -1345,7 +1386,7 @@ impl PolyClient {
             "{}/markets?clobTokenIds={}&limit=1",
             self.gamma_url, token_id
         );
-        let resp = match send_with_retry(|| self.http.get(&url)).await {
+        let resp = match self.throttled_send(|| self.http.get(&url)).await {
             Ok(r) if r.status().is_success() => r,
             _ => return false,
         };
@@ -1373,7 +1414,8 @@ impl PolyClient {
             "{}/prices-history?market={}&interval={}&fidelity={}",
             self.data_url, condition_id, interval, fidelity
         );
-        let resp = send_with_retry(|| self.http.get(&url))
+        let resp = self
+            .throttled_send(|| self.http.get(&url))
             .await
             .map_err(net_err)?;
         if !resp.status().is_success() {
@@ -1652,11 +1694,12 @@ impl PolyClient {
         );
 
         let clob_url = self.clob_url.clone();
-        let resp = send_with_retry(|| {
-            self.http
-                .post(format!("{}/auth/api-key", clob_url))
-                .headers(headers.clone())
-        })
+        let resp = self
+            .throttled_send(|| {
+                self.http
+                    .post(format!("{}/auth/api-key", clob_url))
+                    .headers(headers.clone())
+            })
         .await
         .map_err(net_err)?;
 
@@ -1702,7 +1745,8 @@ impl PolyClient {
             "{}/prices-history?market={}&interval=all&fidelity=60",
             self.clob_url, token_id,
         );
-        let resp = send_with_retry(|| self.http.get(&url))
+        let resp = self
+            .throttled_send(|| self.http.get(&url))
             .await
             .map_err(net_err)?;
         if !resp.status().is_success() {
