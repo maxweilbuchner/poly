@@ -11,11 +11,19 @@ use crate::types::OrderBook;
 /// Render an order book (bid/ask ladder) into `area`.
 ///
 /// Shows up to `levels` price levels, bids green, asks red.
-pub fn render(f: &mut Frame, area: Rect, book: Option<&OrderBook>, label: &str, levels: usize) {
-    let title = format!(" {} ", label);
+pub fn render_with_selection(f: &mut Frame, area: Rect, book: Option<&OrderBook>, label: &str, levels: usize, selected: bool) {
+    let title = if selected {
+        format!(" ▸ {} ", label)
+    } else {
+        format!(" {} ", label)
+    };
+    let border_color = if selected { theme::CYAN } else { theme::BORDER };
     let block = Block::bordered()
-        .title(title)
-        .border_style(Style::default().fg(theme::BORDER))
+        .title(ratatui::text::Span::styled(
+            title,
+            Style::default().fg(border_color).add_modifier(if selected { Modifier::BOLD } else { Modifier::empty() }),
+        ))
+        .border_style(Style::default().fg(border_color))
         .style(Style::default().bg(theme::PANEL_BG));
 
     // Header row

@@ -18,7 +18,7 @@ impl fmt::Display for AppError {
         match self {
             AppError::Auth(msg) => write!(
                 f,
-                "{}\n  Hint: add credentials to .env or ~/.poly/config.toml",
+                "{}\n  Hint: run `poly setup` to configure credentials",
                 msg
             ),
             AppError::Network(msg) => write!(
@@ -36,7 +36,47 @@ impl fmt::Display for AppError {
 
 impl std::error::Error for AppError {}
 
+impl From<reqwest::Error> for AppError {
+    fn from(e: reqwest::Error) -> Self {
+        AppError::from_reqwest(e)
+    }
+}
+
+impl From<String> for AppError {
+    fn from(s: String) -> Self {
+        AppError::Other(s.into())
+    }
+}
+
+impl From<&str> for AppError {
+    fn from(s: &str) -> Self {
+        AppError::Other(s.to_string().into())
+    }
+}
+
+impl From<Box<dyn std::error::Error + Send + Sync>> for AppError {
+    fn from(e: Box<dyn std::error::Error + Send + Sync>) -> Self {
+        AppError::Other(e)
+    }
+}
+
+impl From<std::io::Error> for AppError {
+    fn from(e: std::io::Error) -> Self {
+        AppError::Other(Box::new(e))
+    }
+}
+
 impl AppError {
+    /// Returns `true` if this is a credentials / auth error.
+    pub fn is_auth(&self) -> bool {
+        matches!(self, AppError::Auth(_))
+    }
+
+    /// Wrap any boxable error as `Other`.
+    pub fn other<E: std::error::Error + Send + Sync + 'static>(e: E) -> Self {
+        AppError::Other(Box::new(e))
+    }
+
     /// Convert a reqwest transport error into the appropriate variant.
     pub fn from_reqwest(e: reqwest::Error) -> Self {
         let url = e.url().map(|u| u.as_str()).unwrap_or("unknown URL");
@@ -57,7 +97,9 @@ impl AppError {
             .and_then(|v| {
                 v.get("error")
                     .or_else(|| v.get("message"))
+                    .or_else(|| v.get("errorMsg"))  // Polymarket CLOB uses errorMsg
                     .and_then(|m| m.as_str())
+                    .filter(|s| !s.is_empty())
                     .map(|s| s.to_string())
             })
             .unwrap_or_else(|| {

@@ -13,6 +13,7 @@ pub fn render(f: &mut Frame, area: Rect, app: &App) {
         (Tab::Markets, "1 Markets"),
         (Tab::Positions, "2 Positions"),
         (Tab::Balance, "3 Balance"),
+        (Tab::Analytics, "4 Analytics"),
     ];
 
     let mut spans: Vec<Span> = Vec::new();
