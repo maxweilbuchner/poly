@@ -8,6 +8,7 @@ pub struct Market {
     pub condition_id: String,
     pub question: String,
     pub slug: String,
+    pub group_slug: String,
     pub status: MarketStatus,
     pub end_date: Option<String>,
     pub volume: f64,
@@ -15,6 +16,7 @@ pub struct Market {
     pub outcomes: Vec<Outcome>,
     pub category: Option<String>,
     pub tags: Vec<String>,
+    pub neg_risk: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -129,11 +131,18 @@ pub struct Position {
     pub current_price: f64,
     pub realized_pnl: f64,
     pub unrealized_pnl: f64,
+    pub end_date: Option<String>,
+    pub neg_risk: bool,
+    /// True when the market has closed/resolved (regardless of win/loss).
+    pub market_closed: bool,
+    /// True when the market is resolved and this position holds the winning outcome.
+    /// Eligible for on-chain redemption via ConditionalTokens.redeemPositions().
+    pub redeemable: bool,
 }
 
 // ── Order Type ────────────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, PartialEq, Serialize, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Default)]
 pub enum OrderType {
     #[default]
     /// Good-til-cancelled limit order
@@ -152,4 +161,23 @@ impl std::fmt::Display for OrderType {
             OrderType::Ioc => write!(f, "IOC"),
         }
     }
+}
+
+/// A single (timestamp_ms, price) data point from the price-history API.
+pub type PricePoint = (u64, f64);
+
+/// One named outcome series: `(outcome_name, data_points)`.
+pub type OutcomeSeries = (String, Vec<PricePoint>);
+
+/// Parameters for placing a single order, passed to `PolyClient::place_order`
+/// and `spawn_place_order`.
+#[derive(Debug, Clone)]
+pub struct PlaceOrderParams {
+    pub token_id:   String,
+    pub price:      f64,
+    pub size:       f64,
+    pub side:       Side,
+    pub order_type: OrderType,
+    pub expiry:     Option<u64>,
+    pub neg_risk:   bool,
 }
