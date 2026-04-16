@@ -15,15 +15,15 @@ use std::env;
 use types::{OrderType, PlaceOrderParams, Side};
 
 struct TradeArgs {
-    token_id:   String,
-    price:      Option<f64>,
-    size:       f64,
-    side:       Side,
+    token_id: String,
+    price: Option<f64>,
+    size: f64,
+    side: Side,
     order_type: String,
-    market:     bool,
-    expiry:     Option<u64>,
-    dry_run:    bool,
-    json:       bool,
+    market: bool,
+    expiry: Option<u64>,
+    dry_run: bool,
+    json: bool,
 }
 
 #[derive(Parser)]
@@ -277,11 +277,53 @@ async fn main() {
         }
         Command::Market { id, book } => cmd_market(&client, &id, book, json).await,
         Command::Book { token_id, label } => cmd_book(&client, &token_id, &label, json).await,
-        Command::Buy { token_id, size, price, order_type, market, expiry } => {
-            cmd_trade(&client, TradeArgs { token_id, price, size, side: Side::Buy, order_type, market, expiry, dry_run: cli.dry_run, json }).await
+        Command::Buy {
+            token_id,
+            size,
+            price,
+            order_type,
+            market,
+            expiry,
+        } => {
+            cmd_trade(
+                &client,
+                TradeArgs {
+                    token_id,
+                    price,
+                    size,
+                    side: Side::Buy,
+                    order_type,
+                    market,
+                    expiry,
+                    dry_run: cli.dry_run,
+                    json,
+                },
+            )
+            .await
         }
-        Command::Sell { token_id, size, price, order_type, market, expiry } => {
-            cmd_trade(&client, TradeArgs { token_id, price, size, side: Side::Sell, order_type, market, expiry, dry_run: cli.dry_run, json }).await
+        Command::Sell {
+            token_id,
+            size,
+            price,
+            order_type,
+            market,
+            expiry,
+        } => {
+            cmd_trade(
+                &client,
+                TradeArgs {
+                    token_id,
+                    price,
+                    size,
+                    side: Side::Sell,
+                    order_type,
+                    market,
+                    expiry,
+                    dry_run: cli.dry_run,
+                    json,
+                },
+            )
+            .await
         }
         Command::Orders => cmd_orders(&client, json).await,
         Command::Positions => cmd_positions(&client, json).await,
@@ -289,16 +331,18 @@ async fn main() {
         Command::CancelAll => cmd_cancel_all(&client, json).await,
         Command::Balance => cmd_balance(&client, json).await,
         Command::History { limit } => cmd_history(&client, limit, json).await,
-        Command::Watch { token_id, label, interval } => {
-            cmd_watch(&client, &token_id, &label, interval).await
+        Command::Watch {
+            token_id,
+            label,
+            interval,
+        } => cmd_watch(&client, &token_id, &label, interval).await,
+        Command::Top { limit, category } => {
+            cmd_top(&client, limit, category.as_deref(), json).await
         }
-        Command::Top { limit, category } => cmd_top(&client, limit, category.as_deref(), json).await,
         Command::CancelMarket { condition_id } => {
             cmd_cancel_market(&client, &condition_id, json).await
         }
-        Command::Export { what, output } => {
-            cmd_export(&client, &what, output.as_deref()).await
-        }
+        Command::Export { what, output } => cmd_export(&client, &what, output.as_deref()).await,
         Command::DeriveKeys => cmd_derive_keys(&client).await,
         Command::Migrate => cmd_migrate().await,
         Command::Setup => unreachable!(),
@@ -324,14 +368,22 @@ async fn cmd_search(
     }
     let markets = client.search_markets(query, active_only, limit).await?;
     if json {
-        println!("{}", serde_json::to_string_pretty(&markets).map_err(AppError::other)?);
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&markets).map_err(AppError::other)?
+        );
     } else {
         display::print_market_list(&markets);
     }
     Ok(())
 }
 
-async fn cmd_market(client: &PolyClient, id: &str, show_book: bool, json: bool) -> client::Result<()> {
+async fn cmd_market(
+    client: &PolyClient,
+    id: &str,
+    show_book: bool,
+    json: bool,
+) -> client::Result<()> {
     // Accept full polymarket.com URLs, e.g.
     //   https://polymarket.com/event/will-trump-win-the-2024-us-presidential-election
     // Strip query string, fragment, and trailing slash, then take the last path segment.
@@ -370,7 +422,9 @@ async fn cmd_market(client: &PolyClient, id: &str, show_book: bool, json: bool) 
     };
 
     if markets.is_empty() {
-        display::print_error("Market not found. Try `poly search <keyword>` to find the right slug or ID.");
+        display::print_error(
+            "Market not found. Try `poly search <keyword>` to find the right slug or ID.",
+        );
         return Ok(());
     }
 
@@ -391,9 +445,15 @@ async fn cmd_market(client: &PolyClient, id: &str, show_book: bool, json: bool) 
                 }
                 out.push(serde_json::json!({ "market": market, "books": books }));
             }
-            println!("{}", serde_json::to_string_pretty(&out).map_err(AppError::other)?);
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&out).map_err(AppError::other)?
+            );
         } else {
-            println!("{}", serde_json::to_string_pretty(&markets).map_err(AppError::other)?);
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&markets).map_err(AppError::other)?
+            );
         }
     } else {
         for market in &markets {
@@ -414,10 +474,18 @@ async fn cmd_market(client: &PolyClient, id: &str, show_book: bool, json: bool) 
     Ok(())
 }
 
-async fn cmd_book(client: &PolyClient, token_id: &str, label: &str, json: bool) -> client::Result<()> {
+async fn cmd_book(
+    client: &PolyClient,
+    token_id: &str,
+    label: &str,
+    json: bool,
+) -> client::Result<()> {
     let book = client.get_order_book(token_id).await?;
     if json {
-        println!("{}", serde_json::to_string_pretty(&book).map_err(AppError::other)?);
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&book).map_err(AppError::other)?
+        );
     } else {
         let name = if label.is_empty() { token_id } else { label };
         display::print_order_book(&book, name);
@@ -426,7 +494,17 @@ async fn cmd_book(client: &PolyClient, token_id: &str, label: &str, json: bool) 
 }
 
 async fn cmd_trade(client: &PolyClient, args: TradeArgs) -> client::Result<()> {
-    let TradeArgs { token_id, price: price_arg, size, side, order_type: order_type_str, market, expiry, dry_run, json } = args;
+    let TradeArgs {
+        token_id,
+        price: price_arg,
+        size,
+        side,
+        order_type: order_type_str,
+        market,
+        expiry,
+        dry_run,
+        json,
+    } = args;
     // Resolve price and order type: market orders fetch best price from the book
     // and always use FOK; limit orders require an explicit price.
     let (price, order_type) = if market {
@@ -471,15 +549,18 @@ async fn cmd_trade(client: &PolyClient, args: TradeArgs) -> client::Result<()> {
     if dry_run {
         let cost = size * price;
         if json {
-            println!("{}", serde_json::json!({
-                "dry_run": true,
-                "side": side.to_string(),
-                "token_id": token_id,
-                "price": price,
-                "size": size,
-                "cost": cost,
-                "expiry": expiry,
-            }));
+            println!(
+                "{}",
+                serde_json::json!({
+                    "dry_run": true,
+                    "side": side.to_string(),
+                    "token_id": token_id,
+                    "price": price,
+                    "size": size,
+                    "cost": cost,
+                    "expiry": expiry,
+                })
+            );
         } else {
             let expiry_note = expiry
                 .map(|e| format!("  expiry: {}", e))
@@ -493,7 +574,15 @@ async fn cmd_trade(client: &PolyClient, args: TradeArgs) -> client::Result<()> {
     }
 
     let neg_risk = client.get_neg_risk(&token_id).await;
-    let params = PlaceOrderParams { token_id, price, size, side: side.clone(), order_type, expiry, neg_risk };
+    let params = PlaceOrderParams {
+        token_id,
+        price,
+        size,
+        side: side.clone(),
+        order_type,
+        expiry,
+        neg_risk,
+    };
     let order_id = client.place_order(&params).await?;
     if json {
         println!("{}", serde_json::json!({ "order_id": order_id }));
@@ -509,7 +598,10 @@ async fn cmd_orders(client: &PolyClient, json: bool) -> client::Result<()> {
     }
     let orders = client.get_open_orders().await?;
     if json {
-        println!("{}", serde_json::to_string_pretty(&orders).map_err(AppError::other)?);
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&orders).map_err(AppError::other)?
+        );
     } else {
         display::print_orders(&orders);
     }
@@ -522,7 +614,10 @@ async fn cmd_positions(client: &PolyClient, json: bool) -> client::Result<()> {
     }
     let positions = client.get_positions().await?;
     if json {
-        println!("{}", serde_json::to_string_pretty(&positions).map_err(AppError::other)?);
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&positions).map_err(AppError::other)?
+        );
     } else {
         display::print_positions(&positions);
     }
@@ -586,8 +681,7 @@ async fn cmd_export(client: &PolyClient, what: &str, output: Option<&str>) -> cl
 
     match output {
         Some(path) => {
-            std::fs::write(path, &csv)
-                .map_err(|e| format!("Failed to write '{}': {}", path, e))?;
+            std::fs::write(path, &csv).map_err(|e| format!("Failed to write '{}': {}", path, e))?;
             display::print_info(&format!("Wrote {}", path));
         }
         None => print!("{}", csv),
@@ -640,7 +734,10 @@ async fn cmd_balance(client: &PolyClient, json: bool) -> client::Result<()> {
     let balance = client.get_balance().await?;
     let allowance = client.get_allowance().await.unwrap_or(0.0);
     if json {
-        println!("{}", serde_json::json!({ "balance": balance, "allowance": allowance }));
+        println!(
+            "{}",
+            serde_json::json!({ "balance": balance, "allowance": allowance })
+        );
     } else {
         display::print_balance(balance, allowance);
     }
@@ -653,7 +750,10 @@ async fn cmd_history(client: &PolyClient, limit: usize, json: bool) -> client::R
     }
     let orders = client.get_order_history(limit).await?;
     if json {
-        println!("{}", serde_json::to_string_pretty(&orders).map_err(AppError::other)?);
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&orders).map_err(AppError::other)?
+        );
     } else {
         display::print_history(&orders);
     }
@@ -719,14 +819,21 @@ async fn cmd_top(
     }
     let markets = client.get_top_markets(limit, category).await?;
     if json {
-        println!("{}", serde_json::to_string_pretty(&markets).map_err(AppError::other)?);
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&markets).map_err(AppError::other)?
+        );
     } else {
         display::print_market_list(&markets);
     }
     Ok(())
 }
 
-async fn cmd_cancel_market(client: &PolyClient, condition_id: &str, json: bool) -> client::Result<()> {
+async fn cmd_cancel_market(
+    client: &PolyClient,
+    condition_id: &str,
+    json: bool,
+) -> client::Result<()> {
     // Normalise to 0x-prefixed hex
     let cid = if condition_id.starts_with("0x") {
         condition_id.to_string()
@@ -743,8 +850,11 @@ async fn cmd_cancel_market(client: &PolyClient, condition_id: &str, json: bool) 
         .await?
         .ok_or_else(|| format!("Market not found: {}", cid))?;
 
-    let token_ids: std::collections::HashSet<&str> =
-        market.outcomes.iter().map(|o| o.token_id.as_str()).collect();
+    let token_ids: std::collections::HashSet<&str> = market
+        .outcomes
+        .iter()
+        .map(|o| o.token_id.as_str())
+        .collect();
 
     // Find open orders whose asset_id matches one of the market's outcome tokens
     if !json {
@@ -758,9 +868,15 @@ async fn cmd_cancel_market(client: &PolyClient, condition_id: &str, json: bool) 
 
     if matching.is_empty() {
         if json {
-            println!("{}", serde_json::json!({ "cancelled": serde_json::Value::Array(vec![]) }));
+            println!(
+                "{}",
+                serde_json::json!({ "cancelled": serde_json::Value::Array(vec![]) })
+            );
         } else {
-            println!("{}", colored::Colorize::yellow("No open orders for that market."));
+            println!(
+                "{}",
+                colored::Colorize::yellow("No open orders for that market.")
+            );
         }
         return Ok(());
     }
@@ -790,7 +906,10 @@ async fn cmd_cancel_market(client: &PolyClient, condition_id: &str, json: bool) 
 
 async fn cmd_derive_keys(client: &PolyClient) -> client::Result<()> {
     let wallet = client.wallet_address_str();
-    display::print_info(&format!("Deriving CLOB API credentials for wallet {}…", wallet));
+    display::print_info(&format!(
+        "Deriving CLOB API credentials for wallet {}…",
+        wallet
+    ));
     display::print_info("Fetching server timestamp from CLOB…");
     let (key, secret, passphrase) = client.derive_api_creds().await?;
     println!("\nSuccess! Add these to your .env:\n");
@@ -801,20 +920,19 @@ async fn cmd_derive_keys(client: &PolyClient) -> client::Result<()> {
 }
 
 async fn cmd_migrate() -> client::Result<()> {
-    let db_path  = persist::db_path();
+    let db_path = persist::db_path();
     let snap_path = persist::snapshot_csv_path();
-    let res_path  = persist::resolutions_csv_path();
+    let res_path = persist::resolutions_csv_path();
 
     println!("Database : {}", db_path.display());
     println!("Snapshots: {}", snap_path.display());
     println!("Resolutions: {}", res_path.display());
     println!();
 
-    let (snap_n, res_n) = tokio::task::spawn_blocking(move || {
-        db::migrate_from_csvs(&db_path, &snap_path, &res_path)
-    })
-    .await
-    .unwrap_or((0, 0));
+    let (snap_n, res_n) =
+        tokio::task::spawn_blocking(move || db::migrate_from_csvs(&db_path, &snap_path, &res_path))
+            .await
+            .unwrap_or((0, 0));
 
     if snap_n == 0 && res_n == 0 {
         println!("Nothing imported — database already contains data or no CSV files found.");
@@ -833,9 +951,9 @@ async fn cmd_migrate() -> client::Result<()> {
 /// Nested `[auth]` section (new format).
 #[derive(serde::Deserialize, Default)]
 struct AuthConfig {
-    private_key:    Option<String>,
-    api_key:        Option<String>,
-    api_secret:     Option<String>,
+    private_key: Option<String>,
+    api_key: Option<String>,
+    api_secret: Option<String>,
     api_passphrase: Option<String>,
     funder_address: Option<String>,
     polygon_rpc_url: Option<String>,
@@ -845,14 +963,14 @@ struct AuthConfig {
 struct PolyConfig {
     // New nested format
     auth: Option<AuthConfig>,
-    pub tui:  Option<tui::TuiConfig>,
+    pub tui: Option<tui::TuiConfig>,
 
     // Legacy flat format (backward-compat with existing ~/.poly/config.toml)
-    private_key:    Option<String>,
-    api_key:        Option<String>,
-    api_secret:     Option<String>,
+    private_key: Option<String>,
+    api_key: Option<String>,
+    api_secret: Option<String>,
     api_passphrase: Option<String>,
-    rpc_url:        Option<String>,
+    rpc_url: Option<String>,
     funder_address: Option<String>,
 }
 

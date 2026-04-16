@@ -97,7 +97,7 @@ impl AppError {
             .and_then(|v| {
                 v.get("error")
                     .or_else(|| v.get("message"))
-                    .or_else(|| v.get("errorMsg"))  // Polymarket CLOB uses errorMsg
+                    .or_else(|| v.get("errorMsg")) // Polymarket CLOB uses errorMsg
                     .and_then(|m| m.as_str())
                     .filter(|s| !s.is_empty())
                     .map(|s| s.to_string())

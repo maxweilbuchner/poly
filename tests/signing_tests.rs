@@ -13,8 +13,7 @@ use poly::client::{order_eip712_digest, OrderSigningInputs};
 use std::str::FromStr;
 
 // A deterministic test key — not associated with any real funds.
-const TEST_PRIVKEY: &str =
-    "0x4c0883a69102937d6231471b5dbb6204fe512961708279e36e9a7e9b1b5a2d4e";
+const TEST_PRIVKEY: &str = "0x4c0883a69102937d6231471b5dbb6204fe512961708279e36e9a7e9b1b5a2d4e";
 // Address of TEST_PRIVKEY.
 const TEST_SIGNER_ADDR: &str = "0x686C505e1Fc4510A27f13D0fBEAb3aec056b2237";
 // A distinct address standing in for a proxy/funder wallet.
@@ -44,7 +43,7 @@ fn base_inputs() -> OrderSigningInputs {
         taker_amount: 10_000_000,
         expiration: 0,
         fee_rate_bps: 0,
-        side_u8: 0, // Buy
+        side_u8: 0,        // Buy
         signature_type: 0, // EOA
         neg_risk: false,
     }
@@ -112,6 +111,9 @@ fn proxy_digest_differs_from_eoa() {
 fn side_sell_differs_from_buy() {
     // side is encoded as a uint8 in the struct hash; flipping must change digest.
     let buy = base_inputs();
-    let sell = OrderSigningInputs { side_u8: 1, ..base_inputs() };
+    let sell = OrderSigningInputs {
+        side_u8: 1,
+        ..base_inputs()
+    };
     assert_ne!(order_eip712_digest(&buy), order_eip712_digest(&sell));
 }

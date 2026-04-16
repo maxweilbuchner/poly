@@ -6,13 +6,17 @@ use ratatui::{
     Frame,
 };
 
-use crate::tui::{theme, App};
 use crate::tui::widgets::order_book;
+use crate::tui::{theme, App};
 use ratatui::style::Color;
 
 pub fn render(f: &mut Frame, area: Rect, app: &mut App) {
     // Split into header + sparklines + order books
-    let condition_id = app.selected_market.as_ref().map(|m| m.condition_id.as_str()).unwrap_or("");
+    let condition_id = app
+        .selected_market
+        .as_ref()
+        .map(|m| m.condition_id.as_str())
+        .unwrap_or("");
     let history_key = format!("{}:{}", condition_id, app.sparkline_interval);
     let has_history = app.price_history.contains_key(&history_key);
 
@@ -42,7 +46,12 @@ pub fn render(f: &mut Frame, area: Rect, app: &mut App) {
 
 fn render_header(f: &mut Frame, area: Rect, app: &App) {
     let block = Block::bordered()
-        .title(Span::styled(" Market Detail ", Style::default().fg(theme::CYAN).add_modifier(Modifier::BOLD)))
+        .title(Span::styled(
+            " Market Detail ",
+            Style::default()
+                .fg(theme::CYAN)
+                .add_modifier(Modifier::BOLD),
+        ))
         .border_style(Style::default().fg(theme::BORDER))
         .style(Style::default().bg(theme::PANEL_BG));
 
@@ -60,7 +69,12 @@ fn render_header(f: &mut Frame, area: Rect, app: &App) {
                 Line::from(""),
                 Line::from(vec![
                     Span::styled("  ", Style::default()),
-                    Span::styled(&m.question, Style::default().fg(theme::TEXT).add_modifier(Modifier::BOLD)),
+                    Span::styled(
+                        &m.question,
+                        Style::default()
+                            .fg(theme::TEXT)
+                            .add_modifier(Modifier::BOLD),
+                    ),
                 ]),
                 Line::from(""),
                 Line::from(vec![
@@ -80,7 +94,10 @@ fn render_header(f: &mut Frame, area: Rect, app: &App) {
                     ];
                     if let Some((label, color)) = remaining_time(end) {
                         ends_line.push(Span::styled("  (", Style::default().fg(theme::DIM)));
-                        ends_line.push(Span::styled(label, Style::default().fg(color).add_modifier(Modifier::BOLD)));
+                        ends_line.push(Span::styled(
+                            label,
+                            Style::default().fg(color).add_modifier(Modifier::BOLD),
+                        ));
                         ends_line.push(Span::styled(")", Style::default().fg(theme::DIM)));
                     }
                     Line::from(ends_line)
@@ -90,12 +107,10 @@ fn render_header(f: &mut Frame, area: Rect, app: &App) {
                     Span::styled(&m.condition_id, Style::default().fg(theme::VERY_DIM)),
                 ]),
                 Line::from(""),
-                Line::from(vec![
-                    Span::styled(
-                        "  ←→/Tab outcome  b buy  s sell  t sparkline  c copy  r refresh  Esc back",
-                        Style::default().fg(theme::VERY_DIM),
-                    ),
-                ]),
+                Line::from(vec![Span::styled(
+                    "  ←→/Tab outcome  b buy  s sell  t sparkline  c copy  r refresh  Esc back",
+                    Style::default().fg(theme::VERY_DIM),
+                )]),
             ]
         }
     };
@@ -128,7 +143,10 @@ fn render_sparklines(f: &mut Frame, area: Rect, app: &App) {
         let color = outcome_colors[i % outcome_colors.len()];
 
         // Scale prices 0.0–1.0 → 0–100 as u64 for Sparkline
-        let data: Vec<u64> = points.iter().map(|&(_, p)| (p * 100.0).round() as u64).collect();
+        let data: Vec<u64> = points
+            .iter()
+            .map(|&(_, p)| (p * 100.0).round() as u64)
+            .collect();
 
         // Show only as many points as fit in the column width
         let width = cols[i].width.saturating_sub(2) as usize;
@@ -142,7 +160,12 @@ fn render_sparklines(f: &mut Frame, area: Rect, app: &App) {
             format!(" {} (no data)", name)
         } else {
             let last_price = points.last().map(|&(_, p)| p).unwrap_or(0.0);
-            format!(" {} {:.0}%  {}", name, last_price * 100.0, app.sparkline_interval)
+            format!(
+                " {} {:.0}%  {}",
+                name,
+                last_price * 100.0,
+                app.sparkline_interval
+            )
         };
 
         let block = Block::bordered()
@@ -163,7 +186,8 @@ fn render_sparklines(f: &mut Frame, area: Rect, app: &App) {
 fn render_books(f: &mut Frame, area: Rect, app: &mut App) {
     // Check staleness: if the last update was more than 15s ago, show a warning.
     const STALE_SECS: u64 = 15;
-    let stale_secs = app.order_book_updated_at
+    let stale_secs = app
+        .order_book_updated_at
         .filter(|_| !app.order_books.is_empty())
         .map(|t| t.elapsed().as_secs())
         .filter(|&s| s >= STALE_SECS);
@@ -177,19 +201,32 @@ fn render_books(f: &mut Frame, area: Rect, app: &mut App) {
     };
 
     if let (Some(warn), Some(secs)) = (warn_area, stale_secs) {
-        let msg = format!("  ⚠ order book data is {}s old — WS disconnected, polling every 10s  [r refresh]", secs);
+        let msg = format!(
+            "  ⚠ order book data is {}s old — WS disconnected, polling every 10s  [r refresh]",
+            secs
+        );
         f.render_widget(
-            Paragraph::new(Span::styled(msg, Style::default().fg(Color::Rgb(200, 140, 40)))),
+            Paragraph::new(Span::styled(
+                msg,
+                Style::default().fg(Color::Rgb(200, 140, 40)),
+            )),
             warn,
         );
     }
 
     if app.order_books.is_empty() {
         let block = Block::bordered()
-            .title(Span::styled(" Order Books ", Style::default().fg(theme::CYAN)))
+            .title(Span::styled(
+                " Order Books ",
+                Style::default().fg(theme::CYAN),
+            ))
             .border_style(Style::default().fg(theme::BORDER))
             .style(Style::default().bg(theme::PANEL_BG));
-        let msg = if app.loading { "Loading…" } else { "No order book data." };
+        let msg = if app.loading {
+            "Loading…"
+        } else {
+            "No order book data."
+        };
         let para = Paragraph::new(Span::styled(msg, Style::default().fg(theme::DIM))).block(block);
         f.render_widget(para, books_area);
         return;
@@ -230,9 +267,9 @@ fn remaining_time(end_date: &str) -> Option<(String, Color)> {
         return Some(("ended".to_string(), theme::DIM));
     }
 
-    let days  = secs / 86_400;
+    let days = secs / 86_400;
     let hours = (secs % 86_400) / 3_600;
-    let mins  = (secs % 3_600) / 60;
+    let mins = (secs % 3_600) / 60;
 
     let label = if days > 0 {
         format!("{}d {}h", days, hours)
@@ -262,4 +299,3 @@ fn format_volume(v: f64) -> String {
         format!("${:.2}", v)
     }
 }
-

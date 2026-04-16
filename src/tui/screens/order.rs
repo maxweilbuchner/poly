@@ -6,18 +6,15 @@ use ratatui::{
     Frame,
 };
 
-use crate::tui::{theme, App};
 use crate::tui::widgets::order_book;
+use crate::tui::{theme, App};
 use crate::types::{OrderType, Side};
 
 pub fn render(f: &mut Frame, area: Rect, app: &App) {
     f.render_widget(Clear, area);
 
-    let halves = Layout::horizontal([
-        Constraint::Percentage(50),
-        Constraint::Percentage(50),
-    ])
-    .split(area);
+    let halves =
+        Layout::horizontal([Constraint::Percentage(50), Constraint::Percentage(50)]).split(area);
 
     render_book(f, halves[0], app);
     render_form(f, halves[1], app);
@@ -62,7 +59,9 @@ fn render_form(f: &mut Frame, area: Rect, app: &App) {
     let block = Block::bordered()
         .title(Span::styled(
             title,
-            Style::default().fg(theme::CYAN).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(theme::CYAN)
+                .add_modifier(Modifier::BOLD),
         ))
         .border_style(Style::default().fg(theme::CYAN))
         .style(Style::default().bg(theme::PANEL_BG));
@@ -119,16 +118,20 @@ fn render_form(f: &mut Frame, area: Rect, app: &App) {
     // Size
     let size_focused = app.order_form.focused_field == 0;
     let size_label = if size_exceeds_held {
-        format!(
-            "Size (max {:.2})",
-            app.order_form.max_size.unwrap_or(0.0)
-        )
+        format!("Size (max {:.2})", app.order_form.max_size.unwrap_or(0.0))
     } else if size_below_min {
         "Size (min 5 shares)".to_string()
     } else {
         "Size (shares)".to_string()
     };
-    render_text_field(f, rows[3], &size_label, &app.order_form.size_input, size_focused, size_error);
+    render_text_field(
+        f,
+        rows[3],
+        &size_label,
+        &app.order_form.size_input,
+        size_focused,
+        size_error,
+    );
     if size_focused {
         let cx = rows[3].x + 18 + app.order_form.size_input.len() as u16;
         let cy = rows[3].y;
@@ -142,10 +145,19 @@ fn render_form(f: &mut Frame, area: Rect, app: &App) {
     if app.order_form.market_order {
         let (price_display, price_color) = match app.order_form.market_price {
             Some(p) => (format!("{:.4}  [r refresh]", p), theme::YELLOW),
-            None if app.order_form.market_price_failed => ("fetch failed  [r retry]".to_string(), theme::RED),
+            None if app.order_form.market_price_failed => {
+                ("fetch failed  [r retry]".to_string(), theme::RED)
+            }
             None => ("fetching…".to_string(), theme::DIM),
         };
-        render_field(f, rows[4], "Price (market)", &price_display, false, price_color);
+        render_field(
+            f,
+            rows[4],
+            "Price (market)",
+            &price_display,
+            false,
+            price_color,
+        );
     } else {
         render_text_field(
             f,
@@ -254,7 +266,14 @@ fn render_form(f: &mut Frame, area: Rect, app: &App) {
     f.render_widget(footer, rows[12]);
 }
 
-fn render_text_field(f: &mut Frame, area: Rect, label: &str, value: &str, focused: bool, is_error: bool) {
+fn render_text_field(
+    f: &mut Frame,
+    area: Rect,
+    label: &str,
+    value: &str,
+    focused: bool,
+    is_error: bool,
+) {
     let border_color = if focused {
         theme::BORDER_ACTIVE
     } else {
@@ -305,9 +324,11 @@ fn render_field(
         ),
         Span::styled(
             value.to_string(),
-            Style::default()
-                .fg(color)
-                .add_modifier(if focused { Modifier::BOLD } else { Modifier::empty() }),
+            Style::default().fg(color).add_modifier(if focused {
+                Modifier::BOLD
+            } else {
+                Modifier::empty()
+            }),
         ),
     ]);
     f.render_widget(Paragraph::new(line), area);

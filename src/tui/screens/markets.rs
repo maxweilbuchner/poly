@@ -60,7 +60,9 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
             } else {
                 theme::CYAN
             };
-            map.entry(p.market_id.clone()).or_default().push((label, color));
+            map.entry(p.market_id.clone())
+                .or_default()
+                .push((label, color));
         }
         map
     };
@@ -80,8 +82,8 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
     let cat_active = app.category_filter.is_some();
     let prob_active = app.prob_filter != crate::tui::ProbFilter::All;
     let vol_active = app.volume_filter != crate::tui::VolumeFilter::All;
-    let bottom = Line::from(vec![
-        Span::styled(" sort:", Style::default().fg(theme::VERY_DIM)),
+    let filters = Line::from(vec![
+        Span::styled("sort:", Style::default().fg(theme::VERY_DIM)),
         Span::styled(
             format!("{}  ", app.sort_mode.label()),
             Style::default().fg(theme::DIM),
@@ -109,9 +111,14 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
         Span::styled("watch:", Style::default().fg(theme::VERY_DIM)),
         Span::styled(
             format!("{} ", if app.watchlist_only { "★" } else { "all" }),
-            Style::default().fg(if app.watchlist_only { theme::YELLOW } else { theme::DIM }),
+            Style::default().fg(if app.watchlist_only {
+                theme::YELLOW
+            } else {
+                theme::DIM
+            }),
         ),
-    ]);
+    ])
+    .alignment(ratatui::layout::Alignment::Right);
 
     let block = Block::bordered()
         .title(Span::styled(
@@ -120,7 +127,7 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
                 .fg(theme::CYAN)
                 .add_modifier(Modifier::BOLD),
         ))
-        .title_bottom(bottom)
+        .title(filters)
         .border_style(Style::default().fg(theme::BORDER))
         .style(Style::default().bg(theme::PANEL_BG));
 
@@ -167,8 +174,17 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
     f.render_stateful_widget(list, area, &mut app.market_list_state);
 }
 
-fn build_item(m: &Market, q_width: usize, starred: bool, positions: Vec<(String, ratatui::style::Color)>) -> ListItem<'static> {
-    let q_width = if starred { q_width.saturating_sub(2) } else { q_width };
+fn build_item(
+    m: &Market,
+    q_width: usize,
+    starred: bool,
+    positions: Vec<(String, ratatui::style::Color)>,
+) -> ListItem<'static> {
+    let q_width = if starred {
+        q_width.saturating_sub(2)
+    } else {
+        q_width
+    };
     let question = truncate(&m.question, q_width);
 
     // Line 1: question (with optional star prefix)
@@ -205,7 +221,10 @@ fn build_item(m: &Market, q_width: usize, starred: bool, positions: Vec<(String,
     }
     if let Some(cat_str) = cat {
         spans.push(Span::styled("  · ", Style::default().fg(theme::VERY_DIM)));
-        spans.push(Span::styled(cat_str, Style::default().fg(category_color(cat_str))));
+        spans.push(Span::styled(
+            cat_str,
+            Style::default().fg(category_color(cat_str)),
+        ));
     }
     if !positions.is_empty() {
         spans.push(Span::styled("  · ", Style::default().fg(theme::VERY_DIM)));
@@ -270,12 +289,12 @@ fn prob_color(p: f64) -> Color {
 /// Color for a category label.
 fn category_color(cat: &str) -> Color {
     match cat {
-        "Sports"   => theme::GREEN,
-        "Crypto"   => theme::YELLOW,
+        "Sports" => theme::GREEN,
+        "Crypto" => theme::YELLOW,
         "Politics" => theme::PURPLE,
-        "Finance"  => theme::BLUE,
-        "Weather"  => theme::CYAN,
-        _          => theme::HINT,
+        "Finance" => theme::BLUE,
+        "Weather" => theme::CYAN,
+        _ => theme::HINT,
     }
 }
 
@@ -313,11 +332,11 @@ fn format_end(end_date: Option<&str>) -> Option<(String, Color)> {
     };
 
     let color = if secs < 86_400 {
-        theme::RED    // < 1 day — urgent
+        theme::RED // < 1 day — urgent
     } else if days < 7 {
         theme::YELLOW // < 1 week — soon
     } else {
-        theme::HINT   // distant
+        theme::HINT // distant
     };
 
     Some((label, color))

@@ -11,7 +11,14 @@ use crate::types::OrderBook;
 /// Render an order book (bid/ask ladder) into `area`.
 ///
 /// Shows up to `levels` price levels, bids green, asks red.
-pub fn render_with_selection(f: &mut Frame, area: Rect, book: Option<&OrderBook>, label: &str, levels: usize, selected: bool) {
+pub fn render_with_selection(
+    f: &mut Frame,
+    area: Rect,
+    book: Option<&OrderBook>,
+    label: &str,
+    levels: usize,
+    selected: bool,
+) {
     let title = if selected {
         format!(" ▸ {} ", label)
     } else {
@@ -21,7 +28,11 @@ pub fn render_with_selection(f: &mut Frame, area: Rect, book: Option<&OrderBook>
     let block = Block::bordered()
         .title(ratatui::text::Span::styled(
             title,
-            Style::default().fg(border_color).add_modifier(if selected { Modifier::BOLD } else { Modifier::empty() }),
+            Style::default().fg(border_color).add_modifier(if selected {
+                Modifier::BOLD
+            } else {
+                Modifier::empty()
+            }),
         ))
         .border_style(Style::default().fg(border_color))
         .style(Style::default().bg(theme::PANEL_BG));
@@ -40,10 +51,22 @@ pub fn render_with_selection(f: &mut Frame, area: Rect, book: Option<&OrderBook>
 
             (0..count)
                 .map(|i| {
-                    let ask_price = ask_levels.get(i).map(|l| format!("{:.4}", l.price)).unwrap_or_default();
-                    let ask_size  = ask_levels.get(i).map(|l| format!("{:.2}", l.size)).unwrap_or_default();
-                    let bid_price = bid_levels.get(i).map(|l| format!("{:.4}", l.price)).unwrap_or_default();
-                    let bid_size  = bid_levels.get(i).map(|l| format!("{:.2}", l.size)).unwrap_or_default();
+                    let ask_price = ask_levels
+                        .get(i)
+                        .map(|l| format!("{:.4}", l.price))
+                        .unwrap_or_default();
+                    let ask_size = ask_levels
+                        .get(i)
+                        .map(|l| format!("{:.2}", l.size))
+                        .unwrap_or_default();
+                    let bid_price = bid_levels
+                        .get(i)
+                        .map(|l| format!("{:.4}", l.price))
+                        .unwrap_or_default();
+                    let bid_size = bid_levels
+                        .get(i)
+                        .map(|l| format!("{:.2}", l.size))
+                        .unwrap_or_default();
 
                     let ask_style = Style::default().fg(theme::RED);
                     let bid_style = Style::default().fg(theme::GREEN);

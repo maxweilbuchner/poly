@@ -8,8 +8,10 @@ use std::str::FromStr;
 
 use crate::auth::ClobAuth;
 use crate::error::AppError;
-use crate::types::{Market, MarketStatus, Order, OrderBook, OrderStatus, OrderType, Outcome,
-                   PlaceOrderParams, Position, PriceLevel, PricePoint, Side};
+use crate::types::{
+    Market, MarketStatus, Order, OrderBook, OrderStatus, OrderType, Outcome, PlaceOrderParams,
+    Position, PriceLevel, PricePoint, Side,
+};
 
 pub type Result<T> = std::result::Result<T, AppError>;
 
@@ -46,7 +48,12 @@ where
                 .and_then(|s| s.parse::<u64>().ok())
                 .map(std::time::Duration::from_secs)
                 .unwrap_or(delay);
-            tracing::warn!(status, attempt = attempt + 1, wait_ms = wait.as_millis() as u64, "retrying request");
+            tracing::warn!(
+                status,
+                attempt = attempt + 1,
+                wait_ms = wait.as_millis() as u64,
+                "retrying request"
+            );
             tokio::time::sleep(wait).await;
             delay = (delay * 2).min(std::time::Duration::from_secs(16));
             continue;
@@ -110,7 +117,11 @@ pub fn order_eip712_digest(i: &OrderSigningInputs) -> [u8; 32] {
     let domain_name_hash = ethers::utils::keccak256(b"Polymarket CTF Exchange");
     let domain_version_hash = ethers::utils::keccak256(b"1");
     let chain_id = U256::from(137u64);
-    let exchange_addr = if i.neg_risk { NEG_RISK_CTF_EXCHANGE } else { CTF_EXCHANGE };
+    let exchange_addr = if i.neg_risk {
+        NEG_RISK_CTF_EXCHANGE
+    } else {
+        CTF_EXCHANGE
+    };
     let verifying_contract: H160 = exchange_addr.parse().expect("valid CTF exchange address");
 
     let domain_separator = {
@@ -130,18 +141,40 @@ pub fn order_eip712_digest(i: &OrderSigningInputs) -> [u8; 32] {
     let struct_hash = {
         let mut enc = Vec::with_capacity(13 * 32);
         enc.extend_from_slice(&type_hash);
-        let mut v = [0u8; 32]; i.salt.to_big_endian(&mut v); enc.extend_from_slice(&v);
-        let mut v = [0u8; 32]; v[12..].copy_from_slice(i.maker.as_bytes()); enc.extend_from_slice(&v);
-        let mut v = [0u8; 32]; v[12..].copy_from_slice(i.signer.as_bytes()); enc.extend_from_slice(&v);
-        let mut v = [0u8; 32]; v[12..].copy_from_slice(i.taker.as_bytes()); enc.extend_from_slice(&v);
-        let mut v = [0u8; 32]; i.token_id.to_big_endian(&mut v); enc.extend_from_slice(&v);
-        let mut v = [0u8; 32]; U256::from(i.maker_amount).to_big_endian(&mut v); enc.extend_from_slice(&v);
-        let mut v = [0u8; 32]; U256::from(i.taker_amount).to_big_endian(&mut v); enc.extend_from_slice(&v);
-        let mut v = [0u8; 32]; U256::from(i.expiration).to_big_endian(&mut v); enc.extend_from_slice(&v);
+        let mut v = [0u8; 32];
+        i.salt.to_big_endian(&mut v);
+        enc.extend_from_slice(&v);
+        let mut v = [0u8; 32];
+        v[12..].copy_from_slice(i.maker.as_bytes());
+        enc.extend_from_slice(&v);
+        let mut v = [0u8; 32];
+        v[12..].copy_from_slice(i.signer.as_bytes());
+        enc.extend_from_slice(&v);
+        let mut v = [0u8; 32];
+        v[12..].copy_from_slice(i.taker.as_bytes());
+        enc.extend_from_slice(&v);
+        let mut v = [0u8; 32];
+        i.token_id.to_big_endian(&mut v);
+        enc.extend_from_slice(&v);
+        let mut v = [0u8; 32];
+        U256::from(i.maker_amount).to_big_endian(&mut v);
+        enc.extend_from_slice(&v);
+        let mut v = [0u8; 32];
+        U256::from(i.taker_amount).to_big_endian(&mut v);
+        enc.extend_from_slice(&v);
+        let mut v = [0u8; 32];
+        U256::from(i.expiration).to_big_endian(&mut v);
+        enc.extend_from_slice(&v);
         enc.extend_from_slice(&[0u8; 32]); // nonce = 0
-        let mut v = [0u8; 32]; U256::from(i.fee_rate_bps).to_big_endian(&mut v); enc.extend_from_slice(&v);
-        let mut v = [0u8; 32]; v[31] = i.side_u8; enc.extend_from_slice(&v);
-        let mut v = [0u8; 32]; v[31] = i.signature_type; enc.extend_from_slice(&v);
+        let mut v = [0u8; 32];
+        U256::from(i.fee_rate_bps).to_big_endian(&mut v);
+        enc.extend_from_slice(&v);
+        let mut v = [0u8; 32];
+        v[31] = i.side_u8;
+        enc.extend_from_slice(&v);
+        let mut v = [0u8; 32];
+        v[31] = i.signature_type;
+        enc.extend_from_slice(&v);
         ethers::utils::keccak256(enc)
     };
 
@@ -360,7 +393,11 @@ impl PolyClient {
         active_only: bool,
         limit: usize,
     ) -> Result<Vec<Market>> {
-        let active_param = if active_only { "&active=true&closed=false" } else { "" };
+        let active_param = if active_only {
+            "&active=true&closed=false"
+        } else {
+            ""
+        };
         // Fetch a generous over-fetch so client-side filtering has enough to work with
         let fetch_limit = (limit * 8).max(100);
         let url = format!(
@@ -371,7 +408,9 @@ impl PolyClient {
             active_param
         );
 
-        let resp = send_with_retry(|| self.http.get(&url)).await.map_err(net_err)?;
+        let resp = send_with_retry(|| self.http.get(&url))
+            .await
+            .map_err(net_err)?;
         if !resp.status().is_success() {
             return Err(api_err(resp).await);
         }
@@ -408,15 +447,25 @@ impl PolyClient {
     ///
     /// Over-fetches from the Gamma API (which returns by volume desc by default)
     /// and drops any markets that fail to deserialise, returning up to `limit` results.
-    pub async fn get_top_markets(&self, limit: usize, category: Option<&str>) -> Result<Vec<Market>> {
+    pub async fn get_top_markets(
+        &self,
+        limit: usize,
+        category: Option<&str>,
+    ) -> Result<Vec<Market>> {
         // Over-fetch so category filtering still yields `limit` results.
-        let fetch_limit = if category.is_some() { (limit * 4).max(100) } else { limit };
+        let fetch_limit = if category.is_some() {
+            (limit * 4).max(100)
+        } else {
+            limit
+        };
         let url = format!(
             "{}/markets?active=true&closed=false&order=volume&ascending=false&limit={}",
             self.gamma_url, fetch_limit
         );
 
-        let resp = send_with_retry(|| self.http.get(&url)).await.map_err(net_err)?;
+        let resp = send_with_retry(|| self.http.get(&url))
+            .await
+            .map_err(net_err)?;
         if !resp.status().is_success() {
             return Err(api_err(resp).await);
         }
@@ -450,7 +499,9 @@ impl PolyClient {
             self.gamma_url, limit, offset
         );
 
-        let resp = send_with_retry(|| self.http.get(&url)).await.map_err(net_err)?;
+        let resp = send_with_retry(|| self.http.get(&url))
+            .await
+            .map_err(net_err)?;
         if !resp.status().is_success() {
             return Err(api_err(resp).await);
         }
@@ -466,12 +517,18 @@ impl PolyClient {
     }
 
     /// Fetch one page of all active markets (no end-date filter) for snapshots.
-    pub async fn get_markets_page_snapshot(&self, offset: usize, limit: usize) -> Result<Vec<Market>> {
+    pub async fn get_markets_page_snapshot(
+        &self,
+        offset: usize,
+        limit: usize,
+    ) -> Result<Vec<Market>> {
         let url = format!(
             "{}/markets?active=true&closed=false&order=volume&ascending=false&limit={}&offset={}",
             self.gamma_url, limit, offset
         );
-        let resp = send_with_retry(|| self.http.get(&url)).await.map_err(net_err)?;
+        let resp = send_with_retry(|| self.http.get(&url))
+            .await
+            .map_err(net_err)?;
         if !resp.status().is_success() {
             return Err(api_err(resp).await);
         }
@@ -496,7 +553,9 @@ impl PolyClient {
             "{}/markets?closed=true&order=endDate&ascending=false&limit={}&offset={}",
             self.gamma_url, limit, offset
         );
-        let resp = send_with_retry(|| self.http.get(&url)).await.map_err(net_err)?;
+        let resp = send_with_retry(|| self.http.get(&url))
+            .await
+            .map_err(net_err)?;
         if !resp.status().is_success() {
             return Err(api_err(resp).await);
         }
@@ -504,11 +563,13 @@ impl PolyClient {
         let resolved = raw
             .into_iter()
             .filter_map(|m| {
-                let resolution = derive_resolution(
-                    m.outcomes.as_deref(),
-                    m.outcome_prices.as_deref(),
-                )?;
-                let slug = if m.slug.is_empty() { m.market_slug } else { m.slug };
+                let resolution =
+                    derive_resolution(m.outcomes.as_deref(), m.outcome_prices.as_deref())?;
+                let slug = if m.slug.is_empty() {
+                    m.market_slug
+                } else {
+                    m.slug
+                };
                 let clob_token_id = parse_yes_token_id(m.clob_token_ids.as_deref());
                 Some(MarketResolution {
                     condition_id: m.condition_id,
@@ -531,7 +592,9 @@ impl PolyClient {
         condition_id: &str,
     ) -> Result<Option<MarketResolution>> {
         let url = format!("{}/markets/{}", self.gamma_url, condition_id);
-        let resp = send_with_retry(|| self.http.get(&url)).await.map_err(net_err)?;
+        let resp = send_with_retry(|| self.http.get(&url))
+            .await
+            .map_err(net_err)?;
         if resp.status().as_u16() == 404 {
             return Ok(None);
         }
@@ -539,14 +602,16 @@ impl PolyClient {
             return Err(api_err(resp).await);
         }
         let m: GammaClosedMarket = resp.json().await?;
-        let resolution = match derive_resolution(
-            m.outcomes.as_deref(),
-            m.outcome_prices.as_deref(),
-        ) {
+        let resolution = match derive_resolution(m.outcomes.as_deref(), m.outcome_prices.as_deref())
+        {
             Some(r) => r,
             None => return Ok(None),
         };
-        let slug = if m.slug.is_empty() { m.market_slug } else { m.slug };
+        let slug = if m.slug.is_empty() {
+            m.market_slug
+        } else {
+            m.slug
+        };
         let clob_token_id = parse_yes_token_id(m.clob_token_ids.as_deref());
         Ok(Some(MarketResolution {
             condition_id: m.condition_id,
@@ -562,7 +627,9 @@ impl PolyClient {
     /// Fetch a single market by its condition ID (hex string).
     pub async fn get_market_by_id(&self, condition_id: &str) -> Result<Option<Market>> {
         let url = format!("{}/markets/{}", self.gamma_url, condition_id);
-        let resp = send_with_retry(|| self.http.get(&url)).await.map_err(net_err)?;
+        let resp = send_with_retry(|| self.http.get(&url))
+            .await
+            .map_err(net_err)?;
         if resp.status().as_u16() == 404 {
             return Ok(None);
         }
@@ -578,7 +645,9 @@ impl PolyClient {
     pub async fn get_market_by_slug(&self, slug: &str) -> Result<Vec<Market>> {
         // Try as an event slug first
         let url = format!("{}/events?slug={}", self.gamma_url, urlencoded(slug));
-        let resp = send_with_retry(|| self.http.get(&url)).await.map_err(net_err)?;
+        let resp = send_with_retry(|| self.http.get(&url))
+            .await
+            .map_err(net_err)?;
         if resp.status().is_success() {
             let events: Vec<GammaEvent> = resp.json().await?;
             let mut markets = Vec::new();
@@ -596,7 +665,9 @@ impl PolyClient {
 
         // Try as a direct market slug (correct param name is `slug`, not `market_slug`)
         let url2 = format!("{}/markets?slug={}", self.gamma_url, urlencoded(slug));
-        let resp2 = send_with_retry(|| self.http.get(&url2)).await.map_err(net_err)?;
+        let resp2 = send_with_retry(|| self.http.get(&url2))
+            .await
+            .map_err(net_err)?;
         if resp2.status().is_success() {
             let raw: Vec<GammaMarket> = resp2.json().await?;
             let mut markets = Vec::new();
@@ -616,7 +687,9 @@ impl PolyClient {
     /// Fetch the full order book for a token ID.
     pub async fn get_order_book(&self, token_id: &str) -> Result<OrderBook> {
         let url = format!("{}/book?token_id={}", self.clob_url, token_id);
-        let resp = send_with_retry(|| self.http.get(&url)).await.map_err(net_err)?;
+        let resp = send_with_retry(|| self.http.get(&url))
+            .await
+            .map_err(net_err)?;
         if !resp.status().is_success() {
             return Err(api_err(resp).await);
         }
@@ -641,16 +714,21 @@ impl PolyClient {
         bids.sort_by(|a, b| b.price.total_cmp(&a.price));
         asks.sort_by(|a, b| a.price.total_cmp(&b.price));
 
-        Ok(OrderBook { token_id: token_id.to_string(), bids, asks })
+        Ok(OrderBook {
+            token_id: token_id.to_string(),
+            bids,
+            asks,
+        })
     }
 
     // ── Account info ──────────────────────────────────────────────────────────
 
     /// USDC balance on-chain (Polygon mainnet).
     pub async fn get_balance(&self) -> Result<f64> {
-        let provider = self.provider.as_ref().ok_or_else(|| {
-            AppError::Auth("No RPC URL configured (POLYGON_RPC_URL)".into())
-        })?;
+        let provider = self
+            .provider
+            .as_ref()
+            .ok_or_else(|| AppError::Auth("No RPC URL configured (POLYGON_RPC_URL)".into()))?;
         let address = self
             .funder_address
             .or_else(|| self.wallet.as_ref().map(|w| w.address()))
@@ -660,15 +738,20 @@ impl PolyClient {
 
         let usdc: H160 = USDC_ADDRESS.parse().map_err(AppError::other)?;
         let contract = ERC20::new(usdc, provider.clone().into());
-        let raw: U256 = contract.balance_of(address).call().await.map_err(AppError::other)?;
+        let raw: U256 = contract
+            .balance_of(address)
+            .call()
+            .await
+            .map_err(AppError::other)?;
         Ok(raw.to_string().parse::<f64>().unwrap_or(0.0) / 1_000_000.0)
     }
 
     /// USDC allowance granted to the CTF Exchange.
     pub async fn get_allowance(&self) -> Result<f64> {
-        let provider = self.provider.as_ref().ok_or_else(|| {
-            AppError::Auth("No RPC URL configured (POLYGON_RPC_URL)".into())
-        })?;
+        let provider = self
+            .provider
+            .as_ref()
+            .ok_or_else(|| AppError::Auth("No RPC URL configured (POLYGON_RPC_URL)".into()))?;
         let address = self
             .funder_address
             .or_else(|| self.wallet.as_ref().map(|w| w.address()))
@@ -679,7 +762,11 @@ impl PolyClient {
         let usdc: H160 = USDC_ADDRESS.parse().map_err(AppError::other)?;
         let spender: H160 = CTF_EXCHANGE.parse().map_err(AppError::other)?;
         let contract = ERC20::new(usdc, provider.clone().into());
-        let raw: U256 = contract.allowance(address, spender).call().await.map_err(AppError::other)?;
+        let raw: U256 = contract
+            .allowance(address, spender)
+            .call()
+            .await
+            .map_err(AppError::other)?;
         Ok(raw.to_string().parse::<f64>().unwrap_or(0.0) / 1_000_000.0)
     }
 
@@ -693,7 +780,9 @@ impl PolyClient {
         let signer_str = format!("{:#x}", wallet.address());
         let headers = auth.headers("GET", sign_path, None, &signer_str)?;
 
-        let resp = send_with_retry(|| self.http.get(&url).headers(headers.clone())).await.map_err(net_err)?;
+        let resp = send_with_retry(|| self.http.get(&url).headers(headers.clone()))
+            .await
+            .map_err(net_err)?;
         if !resp.status().is_success() {
             return Err(api_err(resp).await);
         }
@@ -719,8 +808,8 @@ impl PolyClient {
         // CLOB may return a bare array or a paginated {"data": [...], "next_cursor": "..."}.
         let body: serde_json::Value = resp.json().await?;
         let arr = extract_data_array(body);
-        let raw: Vec<RawOrder> = serde_json::from_value(serde_json::Value::Array(arr))
-            .unwrap_or_default();
+        let raw: Vec<RawOrder> =
+            serde_json::from_value(serde_json::Value::Array(arr)).unwrap_or_default();
         Ok(raw
             .into_iter()
             .filter_map(|o| {
@@ -755,7 +844,9 @@ impl PolyClient {
         let signer_str = format!("{:#x}", wallet.address());
         let headers = auth.headers("GET", sign_path, None, &signer_str)?;
 
-        let resp = send_with_retry(|| self.http.get(&url).headers(headers.clone())).await.map_err(net_err)?;
+        let resp = send_with_retry(|| self.http.get(&url).headers(headers.clone()))
+            .await
+            .map_err(net_err)?;
         if !resp.status().is_success() {
             return Err(api_err(resp).await);
         }
@@ -780,8 +871,8 @@ impl PolyClient {
 
         let body: serde_json::Value = resp.json().await?;
         let arr = extract_data_array(body);
-        let raw: Vec<RawOrder> = serde_json::from_value(serde_json::Value::Array(arr))
-            .unwrap_or_default();
+        let raw: Vec<RawOrder> =
+            serde_json::from_value(serde_json::Value::Array(arr)).unwrap_or_default();
         Ok(raw
             .into_iter()
             .filter_map(|o| {
@@ -815,7 +906,9 @@ impl PolyClient {
         let signer_str = format!("{:#x}", wallet.address());
         let headers = auth.headers("GET", &path, None, &signer_str)?;
 
-        let resp = send_with_retry(|| self.http.get(&url).headers(headers.clone())).await.map_err(net_err)?;
+        let resp = send_with_retry(|| self.http.get(&url).headers(headers.clone()))
+            .await
+            .map_err(net_err)?;
         if !resp.status().is_success() {
             return Err(api_err(resp).await);
         }
@@ -830,8 +923,13 @@ impl PolyClient {
         let address = self.funder_address.unwrap_or(wallet.address());
         let address_str = format!("{:#x}", address);
 
-        let url = format!("{}/positions?user={}&sizeThreshold=0.1&limit=500", self.data_url, address_str);
-        let resp = send_with_retry(|| self.http.get(&url)).await.map_err(net_err)?;
+        let url = format!(
+            "{}/positions?user={}&sizeThreshold=0.1&limit=500",
+            self.data_url, address_str
+        );
+        let resp = send_with_retry(|| self.http.get(&url))
+            .await
+            .map_err(net_err)?;
         if !resp.status().is_success() {
             return Err(api_err(resp).await);
         }
@@ -891,26 +989,33 @@ impl PolyClient {
             .into_iter()
             .collect();
 
-        let futs: Vec<_> = unique_ids.iter().map(|cid| {
-            let url = format!("{}/markets/{}", self.gamma_url, cid);
-            let http = self.http.clone();
-            let cid = cid.clone();
-            async move {
-                let result: Option<(Option<String>, bool, bool)> = async {
-                    let r = send_with_retry(|| http.get(&url)).await.ok()?;
-                    if !r.status().is_success() { return None; }
-                    let gm: GammaMarket = r.json().await.ok()?;
-                    Some((gm.end_date, gm.neg_risk, gm.closed))
-                }.await;
-                let (end_date, neg_risk, closed) = result.unwrap_or((None, false, false));
-                (cid, end_date, neg_risk, closed)
-            }
-        }).collect();
+        let futs: Vec<_> = unique_ids
+            .iter()
+            .map(|cid| {
+                let url = format!("{}/markets/{}", self.gamma_url, cid);
+                let http = self.http.clone();
+                let cid = cid.clone();
+                async move {
+                    let result: Option<(Option<String>, bool, bool)> = async {
+                        let r = send_with_retry(|| http.get(&url)).await.ok()?;
+                        if !r.status().is_success() {
+                            return None;
+                        }
+                        let gm: GammaMarket = r.json().await.ok()?;
+                        Some((gm.end_date, gm.neg_risk, gm.closed))
+                    }
+                    .await;
+                    let (end_date, neg_risk, closed) = result.unwrap_or((None, false, false));
+                    (cid, end_date, neg_risk, closed)
+                }
+            })
+            .collect();
 
-        let market_map: HashMap<String, (Option<String>, bool, bool)> =
-            join_all(futs).await.into_iter()
-                .map(|(cid, end_date, neg_risk, closed)| (cid, (end_date, neg_risk, closed)))
-                .collect();
+        let market_map: HashMap<String, (Option<String>, bool, bool)> = join_all(futs)
+            .await
+            .into_iter()
+            .map(|(cid, end_date, neg_risk, closed)| (cid, (end_date, neg_risk, closed)))
+            .collect();
 
         for p in &mut positions {
             if let Some((end_date, neg_risk, closed)) = market_map.get(&p.market_id) {
@@ -968,17 +1073,16 @@ impl PolyClient {
     /// Returns the CLOB `orderID` on success.
     #[tracing::instrument(skip(self), fields(token_id = %params.token_id, side = ?params.side, price = params.price, size = params.size))]
     pub async fn place_order(&self, params: &PlaceOrderParams) -> Result<String> {
-        let token_id   = params.token_id.as_str();
-        let price      = params.price;
-        let size       = params.size;
-        let side       = params.side.clone();
+        let token_id = params.token_id.as_str();
+        let price = params.price;
+        let size = params.size;
+        let side = params.side.clone();
         let order_type = params.order_type;
-        let expiry     = params.expiry;
-        let neg_risk   = params.neg_risk;
-        let fee_rate_bps = self.get_fee_rate(token_id).await
-            .ok_or_else(|| AppError::Network(
-                "fee rate fetch failed — cannot place order safely".to_string()
-            ))?;
+        let expiry = params.expiry;
+        let neg_risk = params.neg_risk;
+        let fee_rate_bps = self.get_fee_rate(token_id).await.ok_or_else(|| {
+            AppError::Network("fee rate fetch failed — cannot place order safely".to_string())
+        })?;
         let (auth, wallet) = self.require_auth()?;
 
         let salt = {
@@ -997,7 +1101,11 @@ impl PolyClient {
         // Market buy (FOK+Buy): maker=USDC cost (max 2dp), taker=shares (max 5dp).
         // Limit orders (GTC/IOC) and sells: cost up to 4dp is accepted.
         let rounded_size = (size * 100.0).round() / 100.0;
-        let cost_dp = if order_type == OrderType::Fok && side == Side::Buy { 100.0 } else { 10_000.0 };
+        let cost_dp = if order_type == OrderType::Fok && side == Side::Buy {
+            100.0
+        } else {
+            10_000.0
+        };
         let rounded_cost = (rounded_size * price * cost_dp).round() / cost_dp;
 
         let decimals = 1_000_000_f64;
@@ -1011,7 +1119,11 @@ impl PolyClient {
 
         // 0 = EOA (maker == signer), 1 = proxy wallet (funder/maker != signer EOA)
         let signature_type: u8 =
-            if self.funder_address.is_some() && self.funder_address != Some(signer) { 1 } else { 0 };
+            if self.funder_address.is_some() && self.funder_address != Some(signer) {
+                1
+            } else {
+                0
+            };
 
         let digest = order_eip712_digest(&OrderSigningInputs {
             salt,
@@ -1056,7 +1168,10 @@ impl PolyClient {
         // POLY_ADDRESS is always the EOA signer — that's what the API key is registered to.
         let signer_str = format!("{:#x}", signer);
         let mut headers = auth.headers("POST", "/order", Some(&body_str), &signer_str)?;
-        headers.insert("Content-Type", "application/json".parse().map_err(AppError::other)?);
+        headers.insert(
+            "Content-Type",
+            "application/json".parse().map_err(AppError::other)?,
+        );
 
         let clob_url = self.clob_url.clone();
         let resp = send_with_retry(|| {
@@ -1082,7 +1197,10 @@ impl PolyClient {
                 .filter(|s| !s.is_empty())
                 .unwrap_or("order rejected by exchange")
                 .to_string();
-            return Err(AppError::Api { status: 200, message: msg });
+            return Err(AppError::Api {
+                status: 200,
+                message: msg,
+            });
         }
 
         let order_id = json
@@ -1102,7 +1220,10 @@ impl PolyClient {
         let body_str = body.to_string();
         let signer_str = format!("{:#x}", wallet.address());
         let mut headers = auth.headers("DELETE", "/order", Some(&body_str), &signer_str)?;
-        headers.insert("Content-Type", "application/json".parse().map_err(AppError::other)?);
+        headers.insert(
+            "Content-Type",
+            "application/json".parse().map_err(AppError::other)?,
+        );
 
         let clob_url = self.clob_url.clone();
         let resp = send_with_retry(|| {
@@ -1165,7 +1286,8 @@ impl PolyClient {
             if funder != wallet.address() {
                 return Err(AppError::Other(
                     "Redemption with a proxy/funder address is not yet supported — \
-                     redeem on polymarket.com instead".into(),
+                     redeem on polymarket.com instead"
+                        .into(),
                 ));
             }
         }
@@ -1219,7 +1341,10 @@ impl PolyClient {
     /// Returns false on any error (safe default — will just produce an invalid sig for neg-risk markets
     /// if the lookup fails, but at least non-neg-risk markets work correctly).
     pub async fn get_neg_risk(&self, token_id: &str) -> bool {
-        let url = format!("{}/markets?clobTokenIds={}&limit=1", self.gamma_url, token_id);
+        let url = format!(
+            "{}/markets?clobTokenIds={}&limit=1",
+            self.gamma_url, token_id
+        );
         let resp = match send_with_retry(|| self.http.get(&url)).await {
             Ok(r) if r.status().is_success() => r,
             _ => return false,
@@ -1228,7 +1353,8 @@ impl PolyClient {
             Ok(v) => v,
             _ => return false,
         };
-        markets.first()
+        markets
+            .first()
             .and_then(|m| m.get("negRisk"))
             .and_then(|v| v.as_bool())
             .unwrap_or(false)
@@ -1247,7 +1373,9 @@ impl PolyClient {
             "{}/prices-history?market={}&interval={}&fidelity={}",
             self.data_url, condition_id, interval, fidelity
         );
-        let resp = send_with_retry(|| self.http.get(&url)).await.map_err(net_err)?;
+        let resp = send_with_retry(|| self.http.get(&url))
+            .await
+            .map_err(net_err)?;
         if !resp.status().is_success() {
             return Err(api_err(resp).await);
         }
@@ -1284,10 +1412,8 @@ impl PolyClient {
         }
 
         let outcomes_raw = parse_json_str_array(gm.outcomes.as_deref().unwrap_or("[]"));
-        let prices_raw =
-            parse_json_str_array(gm.outcome_prices.as_deref().unwrap_or("[]"));
-        let token_ids =
-            parse_json_str_array(gm.clob_token_ids.as_deref().unwrap_or("[]"));
+        let prices_raw = parse_json_str_array(gm.outcome_prices.as_deref().unwrap_or("[]"));
+        let token_ids = parse_json_str_array(gm.clob_token_ids.as_deref().unwrap_or("[]"));
 
         let status = if gm.closed {
             MarketStatus::Closed
@@ -1309,16 +1435,17 @@ impl PolyClient {
 
         let mut outcomes = Vec::new();
         for (i, name) in outcomes_raw.iter().enumerate() {
-            let gamma_price: f64 = prices_raw.get(i).and_then(|s| s.parse().ok()).unwrap_or(0.5);
+            let gamma_price: f64 = prices_raw
+                .get(i)
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(0.5);
             let token_id = token_ids.get(i).cloned().unwrap_or_default();
 
             let (bid, ask, bid_depth, ask_depth) = if fetch_books && !token_id.is_empty() {
                 match self.get_order_book(&token_id).await {
                     Ok(book) => {
-                        let best_bid =
-                            book.bids.first().map(|l| l.price).unwrap_or(gamma_price);
-                        let best_ask =
-                            book.asks.first().map(|l| l.price).unwrap_or(gamma_price);
+                        let best_bid = book.bids.first().map(|l| l.price).unwrap_or(gamma_price);
+                        let best_ask = book.asks.first().map(|l| l.price).unwrap_or(gamma_price);
                         let bd: f64 = book.bids.iter().map(|l| l.size).sum();
                         let ad: f64 = book.asks.iter().map(|l| l.size).sum();
                         (best_bid, best_ask, bd, ad)
@@ -1340,7 +1467,11 @@ impl PolyClient {
             });
         }
 
-        let slug = if !gm.slug.is_empty() { gm.slug.clone() } else { gm.market_slug.clone() };
+        let slug = if !gm.slug.is_empty() {
+            gm.slug.clone()
+        } else {
+            gm.market_slug.clone()
+        };
         let group_slug = gm.group_slug.clone();
 
         Some(Market {
@@ -1421,7 +1552,8 @@ impl PolyClient {
         // Fetch server timestamp — CLOB rejects requests with large clock skew.
         // The /time endpoint returns a plain integer string (e.g. "1775295881").
         let timestamp: String = {
-            let t_resp = self.http
+            let t_resp = self
+                .http
                 .get(format!("{}/time", self.clob_url))
                 .send()
                 .await
@@ -1432,7 +1564,8 @@ impl PolyClient {
             if trimmed.chars().all(|c| c.is_ascii_digit()) {
                 trimmed.to_string()
             } else if let Ok(v) = serde_json::from_str::<serde_json::Value>(&body) {
-                v.get("time").or_else(|| v.get("timestamp"))
+                v.get("time")
+                    .or_else(|| v.get("timestamp"))
                     .and_then(|x| x.as_f64())
                     .map(|f| (f as u64).to_string())
                     .unwrap_or_else(|| {
@@ -1453,10 +1586,9 @@ impl PolyClient {
 
         // ── EIP-712 ClobAuth signing ──────────────────────────────────────────
         // Domain has no verifyingContract (3-field variant)
-        let domain_type_hash = ethers::utils::keccak256(
-            b"EIP712Domain(string name,string version,uint256 chainId)",
-        );
-        let domain_name_hash    = ethers::utils::keccak256(b"ClobAuthDomain");
+        let domain_type_hash =
+            ethers::utils::keccak256(b"EIP712Domain(string name,string version,uint256 chainId)");
+        let domain_name_hash = ethers::utils::keccak256(b"ClobAuthDomain");
         let domain_version_hash = ethers::utils::keccak256(b"1");
 
         let domain_separator = {
@@ -1476,7 +1608,7 @@ impl PolyClient {
 
         let message = "This message attests that I control the given wallet";
         let timestamp_hash = ethers::utils::keccak256(timestamp.as_bytes());
-        let message_hash   = ethers::utils::keccak256(message.as_bytes());
+        let message_hash = ethers::utils::keccak256(message.as_bytes());
 
         let nonce_val: u64 = if self.funder_address.is_some() { 2 } else { 0 };
         let struct_hash = {
@@ -1502,16 +1634,22 @@ impl PolyClient {
             ethers::utils::keccak256(msg)
         };
 
-        let signature  = wallet.sign_hash(digest.into()).map_err(AppError::other)?;
-        let sig_str    = format!("0x{}", signature);
-        let addr_str   = format!("{:#x}", address);
+        let signature = wallet.sign_hash(digest.into()).map_err(AppError::other)?;
+        let sig_str = format!("0x{}", signature);
+        let addr_str = format!("{:#x}", address);
 
         // ── POST /auth/api-key ────────────────────────────────────────────────
         let mut headers = reqwest::header::HeaderMap::new();
-        headers.insert("POLY_ADDRESS",   addr_str.parse().map_err(AppError::other)?);
+        headers.insert("POLY_ADDRESS", addr_str.parse().map_err(AppError::other)?);
         headers.insert("POLY_SIGNATURE", sig_str.parse().map_err(AppError::other)?);
-        headers.insert("POLY_TIMESTAMP", timestamp.parse().map_err(AppError::other)?);
-        headers.insert("POLY_NONCE", nonce_val.to_string().parse().map_err(AppError::other)?);
+        headers.insert(
+            "POLY_TIMESTAMP",
+            timestamp.parse().map_err(AppError::other)?,
+        );
+        headers.insert(
+            "POLY_NONCE",
+            nonce_val.to_string().parse().map_err(AppError::other)?,
+        );
 
         let clob_url = self.clob_url.clone();
         let resp = send_with_retry(|| {
@@ -1564,7 +1702,9 @@ impl PolyClient {
             "{}/prices-history?market={}&interval=all&fidelity=60",
             self.clob_url, token_id,
         );
-        let resp = send_with_retry(|| self.http.get(&url)).await.map_err(net_err)?;
+        let resp = send_with_retry(|| self.http.get(&url))
+            .await
+            .map_err(net_err)?;
         if !resp.status().is_success() {
             return Ok(None);
         }
@@ -1573,8 +1713,8 @@ impl PolyClient {
         let price = body
             .history
             .iter()
-            .filter(|pt| pt.t <= target_ts)
-            .last()
+            .rev()
+            .find(|pt| pt.t <= target_ts)
             .map(|pt| pt.p);
         Ok(price)
     }
@@ -1599,14 +1739,21 @@ fn parse_yes_token_id(clob_token_ids: Option<&str>) -> Option<String> {
 /// Returns `None` if no clear winner is found (market unresolved or bad data).
 fn derive_resolution(outcomes_json: Option<&str>, prices_json: Option<&str>) -> Option<String> {
     let outcomes = parse_json_str_array(outcomes_json.unwrap_or("[]"));
-    let prices   = parse_json_str_array(prices_json.unwrap_or("[]"));
+    let prices = parse_json_str_array(prices_json.unwrap_or("[]"));
     if outcomes.is_empty() || outcomes.len() != prices.len() {
         return None;
     }
-    outcomes.into_iter().zip(prices.iter()).find_map(|(name, price_str)| {
-        let p: f64 = price_str.parse().ok()?;
-        if (p - 1.0).abs() < 0.01 { Some(name) } else { None }
-    })
+    outcomes
+        .into_iter()
+        .zip(prices.iter())
+        .find_map(|(name, price_str)| {
+            let p: f64 = price_str.parse().ok()?;
+            if (p - 1.0).abs() < 0.01 {
+                Some(name)
+            } else {
+                None
+            }
+        })
 }
 
 fn value_to_f64_str(v: &Option<serde_json::Value>) -> f64 {

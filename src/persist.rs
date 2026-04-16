@@ -29,10 +29,10 @@ const WATCHLIST_VERSION: u32 = 1;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct UiState {
-    pub sort_mode:       SortMode,
-    pub date_filter:     DateFilter,
-    pub prob_filter:     ProbFilter,
-    pub volume_filter:   VolumeFilter,
+    pub sort_mode: SortMode,
+    pub date_filter: DateFilter,
+    pub prob_filter: ProbFilter,
+    pub volume_filter: VolumeFilter,
     pub category_filter: Option<String>,
 }
 
@@ -155,7 +155,10 @@ pub fn save_watchlist(watchlist: &HashSet<String>) {
     }
     let mut sorted: Vec<String> = watchlist.iter().cloned().collect();
     sorted.sort();
-    let wf = WatchlistFile { version: WATCHLIST_VERSION, items: sorted };
+    let wf = WatchlistFile {
+        version: WATCHLIST_VERSION,
+        items: sorted,
+    };
     if let Ok(json) = serde_json::to_string(&wf) {
         let _ = std::fs::write(&path, json);
     }
@@ -180,7 +183,10 @@ pub fn snapshot_csv_path() -> PathBuf {
 
 /// Write all starred markets to a timestamped JSON file in the poly data directory.
 /// Returns the path written on success.
-pub fn export_watchlist(watchlist: &HashSet<String>, markets: &[Market]) -> Result<PathBuf, std::io::Error> {
+pub fn export_watchlist(
+    watchlist: &HashSet<String>,
+    markets: &[Market],
+) -> Result<PathBuf, std::io::Error> {
     let dir = data_dir();
     std::fs::create_dir_all(&dir)?;
 
@@ -192,8 +198,7 @@ pub fn export_watchlist(watchlist: &HashSet<String>, markets: &[Market]) -> Resu
         .filter(|m| watchlist.contains(&m.condition_id))
         .collect();
 
-    let json = serde_json::to_string_pretty(&starred)
-        .map_err(std::io::Error::other)?;
+    let json = serde_json::to_string_pretty(&starred).map_err(std::io::Error::other)?;
     std::fs::write(&path, json)?;
     Ok(path)
 }

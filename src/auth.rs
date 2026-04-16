@@ -18,7 +18,11 @@ pub struct ClobAuth {
 
 impl ClobAuth {
     pub fn new(key: String, secret: String, passphrase: String) -> Self {
-        Self { key, secret, passphrase }
+        Self {
+            key,
+            secret,
+            passphrase,
+        }
     }
 
     /// Build HMAC-SHA256 authentication headers for CLOB REST requests.

@@ -173,11 +173,11 @@ pub type OutcomeSeries = (String, Vec<PricePoint>);
 /// and `spawn_place_order`.
 #[derive(Debug, Clone)]
 pub struct PlaceOrderParams {
-    pub token_id:   String,
-    pub price:      f64,
-    pub size:       f64,
-    pub side:       Side,
+    pub token_id: String,
+    pub price: f64,
+    pub size: f64,
+    pub side: Side,
     pub order_type: OrderType,
-    pub expiry:     Option<u64>,
-    pub neg_risk:   bool,
+    pub expiry: Option<u64>,
+    pub neg_risk: bool,
 }

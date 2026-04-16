@@ -21,7 +21,10 @@ pub fn render(f: &mut Frame, app: &mut App) {
         f.size(),
     );
 
-    let area = f.size().inner(Margin { horizontal: 2, vertical: 1 });
+    let area = f.size().inner(Margin {
+        horizontal: 2,
+        vertical: 1,
+    });
 
     // Three-row layout: tab bar / content / status bar
     let chunks = Layout::vertical([
@@ -37,9 +40,9 @@ pub fn render(f: &mut Frame, app: &mut App) {
     // Render content based on active tab
     let content = chunks[1];
     match &app.active_tab {
-        Tab::Markets   => render_markets_content(f, content, app),
+        Tab::Markets => render_markets_content(f, content, app),
         Tab::Positions => positions::render(f, content, app),
-        Tab::Balance   => balance::render(f, content, app),
+        Tab::Balance => balance::render(f, content, app),
         Tab::Analytics => analytics::render(f, content, app),
     }
 
@@ -47,13 +50,13 @@ pub fn render(f: &mut Frame, app: &mut App) {
     // OrderEntry and CloseConfirm are drawn here so they work from any tab.
     let full = f.size();
     match app.current_screen() {
-        Some(Screen::Setup)            => setup::render(f, full, &app.setup_form),
-        Some(Screen::QuitConfirm)      => render_root_menu(f, full, app),
-        Some(Screen::Help)             => render_help(f, full),
-        Some(Screen::OrderEntry)       => order::render(f, full, app),
-        Some(Screen::CloseConfirm)     => render_close_confirm(f, full, app),
+        Some(Screen::Setup) => setup::render(f, full, &app.setup_form),
+        Some(Screen::QuitConfirm) => render_root_menu(f, full, app),
+        Some(Screen::Help) => render_help(f, full),
+        Some(Screen::OrderEntry) => order::render(f, full, app),
+        Some(Screen::CloseConfirm) => render_close_confirm(f, full, app),
         Some(Screen::CancelAllConfirm) => render_cancel_all_confirm(f, full, app),
-        Some(Screen::RedeemConfirm)    => render_redeem_confirm(f, full, app),
+        Some(Screen::RedeemConfirm) => render_redeem_confirm(f, full, app),
         Some(Screen::RedeemAllConfirm) => render_redeem_all_confirm(f, full, app),
         _ => {}
     }
@@ -96,7 +99,9 @@ fn render_root_menu(f: &mut Frame, area: Rect, app: &App) {
     let block = Block::bordered()
         .title(Span::styled(
             " Menu ",
-            Style::default().fg(theme::CYAN).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(theme::CYAN)
+                .add_modifier(Modifier::BOLD),
         ))
         .border_style(Style::default().fg(theme::BORDER))
         .style(Style::default().bg(theme::PANEL_BG));
@@ -124,18 +129,12 @@ fn render_root_menu(f: &mut Frame, area: Rect, app: &App) {
                     format!("{:<18}", label),
                     Style::default().fg(*color).add_modifier(Modifier::BOLD),
                 ),
-                Span::styled(
-                    format!(" {}", key_hint),
-                    Style::default().fg(theme::HINT),
-                ),
+                Span::styled(format!(" {}", key_hint), Style::default().fg(theme::HINT)),
             ]));
         } else {
             lines.push(Line::from(vec![
                 Span::raw("   "),
-                Span::styled(
-                    format!("{:<18}", label),
-                    Style::default().fg(theme::DIM),
-                ),
+                Span::styled(format!("{:<18}", label), Style::default().fg(theme::DIM)),
                 Span::styled(
                     format!(" {}", key_hint),
                     Style::default().fg(theme::VERY_DIM),
@@ -186,13 +185,13 @@ fn render_close_confirm(f: &mut Frame, area: Rect, app: &App) {
     let price_str = match app.order_form.market_price {
         Some(p) => format!("{:.4}", p),
         None if app.order_form.market_price_failed => "fetch failed  [r retry]".to_string(),
-        None    => "loading…".to_string(),
+        None => "loading…".to_string(),
     };
 
-    let proceeds   = app.order_form.market_price.map(|p| size * p);
-    let avg_price  = pos.map(|p| p.avg_price).unwrap_or(0.0);
+    let proceeds = app.order_form.market_price.map(|p| size * p);
+    let avg_price = pos.map(|p| p.avg_price).unwrap_or(0.0);
     let cost_basis = avg_price * size;
-    let pnl        = proceeds.map(|pr| pr - cost_basis);
+    let pnl = proceeds.map(|pr| pr - cost_basis);
 
     let outcome_display: String = if outcome.chars().count() > 38 {
         outcome.chars().take(37).collect::<String>() + "…"
@@ -204,14 +203,21 @@ fn render_close_confirm(f: &mut Frame, area: Rect, app: &App) {
 
     lines.push(Line::from(vec![
         Span::raw("  "),
-        Span::styled(outcome_display, Style::default().fg(theme::CYAN).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            outcome_display,
+            Style::default()
+                .fg(theme::CYAN)
+                .add_modifier(Modifier::BOLD),
+        ),
     ]));
     lines.push(Line::from(""));
     lines.push(Line::from(vec![
         Span::styled("  Sell      ", Style::default().fg(theme::VERY_DIM)),
         Span::styled(
             format!("{:.2} shares", size),
-            Style::default().fg(theme::TEXT).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(theme::TEXT)
+                .add_modifier(Modifier::BOLD),
         ),
     ]));
     lines.push(Line::from(vec![
@@ -231,7 +237,7 @@ fn render_close_confirm(f: &mut Frame, area: Rect, app: &App) {
         ]));
     }
     if let Some(p) = pnl {
-        let sign  = if p >= 0.0 { "+" } else { "" };
+        let sign = if p >= 0.0 { "+" } else { "" };
         let color = if p >= 0.0 { theme::GREEN } else { theme::RED };
         lines.push(Line::from(vec![
             Span::styled("  P&L        ", Style::default().fg(theme::VERY_DIM)),
@@ -245,7 +251,12 @@ fn render_close_confirm(f: &mut Frame, area: Rect, app: &App) {
     f.render_widget(Paragraph::new(lines), sections[1]);
 
     let footer = Paragraph::new(Line::from(vec![
-        Span::styled("y/Enter", Style::default().fg(theme::GREEN).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "y/Enter",
+            Style::default()
+                .fg(theme::GREEN)
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled(" confirm   ", Style::default().fg(theme::HINT)),
         Span::styled("Esc/n", Style::default().fg(theme::DIM)),
         Span::styled(" cancel", Style::default().fg(theme::HINT)),
@@ -261,7 +272,9 @@ fn render_help(f: &mut Frame, area: Rect) {
     let block = Block::bordered()
         .title(Span::styled(
             " Key Bindings ",
-            Style::default().fg(theme::CYAN).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(theme::CYAN)
+                .add_modifier(Modifier::BOLD),
         ))
         .border_style(Style::default().fg(theme::CYAN))
         .style(Style::default().bg(theme::PANEL_BG));
@@ -270,11 +283,7 @@ fn render_help(f: &mut Frame, area: Rect) {
     f.render_widget(block, modal);
 
     // Reserve the last row for the close hint.
-    let layout = Layout::vertical([
-        Constraint::Min(0),
-        Constraint::Length(1),
-    ])
-    .split(inner);
+    let layout = Layout::vertical([Constraint::Min(0), Constraint::Length(1)]).split(inner);
 
     // Two content columns separated by a 1-char vertical divider.
     let cols = Layout::horizontal([
@@ -293,7 +302,9 @@ fn render_help(f: &mut Frame, area: Rect) {
 
     let k = Style::default().fg(theme::TEXT);
     let d = Style::default().fg(theme::DIM);
-    let h = Style::default().fg(theme::CYAN).add_modifier(Modifier::BOLD);
+    let h = Style::default()
+        .fg(theme::CYAN)
+        .add_modifier(Modifier::BOLD);
 
     // ── Left column: Navigation · Market Detail · Order Entry ─────────────
 
@@ -302,12 +313,12 @@ fn render_help(f: &mut Frame, area: Rect) {
     left.push(Line::from(Span::styled("  Navigation", h)));
     for (key, desc) in [
         ("1 / 2 / 3 / 4", "Switch tabs"),
-        ("Tab",           "Cycle tabs / switch panels"),
-        ("↑ ↓  /  j k",  "Navigate lists"),
-        ("Esc",           "Go back / close"),
-        ("q",             "Quit menu"),
-        ("?",             "Help screen"),
-        ("Ctrl+C",        "Force quit"),
+        ("Tab", "Cycle tabs / switch panels"),
+        ("↑ ↓  /  j k", "Navigate lists"),
+        ("Esc", "Go back / close"),
+        ("q", "Quit menu"),
+        ("?", "Help screen"),
+        ("Ctrl+C", "Force quit"),
     ] {
         left.push(Line::from(vec![
             Span::styled(format!("  {:>12}  ", key), k),
@@ -319,10 +330,10 @@ fn render_help(f: &mut Frame, area: Rect) {
     left.push(Line::from(Span::styled("  Market Detail", h)));
     for (key, desc) in [
         ("← →  /  Tab", "Cycle outcomes"),
-        ("t",           "Sparkline: 1d ↔ 1w"),
-        ("b / s",       "Buy / sell"),
-        ("c",           "Copy condition ID"),
-        ("r",           "Refresh"),
+        ("t", "Sparkline: 1d ↔ 1w"),
+        ("b / s", "Buy / sell"),
+        ("c", "Copy condition ID"),
+        ("r", "Refresh"),
     ] {
         left.push(Line::from(vec![
             Span::styled(format!("  {:>12}  ", key), k),
@@ -333,12 +344,12 @@ fn render_help(f: &mut Frame, area: Rect) {
     left.push(Line::from(""));
     left.push(Line::from(Span::styled("  Order Entry", h)));
     for (key, desc) in [
-        ("Tab",   "Next field"),
+        ("Tab", "Next field"),
         ("Space", "Cycle order type"),
-        ("d",     "Toggle dry-run"),
-        ("r",     "Refresh market price"),
+        ("d", "Toggle dry-run"),
+        ("r", "Refresh market price"),
         ("Enter", "Submit"),
-        ("Esc",   "Cancel"),
+        ("Esc", "Cancel"),
     ] {
         left.push(Line::from(vec![
             Span::styled(format!("  {:>12}  ", key), k),
@@ -352,16 +363,16 @@ fn render_help(f: &mut Frame, area: Rect) {
 
     right.push(Line::from(Span::styled("  Markets", h)));
     for (key, desc) in [
-        ("/",     "Search"),
-        ("s",     "Sort: vol → date → prob"),
-        ("d",     "Date: all → today → 7d → 30d"),
-        ("p",     "Prob: all ↔ 80–98%"),
-        ("v",     "Vol: all → >1K → >10K → >100K"),
-        ("*",     "Star / unstar market"),
-        ("w",     "Toggle watchlist-only"),
-        ("e",     "Export starred to JSON"),
+        ("/", "Search"),
+        ("s", "Sort: vol → date → prob"),
+        ("d", "Date: all → today → 7d → 30d"),
+        ("p", "Prob: all ↔ 80–98%"),
+        ("v", "Vol: all → >1K → >10K → >100K"),
+        ("*", "Star / unstar market"),
+        ("w", "Toggle watchlist-only"),
+        ("e", "Export starred to JSON"),
         ("Enter", "Open market detail"),
-        ("r",     "Refresh"),
+        ("r", "Refresh"),
     ] {
         right.push(Line::from(vec![
             Span::styled(format!("  {:>12}  ", key), k),
@@ -373,12 +384,12 @@ fn render_help(f: &mut Frame, area: Rect) {
     right.push(Line::from(Span::styled("  Positions", h)));
     for (key, desc) in [
         ("b / s", "Buy more / sell"),
-        ("x",     "Close at market price"),
-        ("c",     "Cancel highlighted order"),
-        ("C",     "Cancel all orders"),
-        ("R",     "Redeem won position on-chain"),
-        ("A",     "Redeem all redeemable"),
-        ("r",     "Refresh"),
+        ("x", "Close at market price"),
+        ("c", "Cancel highlighted order"),
+        ("C", "Cancel all orders"),
+        ("R", "Redeem won position on-chain"),
+        ("A", "Redeem all redeemable"),
+        ("r", "Refresh"),
     ] {
         right.push(Line::from(vec![
             Span::styled(format!("  {:>12}  ", key), k),
@@ -426,19 +437,31 @@ fn render_cancel_all_confirm(f: &mut Frame, area: Rect, app: &App) {
     lines.push(Line::from(vec![
         Span::raw("  "),
         Span::styled(
-            format!("Cancel all {} open order{}?", count, if count == 1 { "" } else { "s" }),
-            Style::default().fg(theme::TEXT).add_modifier(Modifier::BOLD),
+            format!(
+                "Cancel all {} open order{}?",
+                count,
+                if count == 1 { "" } else { "s" }
+            ),
+            Style::default()
+                .fg(theme::TEXT)
+                .add_modifier(Modifier::BOLD),
         ),
     ]));
     lines.push(Line::from(""));
     lines.push(Line::from(vec![
         Span::raw("  "),
-        Span::styled("This action cannot be undone.", Style::default().fg(theme::DIM)),
+        Span::styled(
+            "This action cannot be undone.",
+            Style::default().fg(theme::DIM),
+        ),
     ]));
     f.render_widget(Paragraph::new(lines), sections[1]);
 
     let footer = Paragraph::new(Line::from(vec![
-        Span::styled("y/Enter", Style::default().fg(theme::RED).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "y/Enter",
+            Style::default().fg(theme::RED).add_modifier(Modifier::BOLD),
+        ),
         Span::styled(" confirm   ", Style::default().fg(theme::HINT)),
         Span::styled("Esc/n", Style::default().fg(theme::DIM)),
         Span::styled(" cancel", Style::default().fg(theme::HINT)),
@@ -454,7 +477,9 @@ fn render_redeem_confirm(f: &mut Frame, area: Rect, app: &App) {
     let block = Block::bordered()
         .title(Span::styled(
             " Redeem Position ",
-            Style::default().fg(theme::GREEN).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(theme::GREEN)
+                .add_modifier(Modifier::BOLD),
         ))
         .border_style(Style::default().fg(Color::Rgb(40, 120, 60)))
         .style(Style::default().bg(theme::PANEL_BG));
@@ -469,7 +494,9 @@ fn render_redeem_confirm(f: &mut Frame, area: Rect, app: &App) {
     ])
     .split(inner);
 
-    let pos = app.redeem_confirm_pos_idx.and_then(|i| app.positions.get(i));
+    let pos = app
+        .redeem_confirm_pos_idx
+        .and_then(|i| app.positions.get(i));
 
     let mut lines = vec![Line::from("")];
     if let Some(p) = pos {
@@ -480,32 +507,55 @@ fn render_redeem_confirm(f: &mut Frame, area: Rect, app: &App) {
         };
         lines.push(Line::from(vec![
             Span::raw("  "),
-            Span::styled(outcome_display, Style::default().fg(theme::GREEN).add_modifier(Modifier::BOLD)),
+            Span::styled(
+                outcome_display,
+                Style::default()
+                    .fg(theme::GREEN)
+                    .add_modifier(Modifier::BOLD),
+            ),
         ]));
         lines.push(Line::from(""));
         lines.push(Line::from(vec![
             Span::styled("  Shares     ", Style::default().fg(theme::VERY_DIM)),
-            Span::styled(format!("{:.2}", p.size), Style::default().fg(theme::TEXT).add_modifier(Modifier::BOLD)),
+            Span::styled(
+                format!("{:.2}", p.size),
+                Style::default()
+                    .fg(theme::TEXT)
+                    .add_modifier(Modifier::BOLD),
+            ),
         ]));
         lines.push(Line::from(vec![
             Span::styled("  Proceeds   ", Style::default().fg(theme::VERY_DIM)),
             Span::styled(
                 format!("≈ ${:.4} USDC", p.size),
-                Style::default().fg(theme::GREEN).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(theme::GREEN)
+                    .add_modifier(Modifier::BOLD),
             ),
         ]));
         lines.push(Line::from(""));
         lines.push(Line::from(vec![
             Span::raw("  "),
-            Span::styled("Sends an on-chain tx — requires RPC + private key.", Style::default().fg(theme::VERY_DIM)),
+            Span::styled(
+                "Sends an on-chain tx — requires RPC + private key.",
+                Style::default().fg(theme::VERY_DIM),
+            ),
         ]));
     } else {
-        lines.push(Line::from(Span::styled("  No position selected.", Style::default().fg(theme::DIM))));
+        lines.push(Line::from(Span::styled(
+            "  No position selected.",
+            Style::default().fg(theme::DIM),
+        )));
     }
     f.render_widget(Paragraph::new(lines), sections[1]);
 
     let footer = Paragraph::new(Line::from(vec![
-        Span::styled("y/Enter", Style::default().fg(theme::GREEN).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "y/Enter",
+            Style::default()
+                .fg(theme::GREEN)
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled(" confirm   ", Style::default().fg(theme::HINT)),
         Span::styled("Esc/n", Style::default().fg(theme::DIM)),
         Span::styled(" cancel", Style::default().fg(theme::HINT)),
@@ -518,14 +568,17 @@ fn render_redeem_all_confirm(f: &mut Frame, area: Rect, app: &App) {
     let modal = centered_rect(44, 32, area);
     f.render_widget(Clear, modal);
 
-    let redeemable: Vec<&crate::types::Position> = app.positions.iter().filter(|p| p.redeemable).collect();
+    let redeemable: Vec<&crate::types::Position> =
+        app.positions.iter().filter(|p| p.redeemable).collect();
     let count = redeemable.len();
     let total_proceeds: f64 = redeemable.iter().map(|p| p.size).sum();
 
     let block = Block::bordered()
         .title(Span::styled(
             " Redeem All Positions ",
-            Style::default().fg(theme::GREEN).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(theme::GREEN)
+                .add_modifier(Modifier::BOLD),
         ))
         .border_style(Style::default().fg(Color::Rgb(40, 120, 60)))
         .style(Style::default().bg(theme::PANEL_BG));
@@ -544,8 +597,14 @@ fn render_redeem_all_confirm(f: &mut Frame, area: Rect, app: &App) {
     lines.push(Line::from(vec![
         Span::raw("  "),
         Span::styled(
-            format!("Redeem {} redeemable position{}?", count, if count == 1 { "" } else { "s" }),
-            Style::default().fg(theme::TEXT).add_modifier(Modifier::BOLD),
+            format!(
+                "Redeem {} redeemable position{}?",
+                count,
+                if count == 1 { "" } else { "s" }
+            ),
+            Style::default()
+                .fg(theme::TEXT)
+                .add_modifier(Modifier::BOLD),
         ),
     ]));
     lines.push(Line::from(""));
@@ -553,18 +612,28 @@ fn render_redeem_all_confirm(f: &mut Frame, area: Rect, app: &App) {
         Span::styled("  Total proceeds  ", Style::default().fg(theme::VERY_DIM)),
         Span::styled(
             format!("≈ ${:.4} USDC", total_proceeds),
-            Style::default().fg(theme::GREEN).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(theme::GREEN)
+                .add_modifier(Modifier::BOLD),
         ),
     ]));
     lines.push(Line::from(""));
     lines.push(Line::from(vec![
         Span::raw("  "),
-        Span::styled("Sends one tx per position sequentially.", Style::default().fg(theme::VERY_DIM)),
+        Span::styled(
+            "Sends one tx per position sequentially.",
+            Style::default().fg(theme::VERY_DIM),
+        ),
     ]));
     f.render_widget(Paragraph::new(lines), sections[1]);
 
     let footer = Paragraph::new(Line::from(vec![
-        Span::styled("y/Enter", Style::default().fg(theme::GREEN).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "y/Enter",
+            Style::default()
+                .fg(theme::GREEN)
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled(" confirm   ", Style::default().fg(theme::HINT)),
         Span::styled("Esc/n", Style::default().fg(theme::DIM)),
         Span::styled(" cancel", Style::default().fg(theme::HINT)),

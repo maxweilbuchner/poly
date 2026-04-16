@@ -338,17 +338,13 @@ fn load_existing(path: &PathBuf) -> ExistingConfig {
     let a = cfg.auth.as_ref();
 
     ExistingConfig {
-        private_key: a
-            .and_then(|a| a.private_key.clone())
-            .or(cfg.private_key),
+        private_key: a.and_then(|a| a.private_key.clone()).or(cfg.private_key),
         api_key: a.and_then(|a| a.api_key.clone()).or(cfg.api_key),
         api_secret: a.and_then(|a| a.api_secret.clone()).or(cfg.api_secret),
         api_passphrase: a
             .and_then(|a| a.api_passphrase.clone())
             .or(cfg.api_passphrase),
-        rpc_url: a
-            .and_then(|a| a.polygon_rpc_url.clone())
-            .or(cfg.rpc_url),
+        rpc_url: a.and_then(|a| a.polygon_rpc_url.clone()).or(cfg.rpc_url),
         funder_address: a
             .and_then(|a| a.funder_address.clone())
             .or(cfg.funder_address),
@@ -379,6 +375,7 @@ fn config_write_path() -> PathBuf {
 
 // ── Config writing ───────────────────────────────────────────────────────────
 
+#[allow(clippy::too_many_arguments)]
 fn write_config(
     path: &PathBuf,
     private_key: &str,

@@ -7,6 +7,9 @@ use ratatui::{
     Frame,
 };
 
+/// Regression result: `(slope, intercept, fitted_points)`.
+type Regression = (f64, f64, Vec<(f64, f64)>);
+
 fn fmt_vol(v: f64) -> String {
     if v >= 1_000_000_000.0 {
         format!("${:.1}B", v / 1_000_000_000.0)
@@ -63,23 +66,14 @@ pub fn render(f: &mut Frame, area: Rect, app: &App) {
     // ── Chart grid ────────────────────────────────────────────────────────────
     // Row 0 (50%): [A: Prob Distribution] | [B: Resolution Bias]
     // Row 1 (50%): [C: Calibration      ] | [D: Volume by Cat  ]
-    let chart_rows = Layout::vertical([
-        Constraint::Percentage(50),
-        Constraint::Percentage(50),
-    ])
-    .split(charts_area);
+    let chart_rows = Layout::vertical([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .split(charts_area);
 
-    let top_cols = Layout::horizontal([
-        Constraint::Percentage(50),
-        Constraint::Percentage(50),
-    ])
-    .split(chart_rows[0]);
+    let top_cols = Layout::horizontal([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .split(chart_rows[0]);
 
-    let bot_cols = Layout::horizontal([
-        Constraint::Percentage(50),
-        Constraint::Percentage(50),
-    ])
-    .split(chart_rows[1]);
+    let bot_cols = Layout::horizontal([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .split(chart_rows[1]);
 
     render_prob_distribution(f, top_cols[0], app, false);
     render_resolution_bias(f, top_cols[1], app, false);
@@ -118,7 +112,10 @@ fn render_collapsed_strip(f: &mut Frame, area: Rect, app: &App) {
             Style::default().fg(theme::DIM),
         )
     } else {
-        Span::styled("No snapshot yet — press p", Style::default().fg(theme::VERY_DIM))
+        Span::styled(
+            "No snapshot yet — press p",
+            Style::default().fg(theme::VERY_DIM),
+        )
     };
 
     let spans = vec![
@@ -138,7 +135,9 @@ fn render_snapshot_panel(f: &mut Frame, area: Rect, app: &App) {
     let block = Block::bordered()
         .title(Span::styled(
             " Market Snapshot ",
-            Style::default().fg(theme::CYAN).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(theme::CYAN)
+                .add_modifier(Modifier::BOLD),
         ))
         .border_style(Style::default().fg(theme::BORDER))
         .style(Style::default().bg(theme::PANEL_BG));
@@ -158,11 +157,8 @@ fn render_snapshot_panel(f: &mut Frame, area: Rect, app: &App) {
 
     // ── Combined status + next line ───────────────────────────────────────────
     // Split row 1 horizontally: [left: status/last] [right: next]
-    let status_cols = Layout::horizontal([
-        Constraint::Percentage(55),
-        Constraint::Percentage(45),
-    ])
-    .split(chunks[1]);
+    let status_cols = Layout::horizontal([Constraint::Percentage(55), Constraint::Percentage(45)])
+        .split(chunks[1]);
 
     let status_line = if app.snapshot_in_progress {
         let spinner = SPINNER[(app.tick / 4) as usize % SPINNER.len()];
@@ -170,7 +166,9 @@ fn render_snapshot_panel(f: &mut Frame, area: Rect, app: &App) {
             Span::styled("  Status  ", Style::default().fg(theme::DIM)),
             Span::styled(
                 format!("{} Fetching…", spinner),
-                Style::default().fg(theme::YELLOW).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(theme::YELLOW)
+                    .add_modifier(Modifier::BOLD),
             ),
             Span::styled(
                 format!("  {} markets", app.snapshot_fetched_so_far),
@@ -246,14 +244,17 @@ fn render_snapshot_panel(f: &mut Frame, area: Rect, app: &App) {
 
     // ── Summary stats (analytics) or fallback resolved count ─────────────────
     if let Some(stats) = &app.analytics_stats {
-        let active   = stats.prob_buckets.iter().sum::<u64>();
+        let active = stats.prob_buckets.iter().sum::<u64>();
         let resolved = stats.res_yes + stats.res_no + stats.res_other;
-        let vol_str  = fmt_vol(stats.total_volume);
+        let vol_str = fmt_vol(stats.total_volume);
         let sep = Span::styled("  ·  ", Style::default().fg(theme::VERY_DIM));
         let mut spans: Vec<Span> = vec![
             Span::raw("  "),
             Span::styled("Total ", Style::default().fg(theme::DIM)),
-            Span::styled(format!("{}", stats.total_markets), Style::default().fg(theme::TEXT)),
+            Span::styled(
+                format!("{}", stats.total_markets),
+                Style::default().fg(theme::TEXT),
+            ),
             sep.clone(),
             Span::styled("Volume ", Style::default().fg(theme::DIM)),
             Span::styled(vol_str, Style::default().fg(theme::CYAN)),
@@ -279,7 +280,10 @@ fn render_snapshot_panel(f: &mut Frame, area: Rect, app: &App) {
         let total_resolved = app.known_resolved_ids.len();
         let mut res_spans: Vec<Span> = vec![
             Span::styled("  Resolved    ", Style::default().fg(theme::DIM)),
-            Span::styled(format!("{} stored", total_resolved), Style::default().fg(theme::TEXT)),
+            Span::styled(
+                format!("{} stored", total_resolved),
+                Style::default().fg(theme::TEXT),
+            ),
         ];
         if app.resolutions_new_last_run > 0 {
             res_spans.push(Span::styled("  · ", Style::default().fg(theme::VERY_DIM)));
@@ -301,17 +305,22 @@ fn render_snapshot_panel(f: &mut Frame, area: Rect, app: &App) {
             chunks[4],
         );
     }
-
 }
 
 // ── Shared block constructor ───────────────────────────────────────────────────
 
 fn make_block(title: &str, focused: bool) -> Block<'_> {
-    let border_color = if focused { theme::BORDER_ACTIVE } else { theme::BORDER };
+    let border_color = if focused {
+        theme::BORDER_ACTIVE
+    } else {
+        theme::BORDER
+    };
     Block::bordered()
         .title(Span::styled(
             title,
-            Style::default().fg(theme::CYAN).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(theme::CYAN)
+                .add_modifier(Modifier::BOLD),
         ))
         .border_style(Style::default().fg(border_color))
         .style(Style::default().bg(theme::PANEL_BG))
@@ -356,9 +365,15 @@ fn render_prob_distribution(f: &mut Frame, area: Rect, app: &App, focused: bool)
         " ".to_string()
     };
     let title = if total > 0 {
-        format!(" A: Yes Probability Distribution  ({} markets, median ~{}%){}", total, median_pct_label, snap_suffix)
+        format!(
+            " A: Yes Probability Distribution  ({} markets, median ~{}%){}",
+            total, median_pct_label, snap_suffix
+        )
     } else {
-        format!(" A: Yes Probability Distribution  ({} markets){}", total, snap_suffix)
+        format!(
+            " A: Yes Probability Distribution  ({} markets){}",
+            total, snap_suffix
+        )
     };
 
     // Draw the border first so we can measure the real inner rect.
@@ -415,7 +430,11 @@ fn render_prob_distribution(f: &mut Frame, area: Rect, app: &App, focused: bool)
         .enumerate()
         .map(|(i, &v)| {
             let is_median = median_bucket == Some(i);
-            let color = if is_median { theme::YELLOW } else { theme::CYAN };
+            let color = if is_median {
+                theme::YELLOW
+            } else {
+                theme::CYAN
+            };
             Bar::default()
                 .value(v)
                 .label(Line::from(labels[i].as_str()))
@@ -428,7 +447,11 @@ fn render_prob_distribution(f: &mut Frame, area: Rect, app: &App, focused: bool)
         .data(BarGroup::default().bars(&bars))
         .bar_width(bar_width)
         .bar_gap(1)
-        .value_style(Style::default().fg(theme::TEXT).add_modifier(Modifier::BOLD))
+        .value_style(
+            Style::default()
+                .fg(theme::TEXT)
+                .add_modifier(Modifier::BOLD),
+        )
         .label_style(Style::default().fg(theme::DIM));
 
     f.render_widget(chart, chart_area);
@@ -461,9 +484,9 @@ fn fit_endpoints(buckets: &[(u32, u32); 10], weighted: bool) -> Option<(f64, f64
     if pts.len() < 2 {
         return None;
     }
-    let sum_w:   f64 = pts.iter().map(|(_, _, w)| *w).sum();
-    let sum_wx:  f64 = pts.iter().map(|(x, _, w)| w * x).sum();
-    let sum_wy:  f64 = pts.iter().map(|(_, y, w)| w * y).sum();
+    let sum_w: f64 = pts.iter().map(|(_, _, w)| *w).sum();
+    let sum_wx: f64 = pts.iter().map(|(x, _, w)| w * x).sum();
+    let sum_wy: f64 = pts.iter().map(|(_, y, w)| w * y).sum();
     let sum_wxx: f64 = pts.iter().map(|(x, _, w)| w * x * x).sum();
     let sum_wxy: f64 = pts.iter().map(|(x, y, w)| w * x * y).sum();
     let denom = sum_w * sum_wxx - sum_wx * sum_wx;
@@ -552,14 +575,21 @@ fn render_calibration_matrix(f: &mut Frame, area: Rect, app: &App, focused: bool
     let cal_suffix = if app.analytics_loading {
         let sp = SPINNER[(app.tick / 3) as usize % SPINNER.len()];
         if app.calibration_fetch_total > 0 {
-            format!(" {} {}/{} ", sp, app.calibration_fetch_done, app.calibration_fetch_total)
+            format!(
+                " {} {}/{} ",
+                sp, app.calibration_fetch_done, app.calibration_fetch_total
+            )
         } else {
             format!(" {} ", sp)
         }
     } else {
         " ".to_string()
     };
-    let fit_label = if app.regression_weighted { "WLS" } else { "OLS" };
+    let fit_label = if app.regression_weighted {
+        "WLS"
+    } else {
+        "OLS"
+    };
     let title = format!(
         " D: Calibration Fit · category × volume  (−{}h, {}){}",
         app.calibration_hours, fit_label, cal_suffix
@@ -573,12 +603,7 @@ fn render_calibration_matrix(f: &mut Frame, area: Rect, app: &App, focused: bool
         return;
     };
 
-    let total: u32 = stats
-        .calibration_matrix
-        .iter()
-        .flatten()
-        .map(|c| c.n)
-        .sum();
+    let total: u32 = stats.calibration_matrix.iter().flatten().map(|c| c.n).sum();
     if total == 0 {
         let lines = vec![
             Line::from(""),
@@ -640,7 +665,11 @@ fn render_calibration_matrix(f: &mut Frame, area: Rect, app: &App, focused: bool
     };
 
     // Layout: dynamic column width so things still fit in narrow panels.
-    let label_w: usize = CALIB_CATEGORIES.iter().map(|s| s.chars().count()).max().unwrap_or(8);
+    let label_w: usize = CALIB_CATEGORIES
+        .iter()
+        .map(|s| s.chars().count())
+        .max()
+        .unwrap_or(8);
     let inner_w = inner.width as usize;
     let cell_w: usize = {
         // Need: 2 (left pad) + label_w + 1 + 6 cells × cell_w
@@ -695,11 +724,13 @@ fn render_calibration_matrix(f: &mut Frame, area: Rect, app: &App, focused: bool
     lines.push(Line::from(""));
     let mut spans: Vec<Span<'static>> = vec![Span::styled(
         format!("  {:<w$} ", "All", w = label_w),
-        Style::default().fg(theme::CYAN).add_modifier(Modifier::BOLD),
+        Style::default()
+            .fg(theme::CYAN)
+            .add_modifier(Modifier::BOLD),
     )];
-    for ti in 0..5 {
+    for tier in all_per_tier.iter().take(5) {
         spans.push(cell_span(
-            &all_per_tier[ti],
+            tier,
             app.regression_weighted,
             cell_w,
             true,
@@ -732,7 +763,10 @@ fn render_resolution_bias(f: &mut Frame, area: Rect, app: &App, focused: bool) {
     let b_title = format!(" B: Resolution Bias{}", snap_suffix);
 
     let Some(stats) = &app.analytics_stats else {
-        f.render_widget(empty_state("loading…").block(make_block(&b_title, focused)), area);
+        f.render_widget(
+            empty_state("loading…").block(make_block(&b_title, focused)),
+            area,
+        );
         return;
     };
 
@@ -758,7 +792,7 @@ fn render_resolution_bias(f: &mut Frame, area: Rect, app: &App, focused: bool) {
     }
 
     let yes_pct = stats.res_yes as f64 / total;
-    let no_pct  = stats.res_no  as f64 / total;
+    let no_pct = stats.res_no as f64 / total;
     let oth_pct = stats.res_other as f64 / total;
 
     // Each outcome gets two bar rows (fat bars) for visual weight, plus a blank
@@ -771,12 +805,12 @@ fn render_resolution_bias(f: &mut Frame, area: Rect, app: &App, focused: bool) {
     let bar_w = (inner.width as usize).saturating_sub(24).clamp(6, 60);
     let make_bar = |pct: f64| -> (String, String) {
         let filled = (pct * bar_w as f64).round() as usize;
-        let empty  = bar_w.saturating_sub(filled);
+        let empty = bar_w.saturating_sub(filled);
         ("█".repeat(filled), "░".repeat(empty))
     };
 
     let (yes_f, yes_e) = make_bar(yes_pct);
-    let (no_f,  no_e ) = make_bar(no_pct);
+    let (no_f, no_e) = make_bar(no_pct);
     let (oth_f, oth_e) = make_bar(oth_pct);
 
     let content: Vec<Line<'static>> = vec![
@@ -790,14 +824,24 @@ fn render_resolution_bias(f: &mut Frame, area: Rect, app: &App, focused: bool) {
         Line::from(""),
         // YES — row 1: label + bar + stats
         Line::from(vec![
-            Span::styled("  YES  ", Style::default().fg(theme::GREEN).add_modifier(Modifier::BOLD)),
+            Span::styled(
+                "  YES  ",
+                Style::default()
+                    .fg(theme::GREEN)
+                    .add_modifier(Modifier::BOLD),
+            ),
             Span::styled(yes_f.clone(), Style::default().fg(theme::GREEN)),
             Span::styled(yes_e.clone(), Style::default().fg(theme::VERY_DIM)),
             Span::styled(
                 format!("  {:>3.0}%", yes_pct * 100.0),
-                Style::default().fg(theme::TEXT).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(theme::TEXT)
+                    .add_modifier(Modifier::BOLD),
             ),
-            Span::styled(format!("  n={}", stats.res_yes), Style::default().fg(theme::DIM)),
+            Span::styled(
+                format!("  n={}", stats.res_yes),
+                Style::default().fg(theme::DIM),
+            ),
         ]),
         // YES — row 2: bar repeated for height
         Line::from(vec![
@@ -808,14 +852,22 @@ fn render_resolution_bias(f: &mut Frame, area: Rect, app: &App, focused: bool) {
         Line::from(""),
         // NO — row 1
         Line::from(vec![
-            Span::styled("  NO   ", Style::default().fg(theme::RED).add_modifier(Modifier::BOLD)),
+            Span::styled(
+                "  NO   ",
+                Style::default().fg(theme::RED).add_modifier(Modifier::BOLD),
+            ),
             Span::styled(no_f.clone(), Style::default().fg(theme::RED)),
             Span::styled(no_e.clone(), Style::default().fg(theme::VERY_DIM)),
             Span::styled(
                 format!("  {:>3.0}%", no_pct * 100.0),
-                Style::default().fg(theme::TEXT).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(theme::TEXT)
+                    .add_modifier(Modifier::BOLD),
             ),
-            Span::styled(format!("  n={}", stats.res_no), Style::default().fg(theme::DIM)),
+            Span::styled(
+                format!("  n={}", stats.res_no),
+                Style::default().fg(theme::DIM),
+            ),
         ]),
         // NO — row 2
         Line::from(vec![
@@ -826,14 +878,24 @@ fn render_resolution_bias(f: &mut Frame, area: Rect, app: &App, focused: bool) {
         Line::from(""),
         // OTHER — row 1
         Line::from(vec![
-            Span::styled("  OTHER", Style::default().fg(theme::YELLOW).add_modifier(Modifier::BOLD)),
+            Span::styled(
+                "  OTHER",
+                Style::default()
+                    .fg(theme::YELLOW)
+                    .add_modifier(Modifier::BOLD),
+            ),
             Span::styled(oth_f.clone(), Style::default().fg(theme::YELLOW)),
             Span::styled(oth_e.clone(), Style::default().fg(theme::VERY_DIM)),
             Span::styled(
                 format!("  {:>3.0}%", oth_pct * 100.0),
-                Style::default().fg(theme::TEXT).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(theme::TEXT)
+                    .add_modifier(Modifier::BOLD),
             ),
-            Span::styled(format!("  n={}", stats.res_other), Style::default().fg(theme::DIM)),
+            Span::styled(
+                format!("  n={}", stats.res_other),
+                Style::default().fg(theme::DIM),
+            ),
         ]),
         // OTHER — row 2
         Line::from(vec![
@@ -871,14 +933,21 @@ fn render_high_confidence(f: &mut Frame, area: Rect, app: &App, focused: bool) {
     let cal_suffix = if app.analytics_loading {
         let sp = SPINNER[(app.tick / 3) as usize % SPINNER.len()];
         if app.calibration_fetch_total > 0 {
-            format!(" {} {}/{} ", sp, app.calibration_fetch_done, app.calibration_fetch_total)
+            format!(
+                " {} {}/{} ",
+                sp, app.calibration_fetch_done, app.calibration_fetch_total
+            )
         } else {
             format!(" {} ", sp)
         }
     } else {
         " ".to_string()
     };
-    let fit_label = if app.regression_weighted { "WLS" } else { "OLS" };
+    let fit_label = if app.regression_weighted {
+        "WLS"
+    } else {
+        "OLS"
+    };
     let title = format!(
         " C: Calibration Curve (−{}h before close, n={}, {}){}",
         app.calibration_hours, total_samples, fit_label, cal_suffix
@@ -907,16 +976,18 @@ fn render_high_confidence(f: &mut Frame, area: Rect, app: &App, focused: bool) {
     let diagonal: Vec<(f64, f64)> = (0..=100).map(|i| (i as f64, i as f64)).collect();
 
     // Data points split by colour based on deviation from ideal.
-    let mut green_pts:  Vec<(f64, f64)> = Vec::new();
+    let mut green_pts: Vec<(f64, f64)> = Vec::new();
     let mut yellow_pts: Vec<(f64, f64)> = Vec::new();
-    let mut red_pts:    Vec<(f64, f64)> = Vec::new();
+    let mut red_pts: Vec<(f64, f64)> = Vec::new();
 
     for b in 0..10usize {
         let (yes, total) = stats.calibration[b];
-        if total == 0 { continue; }
+        if total == 0 {
+            continue;
+        }
         let expected = b as f64 * 10.0 + 5.0; // bucket midpoint
-        let actual   = yes as f64 / total as f64 * 100.0;
-        let diff     = (actual - expected).abs();
+        let actual = yes as f64 / total as f64 * 100.0;
+        let diff = (actual - expected).abs();
         let pt = (expected, actual);
         if diff <= 15.0 {
             green_pts.push(pt);
@@ -928,21 +999,27 @@ fn render_high_confidence(f: &mut Frame, area: Rect, app: &App, focused: bool) {
     }
 
     // Regression: WLS weights each bucket by its observation count; OLS treats all equally.
-    let regression: Option<(f64, f64, Vec<(f64, f64)>)> = {
+    let regression: Option<Regression> = {
         let wpts: Vec<(f64, f64, f64)> = (0..10usize)
             .filter_map(|b| {
                 let (yes, total) = stats.calibration[b];
-                if total == 0 { return None; }
+                if total == 0 {
+                    return None;
+                }
                 let x = b as f64 * 10.0 + 5.0;
                 let y = yes as f64 / total as f64 * 100.0;
-                let w = if app.regression_weighted { total as f64 } else { 1.0 };
+                let w = if app.regression_weighted {
+                    total as f64
+                } else {
+                    1.0
+                };
                 Some((x, y, w))
             })
             .collect();
         if wpts.len() >= 2 {
-            let sum_w:   f64 = wpts.iter().map(|(_, _, w)| w).sum();
-            let sum_wx:  f64 = wpts.iter().map(|(x, _, w)| w * x).sum();
-            let sum_wy:  f64 = wpts.iter().map(|(_, y, w)| w * y).sum();
+            let sum_w: f64 = wpts.iter().map(|(_, _, w)| w).sum();
+            let sum_wx: f64 = wpts.iter().map(|(x, _, w)| w * x).sum();
+            let sum_wy: f64 = wpts.iter().map(|(_, y, w)| w * y).sum();
             let sum_wxx: f64 = wpts.iter().map(|(x, _, w)| w * x * x).sum();
             let sum_wxy: f64 = wpts.iter().map(|(x, y, w)| w * x * y).sum();
             let denom = sum_w * sum_wxx - sum_wx * sum_wx;
@@ -952,7 +1029,10 @@ fn render_high_confidence(f: &mut Frame, area: Rect, app: &App, focused: bool) {
                 let m = (sum_w * sum_wxy - sum_wx * sum_wy) / denom;
                 let b = (sum_wy - m * sum_wx) / sum_w;
                 let pts: Vec<(f64, f64)> = (0..=100)
-                    .map(|i| { let x = i as f64; (x, (m * x + b).clamp(0.0, 100.0)) })
+                    .map(|i| {
+                        let x = i as f64;
+                        (x, (m * x + b).clamp(0.0, 100.0))
+                    })
                     .collect();
                 Some((m, b, pts))
             }
@@ -962,10 +1042,10 @@ fn render_high_confidence(f: &mut Frame, area: Rect, app: &App, focused: bool) {
     };
 
     let axis_labels = vec![
-        Span::styled("0%",   Style::default().fg(theme::VERY_DIM)),
-        Span::styled("25%",  Style::default().fg(theme::VERY_DIM)),
-        Span::styled("50%",  Style::default().fg(theme::VERY_DIM)),
-        Span::styled("75%",  Style::default().fg(theme::VERY_DIM)),
+        Span::styled("0%", Style::default().fg(theme::VERY_DIM)),
+        Span::styled("25%", Style::default().fg(theme::VERY_DIM)),
+        Span::styled("50%", Style::default().fg(theme::VERY_DIM)),
+        Span::styled("75%", Style::default().fg(theme::VERY_DIM)),
         Span::styled("100%", Style::default().fg(theme::VERY_DIM)),
     ];
 
@@ -1015,17 +1095,23 @@ fn render_high_confidence(f: &mut Frame, area: Rect, app: &App, focused: bool) {
     }
 
     // Build block: add title_bottom with regression crossings when available.
-    let border_color = if focused { theme::BORDER_ACTIVE } else { theme::BORDER };
+    let border_color = if focused {
+        theme::BORDER_ACTIVE
+    } else {
+        theme::BORDER
+    };
     let mut block = Block::bordered()
         .title(Span::styled(
             title,
-            Style::default().fg(theme::CYAN).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(theme::CYAN)
+                .add_modifier(Modifier::BOLD),
         ))
         .border_style(Style::default().fg(border_color))
         .style(Style::default().bg(theme::PANEL_BG));
     if let Some((m, b, _)) = &regression {
         if m.abs() > 1e-10 {
-            let x_zero    = -b / m;
+            let x_zero = -b / m;
             let x_hundred = (100.0 - b) / m;
             block = block.title_bottom(Span::styled(
                 format!(" fit: 0% at {:.0}%  ·  100% at {:.0}% ", x_zero, x_hundred),

@@ -14,6 +14,9 @@
 use std::collections::HashSet;
 use std::path::Path;
 
+/// A single row from calibration queries: `(question, slug, peak_volume, yes_price, resolution)`.
+pub type CalibrationRow = (String, String, f64, f64, String);
+
 use rusqlite::{params, Connection};
 
 // ── Schema ─────────────────────────────────────────────────────────────────────
@@ -63,39 +66,48 @@ pub fn open(path: &Path) -> rusqlite::Result<Connection> {
     conn.execute_batch(SCHEMA)?;
     // Migrate existing databases: add new columns if absent.
     // Each statement fails silently when the column already exists (fresh DB).
-    let _ = conn.execute("ALTER TABLE resolutions ADD COLUMN last_trade_price REAL", []);
+    let _ = conn.execute(
+        "ALTER TABLE resolutions ADD COLUMN last_trade_price REAL",
+        [],
+    );
     let _ = conn.execute("ALTER TABLE resolutions ADD COLUMN clob_token_id TEXT", []);
-    let _ = conn.execute("ALTER TABLE resolutions ADD COLUMN calibration_price REAL", []);
-    let _ = conn.execute("ALTER TABLE resolutions ADD COLUMN calibration_hours INTEGER", []);
+    let _ = conn.execute(
+        "ALTER TABLE resolutions ADD COLUMN calibration_price REAL",
+        [],
+    );
+    let _ = conn.execute(
+        "ALTER TABLE resolutions ADD COLUMN calibration_hours INTEGER",
+        [],
+    );
     Ok(conn)
 }
 
 // ── Data types ─────────────────────────────────────────────────────────────────
 
 pub struct SnapshotRow {
-    pub snapshot_at:  String,
+    pub snapshot_at: String,
     pub condition_id: String,
-    pub question:     String,
-    pub slug:         String,
-    pub category:     String,
-    pub status:       String,
-    pub end_date:     String,
-    pub volume:       f64,
-    pub liquidity:    f64,
-    pub outcome:      String,
-    pub price:        f64,
+    pub question: String,
+    pub slug: String,
+    pub category: String,
+    pub status: String,
+    pub end_date: String,
+    pub volume: f64,
+    pub liquidity: f64,
+    pub outcome: String,
+    pub price: f64,
 }
 
 pub struct ResolutionRow {
-    pub condition_id:     String,
-    pub question:         String,
-    pub slug:             String,
-    pub end_date:         String,
-    pub resolution:       String,
+    pub condition_id: String,
+    pub question: String,
+    pub slug: String,
+    pub end_date: String,
+    pub resolution: String,
     /// Last traded YES-outcome price at market close (Gamma API `lastTradePrice`).
     pub last_trade_price: Option<f64>,
     /// CLOB Yes-token ID; used to fetch `prices-history` for calibration.
-    pub clob_token_id:    Option<String>,
+    pub clob_token_id: Option<String>,
 }
 
 // ── Writes ─────────────────────────────────────────────────────────────────────
@@ -215,8 +227,8 @@ pub fn query_latest_snapshot(conn: &Connection) -> rusqlite::Result<Vec<LatestRo
 
     use std::collections::HashMap;
     struct Md {
-        category:  String,
-        volume:    f64,
+        category: String,
+        volume: f64,
         liquidity: f64,
         yes_price: Option<f64>,
     }
@@ -236,7 +248,11 @@ pub fn query_latest_snapshot(conn: &Connection) -> rusqlite::Result<Vec<LatestRo
     for row in rows.filter_map(|r| r.ok()) {
         let (cid, cat, vol, liq, outcome, price) = row;
         let e = map.entry(cid).or_insert(Md {
-            category: if cat.is_empty() { "Other".to_string() } else { cat },
+            category: if cat.is_empty() {
+                "Other".to_string()
+            } else {
+                cat
+            },
             volume: vol,
             liquidity: liq,
             yes_price: None,
@@ -258,8 +274,7 @@ pub fn query_resolution_counts(conn: &Connection) -> rusqlite::Result<(usize, us
         "SELECT LOWER(resolution), COUNT(*) FROM resolutions GROUP BY LOWER(resolution)",
     )?;
     let (mut yes, mut no, mut other) = (0usize, 0usize, 0usize);
-    let rows =
-        stmt.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, usize>(1)?)))?;
+    let rows = stmt.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, usize>(1)?)))?;
     for (res, count) in rows.filter_map(|r| r.ok()) {
         match res.as_str() {
             "yes" => yes += count,
@@ -301,8 +316,7 @@ pub fn query_high_confidence_accuracy(conn: &Connection) -> rusqlite::Result<(us
     let mut stmt = conn.prepare(sql)?;
     let mut correct = 0usize;
     let mut wrong = 0usize;
-    let rows =
-        stmt.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, f64>(1)?)))?;
+    let rows = stmt.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, f64>(1)?)))?;
     for (resolution, yes_price) in rows.filter_map(|r| r.ok()) {
         let no_price = 1.0 - yes_price;
         let predicted_yes = if yes_price > 0.80 {
@@ -405,10 +419,9 @@ pub fn query_calibration(
     ";
     let mut stmt = conn.prepare(sql)?;
     let mut buckets = [(0usize, 0usize); 10];
-    let rows = stmt.query_map(
-        params![hours_before as i64, modifier],
-        |r| Ok((r.get::<_, i64>(0)?, r.get::<_, String>(1)?)),
-    )?;
+    let rows = stmt.query_map(params![hours_before as i64, modifier], |r| {
+        Ok((r.get::<_, i64>(0)?, r.get::<_, String>(1)?))
+    })?;
     for (bucket, res) in rows.filter_map(|r| r.ok()) {
         let b = bucket.clamp(0, 9) as usize;
         buckets[b].1 += 1;
@@ -426,12 +439,12 @@ pub fn query_calibration(
 ///   1. stored `calibration_price` (when `calibration_hours` matches)
 ///   2. fallback: latest snapshot at least N hours before `end_date`.
 ///
-/// Returns `(question, slug, peak_volume, yes_price, resolution_lower)`.
-/// Peak volume comes from the markets latest history of snapshots.
+/// Returns [`CalibrationRow`] tuples `(question, slug, peak_volume, yes_price, resolution)`.
+/// Peak volume comes from the market's latest history of snapshots.
 pub fn query_calibration_raw(
     conn: &Connection,
     hours_before: u64,
-) -> rusqlite::Result<Vec<(String, String, f64, f64, String)>> {
+) -> rusqlite::Result<Vec<CalibrationRow>> {
     let modifier = format!("-{} hours", hours_before);
     let sql = "
         WITH peak_vol AS (
@@ -513,12 +526,14 @@ pub fn query_edge_vs_volume(conn: &Connection) -> rusqlite::Result<Vec<(String, 
     ";
     let mut stmt = conn.prepare(sql)?;
     const LABELS: [&str; 5] = ["<$1K", "$1K–10K", "$10K–100K", "$100K–1M", ">$1M"];
-    let mut result: Vec<(String, f64, usize)> = LABELS
-        .iter()
-        .map(|&l| (l.to_string(), 0.0, 0))
-        .collect();
+    let mut result: Vec<(String, f64, usize)> =
+        LABELS.iter().map(|&l| (l.to_string(), 0.0, 0)).collect();
     let rows = stmt.query_map([], |r| {
-        Ok((r.get::<_, i64>(0)?, r.get::<_, f64>(1)?, r.get::<_, i64>(2)?))
+        Ok((
+            r.get::<_, i64>(0)?,
+            r.get::<_, f64>(1)?,
+            r.get::<_, i64>(2)?,
+        ))
     })?;
     for (tier, avg_err, cnt) in rows.filter_map(|r| r.ok()) {
         let t = tier.clamp(0, 4) as usize;
@@ -574,7 +589,9 @@ pub fn migrate_from_csvs(
     snapshots_csv: &Path,
     resolutions_csv: &Path,
 ) -> (usize, usize) {
-    let Ok(mut conn) = open(db_path) else { return (0, 0) };
+    let Ok(mut conn) = open(db_path) else {
+        return (0, 0);
+    };
 
     // Already migrated — nothing to do.
     let snap_count: i64 = conn
@@ -599,13 +616,13 @@ pub fn migrate_from_csvs(
                         return None;
                     }
                     Some(ResolutionRow {
-                        condition_id:     f[0].clone(),
-                        question:         f[1].clone(),
-                        slug:             f[2].clone(),
-                        end_date:         f[3].clone(),
-                        resolution:       f[4].clone(),
+                        condition_id: f[0].clone(),
+                        question: f[1].clone(),
+                        slug: f[2].clone(),
+                        end_date: f[3].clone(),
+                        resolution: f[4].clone(),
                         last_trade_price: None,
-                        clob_token_id:    None,
+                        clob_token_id: None,
                     })
                 })
                 .collect();
@@ -629,17 +646,17 @@ pub fn migrate_from_csvs(
                 continue;
             }
             batch.push(SnapshotRow {
-                snapshot_at:  f[0].clone(),
+                snapshot_at: f[0].clone(),
                 condition_id: f[1].clone(),
-                question:     f[2].clone(),
-                slug:         f[3].clone(),
-                category:     f[4].clone(),
-                status:       f[5].clone(),
-                end_date:     f[6].clone(),
-                volume:       f[7].parse().unwrap_or(0.0),
-                liquidity:    f[8].parse().unwrap_or(0.0),
-                outcome:      f[9].clone(),
-                price:        f[10].parse().unwrap_or(0.0),
+                question: f[2].clone(),
+                slug: f[3].clone(),
+                category: f[4].clone(),
+                status: f[5].clone(),
+                end_date: f[6].clone(),
+                volume: f[7].parse().unwrap_or(0.0),
+                liquidity: f[8].parse().unwrap_or(0.0),
+                outcome: f[9].clone(),
+                price: f[10].parse().unwrap_or(0.0),
             });
             if batch.len() >= 10_000 {
                 imported_snap += batch.len();

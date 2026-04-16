@@ -22,12 +22,15 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use tokio::sync::watch;
 use tokio::sync::mpsc::{self, UnboundedSender};
+use tokio::sync::watch;
 
 use crate::client::{self, PolyClient};
 use crate::error::AppError;
-use crate::types::{Market, MarketStatus, Order, OrderBook, OrderType, OutcomeSeries, PlaceOrderParams, Position, PricePoint, Side};
+use crate::types::{
+    Market, MarketStatus, Order, OrderBook, OrderType, OutcomeSeries, PlaceOrderParams, Position,
+    PricePoint, Side,
+};
 
 // ── TUI configuration (from config file [tui] section) ───────────────────────
 
@@ -56,10 +59,10 @@ pub enum Screen {
     MarketList,
     MarketDetail,
     OrderEntry,
-    CloseConfirm,        // fast-path: confirm closing a full position without the order form
-    CancelAllConfirm,    // confirm cancelling all open orders
-    RedeemConfirm,       // confirm on-chain redemption of a single resolved position
-    RedeemAllConfirm,    // confirm on-chain redemption of all redeemable positions
+    CloseConfirm, // fast-path: confirm closing a full position without the order form
+    CancelAllConfirm, // confirm cancelling all open orders
+    RedeemConfirm, // confirm on-chain redemption of a single resolved position
+    RedeemAllConfirm, // confirm on-chain redemption of all redeemable positions
     Help,
     QuitConfirm,
     Setup,
@@ -107,24 +110,24 @@ pub enum DateFilter {
 impl DateFilter {
     pub fn next(&self) -> Self {
         match self {
-            DateFilter::All    => DateFilter::Hours3,
-            DateFilter::Hours3  => DateFilter::Hours6,
-            DateFilter::Hours6  => DateFilter::Hours12,
+            DateFilter::All => DateFilter::Hours3,
+            DateFilter::Hours3 => DateFilter::Hours6,
+            DateFilter::Hours6 => DateFilter::Hours12,
             DateFilter::Hours12 => DateFilter::Hours24,
             DateFilter::Hours24 => DateFilter::Week,
-            DateFilter::Week    => DateFilter::Month,
-            DateFilter::Month   => DateFilter::All,
+            DateFilter::Week => DateFilter::Month,
+            DateFilter::Month => DateFilter::All,
         }
     }
     pub fn label(&self) -> &'static str {
         match self {
-            DateFilter::All    => "all",
-            DateFilter::Hours3  => "3h",
-            DateFilter::Hours6  => "6h",
+            DateFilter::All => "all",
+            DateFilter::Hours3 => "3h",
+            DateFilter::Hours6 => "6h",
             DateFilter::Hours12 => "12h",
             DateFilter::Hours24 => "24h",
-            DateFilter::Week    => "7d",
-            DateFilter::Month   => "30d",
+            DateFilter::Week => "7d",
+            DateFilter::Month => "30d",
         }
     }
 }
@@ -141,7 +144,7 @@ pub enum ProbFilter {
 impl ProbFilter {
     pub fn next(&self) -> Self {
         match self {
-            ProbFilter::All      => ProbFilter::Prob90_98,
+            ProbFilter::All => ProbFilter::Prob90_98,
             ProbFilter::Prob90_98 => ProbFilter::Prob85_98,
             ProbFilter::Prob85_98 => ProbFilter::Prob80_98,
             ProbFilter::Prob80_98 => ProbFilter::All,
@@ -149,7 +152,7 @@ impl ProbFilter {
     }
     pub fn label(&self) -> &'static str {
         match self {
-            ProbFilter::All      => "all",
+            ProbFilter::All => "all",
             ProbFilter::Prob90_98 => "90-98%",
             ProbFilter::Prob85_98 => "85-98%",
             ProbFilter::Prob80_98 => "80-98%",
@@ -169,25 +172,25 @@ pub enum VolumeFilter {
 impl VolumeFilter {
     pub fn next(&self) -> Self {
         match self {
-            VolumeFilter::All  => VolumeFilter::K1,
-            VolumeFilter::K1   => VolumeFilter::K10,
-            VolumeFilter::K10  => VolumeFilter::K100,
+            VolumeFilter::All => VolumeFilter::K1,
+            VolumeFilter::K1 => VolumeFilter::K10,
+            VolumeFilter::K10 => VolumeFilter::K100,
             VolumeFilter::K100 => VolumeFilter::All,
         }
     }
     pub fn label(&self) -> &'static str {
         match self {
-            VolumeFilter::All  => "all",
-            VolumeFilter::K1   => ">1K",
-            VolumeFilter::K10  => ">10K",
+            VolumeFilter::All => "all",
+            VolumeFilter::K1 => ">1K",
+            VolumeFilter::K10 => ">10K",
             VolumeFilter::K100 => ">100K",
         }
     }
     pub fn min_volume(&self) -> f64 {
         match self {
-            VolumeFilter::All  => 0.0,
-            VolumeFilter::K1   => 1_000.0,
-            VolumeFilter::K10  => 10_000.0,
+            VolumeFilter::All => 0.0,
+            VolumeFilter::K1 => 1_000.0,
+            VolumeFilter::K10 => 10_000.0,
             VolumeFilter::K100 => 100_000.0,
         }
     }
@@ -282,8 +285,9 @@ pub enum AppEvent {
 // ── Analytics stats ───────────────────────────────────────────────────────────
 
 /// Row labels for `calibration_matrix`. Index matches the outer array dim.
-pub const CALIB_CATEGORIES: [&str; 6] =
-    ["Politics", "Sports", "Crypto", "Finance", "Weather", "Other"];
+pub const CALIB_CATEGORIES: [&str; 6] = [
+    "Politics", "Sports", "Crypto", "Finance", "Weather", "Other",
+];
 
 /// Per-cell predicted-vs-actual histogram feeding the calibration regression.
 #[derive(Debug, Clone, Copy, Default)]
@@ -443,7 +447,9 @@ pub struct App {
 }
 
 impl Default for App {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl App {
@@ -539,10 +545,10 @@ impl App {
 
     pub fn save_ui_state(&self) {
         crate::persist::save_ui_state(&crate::persist::UiState {
-            sort_mode:       self.sort_mode.clone(),
-            date_filter:     self.date_filter.clone(),
-            prob_filter:     self.prob_filter.clone(),
-            volume_filter:   self.volume_filter.clone(),
+            sort_mode: self.sort_mode.clone(),
+            date_filter: self.date_filter.clone(),
+            prob_filter: self.prob_filter.clone(),
+            volume_filter: self.volume_filter.clone(),
             category_filter: self.category_filter.clone(),
         });
     }
@@ -572,13 +578,13 @@ impl App {
                 // date filter
                 if self.date_filter != DateFilter::All {
                     let cutoff: DateTime<Local> = match self.date_filter {
-                        DateFilter::Hours3  => now + Duration::hours(3),
-                        DateFilter::Hours6  => now + Duration::hours(6),
+                        DateFilter::Hours3 => now + Duration::hours(3),
+                        DateFilter::Hours6 => now + Duration::hours(6),
                         DateFilter::Hours12 => now + Duration::hours(12),
                         DateFilter::Hours24 => now + Duration::hours(24),
-                        DateFilter::Week    => now + Duration::days(7),
-                        DateFilter::Month   => now + Duration::days(30),
-                        DateFilter::All     => unreachable!(),
+                        DateFilter::Week => now + Duration::days(7),
+                        DateFilter::Month => now + Duration::days(30),
+                        DateFilter::All => unreachable!(),
                     };
                     match &m.end_date {
                         Some(end) => {
@@ -588,10 +594,15 @@ impl App {
                                     .map(|dt| dt.with_timezone(&Local))
                                     .ok()
                                     .or_else(|| {
-                                        NaiveDate::parse_from_str(end.get(..10).unwrap_or(""), "%Y-%m-%d")
-                                            .ok()
-                                            .and_then(|d| d.and_hms_opt(0, 0, 0))
-                                            .map(|ndt| Utc.from_utc_datetime(&ndt).with_timezone(&Local))
+                                        NaiveDate::parse_from_str(
+                                            end.get(..10).unwrap_or(""),
+                                            "%Y-%m-%d",
+                                        )
+                                        .ok()
+                                        .and_then(|d| d.and_hms_opt(0, 0, 0))
+                                        .map(|ndt| {
+                                            Utc.from_utc_datetime(&ndt).with_timezone(&Local)
+                                        })
                                     });
                             match market_dt {
                                 Some(dt) if dt > now && dt <= cutoff => {}
@@ -609,13 +620,17 @@ impl App {
                 }
                 // prob filter
                 let (lo, hi) = match self.prob_filter {
-                    ProbFilter::All      => (0.0, 1.0),
+                    ProbFilter::All => (0.0, 1.0),
                     ProbFilter::Prob90_98 => (0.90, 0.98),
                     ProbFilter::Prob85_98 => (0.85, 0.98),
                     ProbFilter::Prob80_98 => (0.80, 0.98),
                 };
                 if lo > 0.0 {
-                    let best = m.outcomes.iter().map(|o| o.price).fold(f64::NEG_INFINITY, f64::max);
+                    let best = m
+                        .outcomes
+                        .iter()
+                        .map(|o| o.price)
+                        .fold(f64::NEG_INFINITY, f64::max);
                     if best < lo || best > hi {
                         return None;
                     }
@@ -635,9 +650,7 @@ impl App {
 
         match &self.sort_mode {
             SortMode::Volume => {
-                indices.sort_by(|&a, &b| {
-                    self.markets[b].volume.total_cmp(&self.markets[a].volume)
-                });
+                indices.sort_by(|&a, &b| self.markets[b].volume.total_cmp(&self.markets[a].volume));
             }
             SortMode::EndDate => {
                 indices.sort_by(|&a, &b| {
@@ -648,8 +661,16 @@ impl App {
             }
             SortMode::Probability => {
                 indices.sort_by(|&a, &b| {
-                    let pa = self.markets[a].outcomes.iter().map(|o| o.price).fold(f64::NEG_INFINITY, f64::max);
-                    let pb = self.markets[b].outcomes.iter().map(|o| o.price).fold(f64::NEG_INFINITY, f64::max);
+                    let pa = self.markets[a]
+                        .outcomes
+                        .iter()
+                        .map(|o| o.price)
+                        .fold(f64::NEG_INFINITY, f64::max);
+                    let pb = self.markets[b]
+                        .outcomes
+                        .iter()
+                        .map(|o| o.price)
+                        .fold(f64::NEG_INFINITY, f64::max);
                     pb.total_cmp(&pa)
                 });
             }
@@ -671,7 +692,10 @@ impl App {
 
     /// Returns the cached filtered+sorted market list. O(n) on indices only.
     pub fn filtered_markets(&self) -> Vec<&Market> {
-        self.filtered_indices.iter().map(|&i| &self.markets[i]).collect()
+        self.filtered_indices
+            .iter()
+            .map(|&i| &self.markets[i])
+            .collect()
     }
 }
 
@@ -687,25 +711,62 @@ pub(crate) fn market_category_from_parts(question: &str, slug: &str) -> Option<&
 
     // Sports: slug prefix is the most reliable signal for league markets
     let sports_slug_kw = [
-        "nba-", "nfl-", "mlb-", "nhl-", "mls-", "pga-", "ufc-",
-        "epl-", "elc-", "efl-", "ucl-", "uel-", "aus-", "ligue1-",
-        "bundesliga-", "laliga-", "seriea-", "a-league-",
+        "nba-",
+        "nfl-",
+        "mlb-",
+        "nhl-",
+        "mls-",
+        "pga-",
+        "ufc-",
+        "epl-",
+        "elc-",
+        "efl-",
+        "ucl-",
+        "uel-",
+        "aus-",
+        "ligue1-",
+        "bundesliga-",
+        "laliga-",
+        "seriea-",
+        "a-league-",
     ];
     if sports_slug_kw.iter().any(|k| s.starts_with(k)) {
         return Some("Sports");
     }
 
     // Weather
-    if q.contains("highest temperature") || q.contains("temperature in ") || q.contains("weather in ") {
+    if q.contains("highest temperature")
+        || q.contains("temperature in ")
+        || q.contains("weather in ")
+    {
         return Some("Weather");
     }
 
     // Crypto
     let crypto_kw = [
-        "bitcoin", " btc ", "ethereum", " eth ", "solana", "dogecoin", " doge",
-        " xrp", "crypto", "blockchain", " defi", " nft", "stablecoin",
-        "market cap", "usdt", "usdc", "altcoin", "layer 2", "layer2",
-        " fdv ", "fdv above", "launch a token", "token by ",
+        "bitcoin",
+        " btc ",
+        "ethereum",
+        " eth ",
+        "solana",
+        "dogecoin",
+        " doge",
+        " xrp",
+        "crypto",
+        "blockchain",
+        " defi",
+        " nft",
+        "stablecoin",
+        "market cap",
+        "usdt",
+        "usdc",
+        "altcoin",
+        "layer 2",
+        "layer2",
+        " fdv ",
+        "fdv above",
+        "launch a token",
+        "token by ",
     ];
     if crypto_kw.iter().any(|k| q.contains(k) || s.contains(k)) {
         return Some("Crypto");
@@ -713,10 +774,26 @@ pub(crate) fn market_category_from_parts(question: &str, slug: &str) -> Option<&
 
     // Finance
     let finance_kw = [
-        "nasdaq", "s&p 500", " spy ", "dow jones", "interest rate", " gdp",
-        "inflation", "federal reserve", "bank of ", "treasury", "bond yield",
-        "crude oil", " silver ", "gold price", "natural gas", "stock market",
-        "ipo ", "earnings", "recession", "tariff",
+        "nasdaq",
+        "s&p 500",
+        " spy ",
+        "dow jones",
+        "interest rate",
+        " gdp",
+        "inflation",
+        "federal reserve",
+        "bank of ",
+        "treasury",
+        "bond yield",
+        "crude oil",
+        " silver ",
+        "gold price",
+        "natural gas",
+        "stock market",
+        "ipo ",
+        "earnings",
+        "recession",
+        "tariff",
     ];
     if finance_kw.iter().any(|k| q.contains(k) || s.contains(k)) {
         return Some("Finance");
@@ -724,16 +801,56 @@ pub(crate) fn market_category_from_parts(question: &str, slug: &str) -> Option<&
 
     // Sports: question-level keywords for leagues/sports not caught by slug
     let sports_q_kw = [
-        "nba", "nfl", "mlb", "nhl", "mls", "premier league", "la liga",
-        "bundesliga", "serie a", "ligue 1", "champions league", "europa league",
-        "conference league", "world cup", "super bowl", "pga tour", "ufc",
-        "formula 1", " f1 ", "wimbledon", " golf", "tennis", "nascar",
-        "exact score:", "moneyline", "top 5 at", "top 10 at", "top 20 at",
-        "finish in the top", " fc ", "united fc", "city fc", "town fc",
-        " o/u ", "handicap:", "both teams to score", "spread:",
-        "valero", "masters 20", "open championship", "the open",
-        "esports", "dota 2", "counter-strike", " lcs", " lpl", "valorant",
-        "win on 202", "win the 202", "end in a draw",
+        "nba",
+        "nfl",
+        "mlb",
+        "nhl",
+        "mls",
+        "premier league",
+        "la liga",
+        "bundesliga",
+        "serie a",
+        "ligue 1",
+        "champions league",
+        "europa league",
+        "conference league",
+        "world cup",
+        "super bowl",
+        "pga tour",
+        "ufc",
+        "formula 1",
+        " f1 ",
+        "wimbledon",
+        " golf",
+        "tennis",
+        "nascar",
+        "exact score:",
+        "moneyline",
+        "top 5 at",
+        "top 10 at",
+        "top 20 at",
+        "finish in the top",
+        " fc ",
+        "united fc",
+        "city fc",
+        "town fc",
+        " o/u ",
+        "handicap:",
+        "both teams to score",
+        "spread:",
+        "valero",
+        "masters 20",
+        "open championship",
+        "the open",
+        "esports",
+        "dota 2",
+        "counter-strike",
+        " lcs",
+        " lpl",
+        "valorant",
+        "win on 202",
+        "win the 202",
+        "end in a draw",
     ];
     if sports_q_kw.iter().any(|k| q.contains(k) || s.contains(k)) {
         return Some("Sports");
@@ -741,13 +858,40 @@ pub(crate) fn market_category_from_parts(question: &str, slug: &str) -> Option<&
 
     // Politics
     let politics_kw = [
-        "trump", "election", " senate", " congress", "president", "democrat",
-        "republican", " ballot", "prime minister", "parliament", "government",
-        "sanction", " vote ", "military", "nato", "ceasefire", "legislation",
-        "invade", "invasion", "blockade", "taiwan", "ukraine", "russia",
-        "le pen", "macron", "zelensky", "recognize israel", "recognize ",
-        "guilty of", "out of custody", "in custody", "criminal trial",
-        "mayor of", "governor of",
+        "trump",
+        "election",
+        " senate",
+        " congress",
+        "president",
+        "democrat",
+        "republican",
+        " ballot",
+        "prime minister",
+        "parliament",
+        "government",
+        "sanction",
+        " vote ",
+        "military",
+        "nato",
+        "ceasefire",
+        "legislation",
+        "invade",
+        "invasion",
+        "blockade",
+        "taiwan",
+        "ukraine",
+        "russia",
+        "le pen",
+        "macron",
+        "zelensky",
+        "recognize israel",
+        "recognize ",
+        "guilty of",
+        "out of custody",
+        "in custody",
+        "criminal trial",
+        "mayor of",
+        "governor of",
     ];
     if politics_kw.iter().any(|k| q.contains(k) || s.contains(k)) {
         return Some("Politics");
@@ -761,7 +905,9 @@ pub(crate) fn market_category_from_parts(question: &str, slug: &str) -> Option<&
 pub async fn run(client: PolyClient, tui_cfg: TuiConfig) -> client::Result<()> {
     use crossterm::{
         execute,
-        terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+        terminal::{
+            disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen, SetTitle,
+        },
     };
     use ratatui::{backend::CrosstermBackend, Terminal};
     use std::io;
@@ -807,7 +953,7 @@ pub async fn run(client: PolyClient, tui_cfg: TuiConfig) -> client::Result<()> {
 
     enable_raw_mode().map_err(AppError::other)?;
     let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen).map_err(AppError::other)?;
+    execute!(stdout, EnterAlternateScreen, SetTitle("POLY")).map_err(AppError::other)?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend).map_err(AppError::other)?;
 
@@ -854,9 +1000,9 @@ async fn run_app(
     // One-time migration: import legacy CSV data into SQLite if the DB is empty.
     // No-op for fresh installs and for users already on SQLite.
     {
-        let db_p   = crate::persist::db_path();
+        let db_p = crate::persist::db_path();
         let snap_p = crate::persist::snapshot_csv_path();
-        let res_p  = crate::persist::resolutions_csv_path();
+        let res_p = crate::persist::resolutions_csv_path();
         tokio::task::spawn_blocking(move || {
             crate::db::migrate_from_csvs(&db_p, &snap_p, &res_p);
         })
@@ -871,10 +1017,10 @@ async fn run_app(
 
     // Restore persisted filter/sort state.
     let ui_state = crate::persist::load_ui_state();
-    app.sort_mode       = ui_state.sort_mode;
-    app.date_filter     = ui_state.date_filter;
-    app.prob_filter     = ui_state.prob_filter;
-    app.volume_filter   = ui_state.volume_filter;
+    app.sort_mode = ui_state.sort_mode;
+    app.date_filter = ui_state.date_filter;
+    app.prob_filter = ui_state.prob_filter;
+    app.volume_filter = ui_state.volume_filter;
     app.category_filter = ui_state.category_filter;
 
     // Auto-show setup wizard on first launch when no credentials are configured.
@@ -961,8 +1107,12 @@ fn handle_event(
             // Skip if already loading, or if a modal (quit/help) is open.
             if app.active_tab == Tab::Positions
                 && !app.loading
-                && !matches!(app.current_screen(), Some(Screen::QuitConfirm) | Some(Screen::Help))
-                && app.positions_refreshed_at
+                && !matches!(
+                    app.current_screen(),
+                    Some(Screen::QuitConfirm) | Some(Screen::Help)
+                )
+                && app
+                    .positions_refreshed_at
                     .is_some_and(|t| t.elapsed() >= Duration::from_secs(app.refresh_interval_secs))
             {
                 app.loading = true;
@@ -976,9 +1126,7 @@ fn handle_event(
             if !app.snapshot_in_progress {
                 let should = match app.snapshot_last_at {
                     None => app.tick >= 600, // ~30 s at 50 ms/tick
-                    Some(last) => {
-                        (chrono::Utc::now() - last).num_seconds() >= 3600
-                    }
+                    Some(last) => (chrono::Utc::now() - last).num_seconds() >= 3600,
                 };
                 if should {
                     app.snapshot_in_progress = true;
@@ -1053,7 +1201,7 @@ fn handle_event(
         }
 
         AppEvent::PositionsLoaded(mut positions) => {
-            positions.sort_by(|a, b| b.unrealized_pnl.total_cmp(&a.unrealized_pnl));
+            positions.sort_by(|a, b| b.current_price.total_cmp(&a.current_price));
             app.positions = positions;
             app.positions_refreshed_at = Some(Instant::now());
             app.last_error = None;
@@ -1111,7 +1259,10 @@ fn handle_event(
             // Mark the market price as failed if we were waiting for one in the order form.
             if app.order_form.market_order
                 && app.order_form.market_price.is_none()
-                && matches!(app.current_screen(), Some(Screen::OrderEntry) | Some(Screen::CloseConfirm))
+                && matches!(
+                    app.current_screen(),
+                    Some(Screen::OrderEntry) | Some(Screen::CloseConfirm)
+                )
             {
                 app.order_form.market_price_failed = true;
             }
@@ -1191,7 +1342,8 @@ fn handle_event(
         }
 
         AppEvent::SnapshotMetaLoaded(meta) => {
-            app.snapshot_last_at = meta.last_snapshot_at
+            app.snapshot_last_at = meta
+                .last_snapshot_at
                 .and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok())
                 .map(|d| d.with_timezone(&chrono::Utc));
             app.snapshot_last_count = meta.last_snapshot_count;
@@ -1267,13 +1419,28 @@ fn handle_key(
     }
 
     match &app.active_tab.clone() {
-        Tab::Positions => { handle_positions_key(app, key, client, tx); false }
-        Tab::Balance   => { handle_balance_key(app, key, client, tx); false }
-        Tab::Analytics => { handle_analytics_key(app, key, client, tx); false }
-        Tab::Markets => match app.current_screen().cloned() {
-            Some(Screen::MarketDetail) => { handle_detail_key(app, key, client, tx); false }
-            _ => { handle_markets_key(app, key, client, tx); false }
+        Tab::Positions => {
+            handle_positions_key(app, key, client, tx);
+            false
         }
+        Tab::Balance => {
+            handle_balance_key(app, key, client, tx);
+            false
+        }
+        Tab::Analytics => {
+            handle_analytics_key(app, key, client, tx);
+            false
+        }
+        Tab::Markets => match app.current_screen().cloned() {
+            Some(Screen::MarketDetail) => {
+                handle_detail_key(app, key, client, tx);
+                false
+            }
+            _ => {
+                handle_markets_key(app, key, client, tx);
+                false
+            }
+        },
     }
 }
 
@@ -1293,9 +1460,9 @@ fn switch_tab(app: &mut App, tab: Tab, client: Arc<PolyClient>, tx: &UnboundedSe
     app.last_error = None; // clear stale errors from previous tab
     app.active_tab = tab.clone();
     app.screen_stack = match &tab {
-        Tab::Markets   => vec![Screen::MarketList],
+        Tab::Markets => vec![Screen::MarketList],
         Tab::Positions => vec![Screen::MarketList], // reuse stack slot; render uses active_tab
-        Tab::Balance   => vec![Screen::MarketList],
+        Tab::Balance => vec![Screen::MarketList],
         Tab::Analytics => vec![Screen::MarketList],
     };
 
@@ -1445,14 +1612,26 @@ fn handle_markets_key(
         }
         KeyCode::Char('e') => {
             if app.watchlist.is_empty() {
-                app.flash = Some(("Watchlist is empty — star markets with *".to_string(), std::time::Instant::now(), false));
+                app.flash = Some((
+                    "Watchlist is empty — star markets with *".to_string(),
+                    std::time::Instant::now(),
+                    false,
+                ));
             } else {
                 match crate::persist::export_watchlist(&app.watchlist, &app.markets) {
                     Ok(path) => {
-                        app.flash = Some((format!("Watchlist exported → {}", path.display()), std::time::Instant::now(), false));
+                        app.flash = Some((
+                            format!("Watchlist exported → {}", path.display()),
+                            std::time::Instant::now(),
+                            false,
+                        ));
                     }
                     Err(e) => {
-                        app.flash = Some((format!("Export failed: {}", e), std::time::Instant::now(), true));
+                        app.flash = Some((
+                            format!("Export failed: {}", e),
+                            std::time::Instant::now(),
+                            true,
+                        ));
                     }
                 }
             }
@@ -1480,20 +1659,34 @@ fn handle_markets_key(
                     app.loading = true;
                     app.detail_outcome_index = 0;
                     app.screen_stack.push(Screen::MarketDetail);
-                    let outcome_names: Vec<String> = market.outcomes.iter().map(|o| o.name.clone()).collect();
+                    let outcome_names: Vec<String> =
+                        market.outcomes.iter().map(|o| o.name.clone()).collect();
                     let interval = app.sparkline_interval;
-                    spawn_load_price_history(Arc::clone(&client), tx.clone(), market.condition_id.clone(), outcome_names, interval);
+                    spawn_load_price_history(
+                        Arc::clone(&client),
+                        tx.clone(),
+                        market.condition_id.clone(),
+                        outcome_names,
+                        interval,
+                    );
                     spawn_load_detail(Arc::clone(&client), tx.clone(), market.clone());
                     // Start WebSocket feed for live order book updates.
                     stop_ws(app);
-                    let token_pairs: Vec<(String, String)> = market.outcomes.iter()
+                    let token_pairs: Vec<(String, String)> = market
+                        .outcomes
+                        .iter()
                         .filter(|o| !o.token_id.is_empty())
                         .map(|o| (o.name.clone(), o.token_id.clone()))
                         .collect();
                     if !token_pairs.is_empty() {
                         let (cancel_tx, cancel_rx) = watch::channel(false);
                         app.ws_cancel = Some(cancel_tx);
-                        spawn_ws_order_book(Arc::clone(&client), tx.clone(), token_pairs, cancel_rx);
+                        spawn_ws_order_book(
+                            Arc::clone(&client),
+                            tx.clone(),
+                            token_pairs,
+                            cancel_rx,
+                        );
                     }
                 }
             }
@@ -1543,7 +1736,9 @@ fn handle_detail_key(
         }
         KeyCode::Char('b') => {
             if let Some(market) = &app.selected_market {
-                let idx = app.detail_outcome_index.min(market.outcomes.len().saturating_sub(1));
+                let idx = app
+                    .detail_outcome_index
+                    .min(market.outcomes.len().saturating_sub(1));
                 if let Some(outcome) = market.outcomes.get(idx) {
                     let token_id = outcome.token_id.clone();
                     app.order_form = OrderForm {
@@ -1556,14 +1751,21 @@ fn handle_detail_key(
                         ..Default::default()
                     };
                     app.screen_stack.push(Screen::OrderEntry);
-                    spawn_fetch_market_price(Arc::clone(&client), tx.clone(), token_id.clone(), Side::Buy);
+                    spawn_fetch_market_price(
+                        Arc::clone(&client),
+                        tx.clone(),
+                        token_id.clone(),
+                        Side::Buy,
+                    );
                     spawn_fetch_fee_rate(Arc::clone(&client), tx.clone(), token_id);
                 }
             }
         }
         KeyCode::Char('s') => {
             if let Some(market) = &app.selected_market {
-                let idx = app.detail_outcome_index.min(market.outcomes.len().saturating_sub(1));
+                let idx = app
+                    .detail_outcome_index
+                    .min(market.outcomes.len().saturating_sub(1));
                 if let Some(outcome) = market.outcomes.get(idx) {
                     let token_id = outcome.token_id.clone();
                     app.order_form = OrderForm {
@@ -1576,7 +1778,12 @@ fn handle_detail_key(
                         ..Default::default()
                     };
                     app.screen_stack.push(Screen::OrderEntry);
-                    spawn_fetch_market_price(Arc::clone(&client), tx.clone(), token_id.clone(), Side::Sell);
+                    spawn_fetch_market_price(
+                        Arc::clone(&client),
+                        tx.clone(),
+                        token_id.clone(),
+                        Side::Sell,
+                    );
                     spawn_fetch_fee_rate(Arc::clone(&client), tx.clone(), token_id);
                 }
             }
@@ -1585,30 +1792,52 @@ fn handle_detail_key(
             if let Some(market) = app.selected_market.clone() {
                 app.order_books.clear();
                 app.loading = true;
-                let outcome_names: Vec<String> = market.outcomes.iter().map(|o| o.name.clone()).collect();
+                let outcome_names: Vec<String> =
+                    market.outcomes.iter().map(|o| o.name.clone()).collect();
                 let interval = app.sparkline_interval;
                 // Invalidate cached price history so it re-fetches
                 let key = format!("{}:{}", market.condition_id, interval);
                 app.price_history.remove(&key);
-                spawn_load_price_history(Arc::clone(&client), tx.clone(), market.condition_id.clone(), outcome_names, interval);
+                spawn_load_price_history(
+                    Arc::clone(&client),
+                    tx.clone(),
+                    market.condition_id.clone(),
+                    outcome_names,
+                    interval,
+                );
                 spawn_load_detail(client, tx.clone(), market);
             }
         }
         KeyCode::Char('t') => {
             // Toggle sparkline interval between 1d and 1w
             if let Some(market) = app.selected_market.clone() {
-                app.sparkline_interval = if app.sparkline_interval == "1d" { "1w" } else { "1d" };
+                app.sparkline_interval = if app.sparkline_interval == "1d" {
+                    "1w"
+                } else {
+                    "1d"
+                };
                 let interval = app.sparkline_interval;
                 let key = format!("{}:{}", market.condition_id, interval);
                 if !app.price_history.contains_key(&key) {
-                    let outcome_names: Vec<String> = market.outcomes.iter().map(|o| o.name.clone()).collect();
-                    spawn_load_price_history(Arc::clone(&client), tx.clone(), market.condition_id.clone(), outcome_names, interval);
+                    let outcome_names: Vec<String> =
+                        market.outcomes.iter().map(|o| o.name.clone()).collect();
+                    spawn_load_price_history(
+                        Arc::clone(&client),
+                        tx.clone(),
+                        market.condition_id.clone(),
+                        outcome_names,
+                        interval,
+                    );
                 }
             }
         }
         KeyCode::Char('c') => {
             if let Some(market) = &app.selected_market {
-                let event_slug = if !market.group_slug.is_empty() { &market.group_slug } else { &market.slug };
+                let event_slug = if !market.group_slug.is_empty() {
+                    &market.group_slug
+                } else {
+                    &market.slug
+                };
                 let url = format!("https://polymarket.com/event/{}", event_slug);
                 copy_to_clipboard(&url);
                 app.set_flash("Link copied to clipboard");
@@ -1638,8 +1867,7 @@ fn handle_order_key(
             app.order_form.focused_field = (app.order_form.focused_field + 1) % 3;
         }
         KeyCode::BackTab => {
-            app.order_form.focused_field =
-                (app.order_form.focused_field + 2) % 3;
+            app.order_form.focused_field = (app.order_form.focused_field + 2) % 3;
         }
         KeyCode::Char('d') => {
             app.order_form.dry_run = !app.order_form.dry_run;
@@ -1676,8 +1904,12 @@ fn handle_order_key(
             }
         }
         KeyCode::Backspace => match app.order_form.focused_field {
-            0 => { app.order_form.size_input.pop(); }
-            1 => { app.order_form.price_input.pop(); }
+            0 => {
+                app.order_form.size_input.pop();
+            }
+            1 => {
+                app.order_form.price_input.pop();
+            }
             _ => {}
         },
         KeyCode::Char(c) => match app.order_form.focused_field {
@@ -1751,7 +1983,11 @@ fn submit_order(app: &mut App, client: Arc<PolyClient>, tx: &UnboundedSender<App
 
     if app.order_form.dry_run {
         let cost = size * price;
-        let mode = if app.order_form.market_order { "MARKET " } else { "" };
+        let mode = if app.order_form.market_order {
+            "MARKET "
+        } else {
+            ""
+        };
         app.set_flash(format!(
             "DRY RUN — {}{} {} @ {:.4} (cost: ${:.4})",
             mode, side, size, price, cost
@@ -1762,15 +1998,19 @@ fn submit_order(app: &mut App, client: Arc<PolyClient>, tx: &UnboundedSender<App
 
     app.loading = true;
     app.screen_stack.pop();
-    spawn_place_order(client, tx.clone(), PlaceOrderParams {
-        token_id: app.order_form.token_id.clone(),
-        price,
-        size,
-        side,
-        order_type,
-        expiry: None,
-        neg_risk: app.order_form.neg_risk,
-    });
+    spawn_place_order(
+        client,
+        tx.clone(),
+        PlaceOrderParams {
+            token_id: app.order_form.token_id.clone(),
+            price,
+            size,
+            side,
+            order_type,
+            expiry: None,
+            neg_risk: app.order_form.neg_risk,
+        },
+    );
 }
 
 // ── Positions key handler ─────────────────────────────────────────────────────
@@ -1864,7 +2104,12 @@ pub fn handle_positions_key(
                         ..Default::default()
                     };
                     app.screen_stack.push(Screen::CloseConfirm);
-                    spawn_fetch_market_price(Arc::clone(&client), tx.clone(), token_id.clone(), Side::Sell);
+                    spawn_fetch_market_price(
+                        Arc::clone(&client),
+                        tx.clone(),
+                        token_id.clone(),
+                        Side::Sell,
+                    );
                     spawn_fetch_fee_rate(Arc::clone(&client), tx.clone(), token_id);
                 }
             }
@@ -1939,15 +2184,19 @@ fn handle_close_confirm_key(
             }
             app.loading = true;
             app.screen_stack.pop();
-            spawn_place_order(client, tx.clone(), PlaceOrderParams {
-                token_id,
-                price,
-                size,
-                side: Side::Sell,
-                order_type: OrderType::Fok,
-                expiry: None,
-                neg_risk,
-            });
+            spawn_place_order(
+                client,
+                tx.clone(),
+                PlaceOrderParams {
+                    token_id,
+                    price,
+                    size,
+                    side: Side::Sell,
+                    order_type: OrderType::Fok,
+                    expiry: None,
+                    neg_risk,
+                },
+            );
             false
         }
         KeyCode::Esc | KeyCode::Char('n') | KeyCode::Char('N') => {
@@ -1970,15 +2219,15 @@ fn open_order_from_position(
         Some(p) => p,
         None => return,
     };
-    let token_id     = pos.token_id.clone();
+    let token_id = pos.token_id.clone();
     let outcome_name = pos.outcome.clone();
-    let size         = pos.size;
-    let neg_risk     = pos.neg_risk;
+    let size = pos.size;
+    let neg_risk = pos.neg_risk;
 
     // Pre-fill size for sell and close operations; leave blank for buy-more.
     let size_input = match side {
         Side::Sell => format!("{:.2}", size),
-        Side::Buy  => String::new(),
+        Side::Buy => String::new(),
     };
 
     app.order_form = OrderForm {
@@ -1991,7 +2240,11 @@ fn open_order_from_position(
         close_position,
         neg_risk,
         // Cap size validation to shares held for sell/close operations.
-        max_size: if matches!(side, Side::Sell) { Some(size) } else { None },
+        max_size: if matches!(side, Side::Sell) {
+            Some(size)
+        } else {
+            None
+        },
         ..Default::default()
     };
     app.screen_stack.push(Screen::OrderEntry);
@@ -2173,7 +2426,8 @@ fn handle_redeem_all_confirm_key(
 ) {
     match key.code {
         KeyCode::Enter | KeyCode::Char('y') | KeyCode::Char('Y') => {
-            let condition_ids: Vec<String> = app.positions
+            let condition_ids: Vec<String> = app
+                .positions
                 .iter()
                 .filter(|p| p.redeemable)
                 .map(|p| p.market_id.clone())
@@ -2197,9 +2451,7 @@ fn handle_redeem_all_confirm_key(
 
 /// Returns the items for the root menu depending on navigation context.
 /// Each entry is (label, key_hint, color).
-pub fn root_menu_items(
-    app: &App,
-) -> Vec<(&'static str, &'static str, ratatui::style::Color)> {
+pub fn root_menu_items(app: &App) -> Vec<(&'static str, &'static str, ratatui::style::Color)> {
     let can_go_back = app.screen_stack.len() >= 2
         && matches!(
             app.screen_stack.get(app.screen_stack.len() - 2),
@@ -2295,7 +2547,10 @@ fn handle_setup_key(app: &mut App, key: KeyEvent) -> bool {
                 match app.setup_form.save() {
                     Ok(path) => {
                         app.screen_stack.pop();
-                        app.set_flash(format!("Config saved to {}. Restart poly to apply.", path.display()));
+                        app.set_flash(format!(
+                            "Config saved to {}. Restart poly to apply.",
+                            path.display()
+                        ));
                         app.setup_complete = true;
                     }
                     Err(e) => {
@@ -2308,7 +2563,9 @@ fn handle_setup_key(app: &mut App, key: KeyEvent) -> bool {
             app.setup_form.go_back();
         }
         KeyCode::Backspace => {
-            if app.setup_form.current_input().is_empty() && app.setup_form.step != SetupStep::PrivateKey {
+            if app.setup_form.current_input().is_empty()
+                && app.setup_form.step != SetupStep::PrivateKey
+            {
                 app.setup_form.go_back();
             } else {
                 app.setup_form.backspace();
@@ -2448,7 +2705,10 @@ pub fn spawn_load_price_history(
 ) {
     let fidelity = if interval == "1d" { 60 } else { 480 };
     tokio::spawn(async move {
-        if let Ok(points) = client.get_price_history(&condition_id, interval, fidelity).await {
+        if let Ok(points) = client
+            .get_price_history(&condition_id, interval, fidelity)
+            .await
+        {
             // The prices-history endpoint returns aggregate market prices.
             // We expose one series per market (labeled "Market") since the
             // data API doesn't break out per-outcome prices in this endpoint.
@@ -2456,13 +2716,23 @@ pub fn spawn_load_price_history(
                 // Binary: Yes price = p, No price = 1 - p
                 let yes: Vec<PricePoint> = points.clone();
                 let no: Vec<PricePoint> = points.iter().map(|&(t, p)| (t, 1.0 - p)).collect();
-                let yes_name = outcome_names.first().cloned().unwrap_or_else(|| "Yes".to_string());
-                let no_name  = outcome_names.get(1).cloned().unwrap_or_else(|| "No".to_string());
+                let yes_name = outcome_names
+                    .first()
+                    .cloned()
+                    .unwrap_or_else(|| "Yes".to_string());
+                let no_name = outcome_names
+                    .get(1)
+                    .cloned()
+                    .unwrap_or_else(|| "No".to_string());
                 vec![(yes_name, yes), (no_name, no)]
             } else {
                 vec![("Price".to_string(), points)]
             };
-            let _ = tx.send(AppEvent::PriceHistoryLoaded(condition_id, interval.to_string(), data));
+            let _ = tx.send(AppEvent::PriceHistoryLoaded(
+                condition_id,
+                interval.to_string(),
+                data,
+            ));
         } // Err: silently ignore — sparkline is best-effort
     });
 }
@@ -2470,8 +2740,12 @@ pub fn spawn_load_price_history(
 pub fn spawn_load_positions(client: Arc<PolyClient>, tx: UnboundedSender<AppEvent>) {
     tokio::spawn(async move {
         match client.get_positions().await {
-            Ok(p) => { let _ = tx.send(AppEvent::PositionsLoaded(p)); }
-            Err(e) => { let _ = tx.send(AppEvent::Error(e)); }
+            Ok(p) => {
+                let _ = tx.send(AppEvent::PositionsLoaded(p));
+            }
+            Err(e) => {
+                let _ = tx.send(AppEvent::Error(e));
+            }
         }
     });
 }
@@ -2479,8 +2753,12 @@ pub fn spawn_load_positions(client: Arc<PolyClient>, tx: UnboundedSender<AppEven
 pub fn spawn_load_orders(client: Arc<PolyClient>, tx: UnboundedSender<AppEvent>) {
     tokio::spawn(async move {
         match client.get_open_orders().await {
-            Ok(o) => { let _ = tx.send(AppEvent::OrdersLoaded(o)); }
-            Err(e) => { let _ = tx.send(AppEvent::Error(e)); }
+            Ok(o) => {
+                let _ = tx.send(AppEvent::OrdersLoaded(o));
+            }
+            Err(e) => {
+                let _ = tx.send(AppEvent::Error(e));
+            }
         }
     });
 }
@@ -2500,8 +2778,12 @@ pub fn spawn_redeem_position(
 ) {
     tokio::spawn(async move {
         match client.redeem_position(&condition_id).await {
-            Ok(tx_hash) => { let _ = tx.send(AppEvent::Redeemed(tx_hash)); }
-            Err(e)      => { let _ = tx.send(AppEvent::Error(e)); }
+            Ok(tx_hash) => {
+                let _ = tx.send(AppEvent::Redeemed(tx_hash));
+            }
+            Err(e) => {
+                let _ = tx.send(AppEvent::Error(e));
+            }
         }
     });
 }
@@ -2528,9 +2810,17 @@ pub fn spawn_redeem_all(
         }
         if succeeded > 0 {
             let msg = if succeeded == total {
-                format!("Redeemed {} position{} — last tx: {}", succeeded, if succeeded == 1 { "" } else { "s" }, last_hash)
+                format!(
+                    "Redeemed {} position{} — last tx: {}",
+                    succeeded,
+                    if succeeded == 1 { "" } else { "s" },
+                    last_hash
+                )
             } else {
-                format!("Redeemed {}/{} positions — last tx: {}", succeeded, total, last_hash)
+                format!(
+                    "Redeemed {}/{} positions — last tx: {}",
+                    succeeded, total, last_hash
+                )
             };
             let _ = tx.send(AppEvent::Redeemed(msg));
         }
@@ -2555,9 +2845,8 @@ pub fn spawn_compute_analytics(
             let db = db_path.clone();
             let h = calibration_hours;
             tokio::task::spawn_blocking(move || {
-                crate::db::open(&db).and_then(|c| {
-                    crate::db::query_unpriced_resolutions(&c, h, CAL_BATCH)
-                })
+                crate::db::open(&db)
+                    .and_then(|c| crate::db::query_unpriced_resolutions(&c, h, CAL_BATCH))
             })
             .await
             .unwrap_or(Ok(vec![]))
@@ -2598,7 +2887,10 @@ pub fn spawn_compute_analytics(
 
                 let results = join_all(futs).await;
                 fetch_done += chunk.len();
-                let _ = tx.send(AppEvent::CalibrationFetchProgress(fetch_done, total_unpriced));
+                let _ = tx.send(AppEvent::CalibrationFetchProgress(
+                    fetch_done,
+                    total_unpriced,
+                ));
 
                 let db = db_path.clone();
                 let h = calibration_hours;
@@ -2646,8 +2938,8 @@ async fn compute_analytics_stats(
 
         // Chart C: resolution bias.
         if let Ok((yes, no, other)) = crate::db::query_resolution_counts(&conn) {
-            stats.res_yes   = yes;
-            stats.res_no    = no;
+            stats.res_yes = yes;
+            stats.res_no = no;
             stats.res_other = other;
         }
 
@@ -2666,17 +2958,23 @@ async fn compute_analytics_stats(
             for (q, s, vol, yes_price, res) in rows {
                 let cat_idx = match market_category_from_parts(&q, &s) {
                     Some("Politics") => 0,
-                    Some("Sports")   => 1,
-                    Some("Crypto")   => 2,
-                    Some("Finance")  => 3,
-                    Some("Weather")  => 4,
-                    _                => 5,
+                    Some("Sports") => 1,
+                    Some("Crypto") => 2,
+                    Some("Finance") => 3,
+                    Some("Weather") => 4,
+                    _ => 5,
                 };
-                let tier = if vol < 1_000.0 { 0 }
-                    else if vol < 10_000.0 { 1 }
-                    else if vol < 100_000.0 { 2 }
-                    else if vol < 1_000_000.0 { 3 }
-                    else { 4 };
+                let tier = if vol < 1_000.0 {
+                    0
+                } else if vol < 10_000.0 {
+                    1
+                } else if vol < 100_000.0 {
+                    2
+                } else if vol < 1_000_000.0 {
+                    3
+                } else {
+                    4
+                };
                 let b = ((yes_price * 10.0) as usize).min(9);
                 let cell = &mut stats.calibration_matrix[cat_idx][tier];
                 cell.buckets[b].1 += 1;
@@ -2690,7 +2988,7 @@ async fn compute_analytics_stats(
         // Keep high-confidence accuracy for potential future use.
         if let Ok((correct, wrong)) = crate::db::query_high_confidence_accuracy(&conn) {
             stats.hc_correct = correct;
-            stats.hc_wrong   = wrong;
+            stats.hc_wrong = wrong;
         }
 
         stats
@@ -2740,24 +3038,24 @@ pub fn spawn_snapshot_markets(
                         for market in &page {
                             let cat = market_category(market).unwrap_or("").to_string();
                             let status = match market.status {
-                                MarketStatus::Active  => "Active",
-                                MarketStatus::Closed  => "Closed",
+                                MarketStatus::Active => "Active",
+                                MarketStatus::Closed => "Closed",
                                 MarketStatus::Unknown => "Unknown",
                             };
                             let end_date = market.end_date.as_deref().unwrap_or("").to_string();
                             for outcome in &market.outcomes {
                                 snapshot_rows.push(SnapshotRow {
-                                    snapshot_at:  snapshot_at.clone(),
+                                    snapshot_at: snapshot_at.clone(),
                                     condition_id: market.condition_id.clone(),
-                                    question:     market.question.clone(),
-                                    slug:         market.slug.clone(),
-                                    category:     cat.clone(),
-                                    status:       status.to_string(),
-                                    end_date:     end_date.clone(),
-                                    volume:       market.volume,
-                                    liquidity:    market.liquidity,
-                                    outcome:      outcome.name.clone(),
-                                    price:        outcome.price,
+                                    question: market.question.clone(),
+                                    slug: market.slug.clone(),
+                                    category: cat.clone(),
+                                    status: status.to_string(),
+                                    end_date: end_date.clone(),
+                                    volume: market.volume,
+                                    liquidity: market.liquidity,
+                                    outcome: outcome.name.clone(),
+                                    price: outcome.price,
                                 });
                             }
                         }
@@ -2816,12 +3114,14 @@ pub fn spawn_snapshot_markets(
             let db_p = db_path.clone();
             tokio::task::spawn_blocking(move || -> bool {
                 crate::db::open(&db_p)
-                    .and_then(|c| c.query_row(
-                        "SELECT COUNT(*) FROM resolutions WHERE clob_token_id IS NULL \
+                    .and_then(|c| {
+                        c.query_row(
+                            "SELECT COUNT(*) FROM resolutions WHERE clob_token_id IS NULL \
                          AND LOWER(resolution) IN ('yes','no')",
-                        [],
-                        |r| r.get::<_, i64>(0),
-                    ))
+                            [],
+                            |r| r.get::<_, i64>(0),
+                        )
+                    })
                     .map(|n| n > 0)
                     .unwrap_or(false)
             })
@@ -2844,13 +3144,13 @@ pub fn spawn_snapshot_markets(
                             && !seen_in_run.contains(&r.condition_id);
                         if is_new {
                             res_rows.push(ResolutionRow {
-                                condition_id:     r.condition_id.clone(),
-                                question:         r.question.clone(),
-                                slug:             r.slug.clone(),
-                                end_date:         r.end_date.as_deref().unwrap_or("").to_string(),
-                                resolution:       r.resolution.clone(),
+                                condition_id: r.condition_id.clone(),
+                                question: r.question.clone(),
+                                slug: r.slug.clone(),
+                                end_date: r.end_date.as_deref().unwrap_or("").to_string(),
+                                resolution: r.resolution.clone(),
                                 last_trade_price: r.last_trade_price,
-                                clob_token_id:    r.clob_token_id.clone(),
+                                clob_token_id: r.clob_token_id.clone(),
                             });
                             seen_in_run.insert(r.condition_id.clone());
                             new_this_page += 1;
@@ -2859,13 +3159,13 @@ pub fn spawn_snapshot_markets(
                             // INSERT OR IGNORE will skip the duplicate; the UPDATE COALESCE
                             // will fill in the token ID without touching other columns.
                             res_rows.push(ResolutionRow {
-                                condition_id:     r.condition_id.clone(),
-                                question:         r.question.clone(),
-                                slug:             r.slug.clone(),
-                                end_date:         r.end_date.as_deref().unwrap_or("").to_string(),
-                                resolution:       r.resolution.clone(),
+                                condition_id: r.condition_id.clone(),
+                                question: r.question.clone(),
+                                slug: r.slug.clone(),
+                                end_date: r.end_date.as_deref().unwrap_or("").to_string(),
+                                resolution: r.resolution.clone(),
                                 last_trade_price: r.last_trade_price,
-                                clob_token_id:    r.clob_token_id.clone(),
+                                clob_token_id: r.clob_token_id.clone(),
                             });
                             backfill_this_page += 1;
                         }
@@ -2879,9 +3179,10 @@ pub fn spawn_snapshot_markets(
                 }
                 Err(e) => {
                     // Non-fatal — log but continue.
-                    let _ = tx.send(AppEvent::SnapshotError(
-                        format!("Resolution fetch error: {}", e),
-                    ));
+                    let _ = tx.send(AppEvent::SnapshotError(format!(
+                        "Resolution fetch error: {}",
+                        e
+                    )));
                     break 'res_loop;
                 }
             }
@@ -2912,7 +3213,9 @@ pub fn spawn_snapshot_markets(
         const XREF_CONCURRENCY: usize = 16;
 
         candidates.sort_unstable_by(|a, b| {
-            b.3.as_deref().unwrap_or("").cmp(a.3.as_deref().unwrap_or(""))
+            b.3.as_deref()
+                .unwrap_or("")
+                .cmp(a.3.as_deref().unwrap_or(""))
         });
         candidates.truncate(XREF_CAP);
 
@@ -2930,13 +3233,13 @@ pub fn spawn_snapshot_markets(
             for result in join_all(futs).await {
                 if let Ok(Some(mr)) = result {
                     xref_rows.push(ResolutionRow {
-                        condition_id:     mr.condition_id.clone(),
-                        question:         mr.question.clone(),
-                        slug:             mr.slug.clone(),
-                        end_date:         mr.end_date.as_deref().unwrap_or("").to_string(),
-                        resolution:       mr.resolution.clone(),
+                        condition_id: mr.condition_id.clone(),
+                        question: mr.question.clone(),
+                        slug: mr.slug.clone(),
+                        end_date: mr.end_date.as_deref().unwrap_or("").to_string(),
+                        resolution: mr.resolution.clone(),
                         last_trade_price: mr.last_trade_price,
-                        clob_token_id:    mr.clob_token_id.clone(),
+                        clob_token_id: mr.clob_token_id.clone(),
                     });
                 }
             }
@@ -2969,9 +3272,9 @@ pub fn spawn_ws_order_book(
     mut cancel: watch::Receiver<bool>,
 ) {
     tokio::spawn(async move {
-        use tokio_tungstenite::{connect_async, tungstenite::Message};
         use futures_util::{SinkExt, StreamExt};
         use serde::Deserialize;
+        use tokio_tungstenite::{connect_async, tungstenite::Message};
 
         const WS_URL: &str = "wss://ws-subscriptions-clob.polymarket.com/ws/market";
 
@@ -2996,7 +3299,16 @@ pub fn spawn_ws_order_book(
         // Keep a cached version of each book so we can send the full list on each update.
         let mut book_cache: Vec<(String, OrderBook)> = token_ids
             .iter()
-            .map(|(name, id)| (name.clone(), OrderBook { token_id: id.clone(), bids: vec![], asks: vec![] }))
+            .map(|(name, id)| {
+                (
+                    name.clone(),
+                    OrderBook {
+                        token_id: id.clone(),
+                        bids: vec![],
+                        asks: vec![],
+                    },
+                )
+            })
             .collect();
 
         // WS phase: try to connect and stream updates until the connection drops or cancel fires.
@@ -3011,7 +3323,8 @@ pub fn spawn_ws_order_book(
             let (mut write, mut read) = ws_stream.split();
 
             // Subscribe to all token IDs.
-            let ids_json: Vec<String> = token_ids.iter()
+            let ids_json: Vec<String> = token_ids
+                .iter()
                 .map(|(_, id)| format!("\"{}\"", id))
                 .collect();
             let subscribe = format!(
@@ -3027,7 +3340,7 @@ pub fn spawn_ws_order_book(
             // arrives (including the expected pong) within that window we break to
             // the HTTP polling fallback.
             const PING_INTERVAL: std::time::Duration = std::time::Duration::from_secs(15);
-            const READ_TIMEOUT:  std::time::Duration = std::time::Duration::from_secs(30);
+            const READ_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
             let mut ping_interval = tokio::time::interval(PING_INTERVAL);
             ping_interval.tick().await; // consume the immediate first tick
 
@@ -3092,9 +3405,13 @@ pub fn spawn_ws_order_book(
 
         // HTTP polling fallback — reached on initial WS connect failure or mid-session disconnect.
         loop {
-            if *cancel.borrow() { return; }
+            if *cancel.borrow() {
+                return;
+            }
             tokio::time::sleep(std::time::Duration::from_secs(10)).await;
-            if *cancel.borrow() { return; }
+            if *cancel.borrow() {
+                return;
+            }
             let mut books = Vec::new();
             for (name, token_id) in &token_ids {
                 if let Ok(book) = client.get_order_book(token_id).await {
@@ -3137,7 +3454,10 @@ pub fn spawn_place_order(
                 // executes the order. Wait briefly then do a precise match on
                 // token_id + side + price + size to avoid false-positives.
                 tokio::time::sleep(std::time::Duration::from_millis(2000)).await;
-                if let Ok(id) = client.find_recent_order(&params.token_id, &params.side, params.price, params.size).await {
+                if let Ok(id) = client
+                    .find_recent_order(&params.token_id, &params.side, params.price, params.size)
+                    .await
+                {
                     let _ = tx.send(AppEvent::OrderPlaced(id));
                 } else {
                     copy_to_clipboard(&e.to_string());
@@ -3167,11 +3487,7 @@ pub fn spawn_cancel_order(
     });
 }
 
-fn spawn_fetch_fee_rate(
-    client: Arc<PolyClient>,
-    tx: UnboundedSender<AppEvent>,
-    token_id: String,
-) {
+fn spawn_fetch_fee_rate(client: Arc<PolyClient>, tx: UnboundedSender<AppEvent>, token_id: String) {
     tokio::spawn(async move {
         // Default to 0: most active markets return 404 (no fee), only special
         // markets return a non-zero base_fee. This matches py-clob-client behaviour.
@@ -3194,11 +3510,19 @@ fn spawn_fetch_market_price(
                     Side::Sell => book.bids.first().map(|l| l.price),
                 };
                 match best {
-                    Some(p) => { let _ = tx.send(AppEvent::MarketPriceFetched(p)); }
-                    None => { let _ = tx.send(AppEvent::Error(crate::error::AppError::Other("Order book empty — no market price available".into()))); }
+                    Some(p) => {
+                        let _ = tx.send(AppEvent::MarketPriceFetched(p));
+                    }
+                    None => {
+                        let _ = tx.send(AppEvent::Error(crate::error::AppError::Other(
+                            "Order book empty — no market price available".into(),
+                        )));
+                    }
                 }
             }
-            Err(e) => { let _ = tx.send(AppEvent::Error(e)); }
+            Err(e) => {
+                let _ = tx.send(AppEvent::Error(e));
+            }
         }
     });
 }
@@ -3206,8 +3530,12 @@ fn spawn_fetch_market_price(
 pub fn spawn_cancel_all(client: Arc<PolyClient>, tx: UnboundedSender<AppEvent>) {
     tokio::spawn(async move {
         match client.cancel_all_orders().await {
-            Ok(()) => { let _ = tx.send(AppEvent::OrderCancelled("all".into())); }
-            Err(e) => { let _ = tx.send(AppEvent::Error(e)); }
+            Ok(()) => {
+                let _ = tx.send(AppEvent::OrderCancelled("all".into()));
+            }
+            Err(e) => {
+                let _ = tx.send(AppEvent::Error(e));
+            }
         }
     });
 }

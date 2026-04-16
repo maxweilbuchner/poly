@@ -9,11 +9,7 @@ use ratatui::{
 use crate::tui::{is_auth_error, theme, App};
 
 pub fn render(f: &mut Frame, area: Rect, app: &App) {
-    let chunks = Layout::vertical([
-        Constraint::Length(10),
-        Constraint::Min(0),
-    ])
-    .split(area);
+    let chunks = Layout::vertical([Constraint::Length(10), Constraint::Min(0)]).split(area);
 
     render_balance_panel(f, chunks[0], app);
 }
@@ -71,7 +67,10 @@ fn render_balance_panel(f: &mut Frame, area: Rect, app: &App) {
         }
         vec![
             Line::from(""),
-            Line::from(Span::styled("  No data. Press r to refresh.", Style::default().fg(theme::DIM))),
+            Line::from(Span::styled(
+                "  No data. Press r to refresh.",
+                Style::default().fg(theme::DIM),
+            )),
         ]
     } else {
         let balance_str = match app.balance {

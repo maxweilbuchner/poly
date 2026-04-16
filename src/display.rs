@@ -69,10 +69,7 @@ pub fn print_market_detail(market: &Market) {
     println!("{}", "═".repeat(80).dimmed());
     println!("{}", market.question.bold().white());
     println!("{}", "─".repeat(80).dimmed());
-    println!(
-        "  Condition ID : {}",
-        market.condition_id.cyan()
-    );
+    println!("  Condition ID : {}", market.condition_id.cyan());
     println!("  Slug         : {}", market.slug.dimmed());
     println!("  Status       : {}", status_str);
     if let Some(end) = &market.end_date {
@@ -89,7 +86,10 @@ pub fn print_market_detail(market: &Market) {
     if !market.outcomes.is_empty() {
         println!();
         println!("{}", "  OUTCOMES".bold());
-        println!("  {:<30} {:>8} {:>8} {:>8} {:>10}  TOKEN ID", "NAME", "BID", "ASK", "MID", "ASK DEPTH");
+        println!(
+            "  {:<30} {:>8} {:>8} {:>8} {:>10}  TOKEN ID",
+            "NAME", "BID", "ASK", "MID", "ASK DEPTH"
+        );
         println!("  {}", "─".repeat(90).dimmed());
         for o in &market.outcomes {
             println!(
@@ -113,14 +113,16 @@ pub fn print_order_book(book: &OrderBook, outcome_name: &str) {
     let depth = 10usize;
 
     println!();
-    println!(
-        "  {} {}",
-        "ORDER BOOK —".bold(),
-        outcome_name.bold().cyan()
-    );
+    println!("  {} {}", "ORDER BOOK —".bold(), outcome_name.bold().cyan());
     println!("  Token ID: {}", book.token_id.dimmed());
     println!();
-    println!("  {:>10}  {:>12}    {:>12}  {:>10}", "BID QTY".bold(), "BID PRICE".bold(), "ASK PRICE".bold(), "ASK QTY".bold());
+    println!(
+        "  {:>10}  {:>12}    {:>12}  {:>10}",
+        "BID QTY".bold(),
+        "BID PRICE".bold(),
+        "ASK PRICE".bold(),
+        "ASK QTY".bold()
+    );
     println!("  {}", "─".repeat(54).dimmed());
 
     let bids: Vec<_> = book.bids.iter().take(depth).collect();
@@ -128,20 +130,12 @@ pub fn print_order_book(book: &OrderBook, outcome_name: &str) {
     let rows = bids.len().max(asks.len());
 
     for i in 0..rows {
-        let bid_str = bids.get(i).map(|l| {
-            format!(
-                "{:>10.1}  {:>12.4}",
-                l.size,
-                l.price
-            )
-        });
-        let ask_str = asks.get(i).map(|l| {
-            format!(
-                "{:>12.4}  {:>10.1}",
-                l.price,
-                l.size
-            )
-        });
+        let bid_str = bids
+            .get(i)
+            .map(|l| format!("{:>10.1}  {:>12.4}", l.size, l.price));
+        let ask_str = asks
+            .get(i)
+            .map(|l| format!("{:>12.4}  {:>10.1}", l.price, l.size));
 
         let bid_display = bid_str
             .as_deref()
@@ -200,12 +194,7 @@ pub fn print_orders(orders: &[Order]) {
 
         println!(
             "{:<44}  {:<5}  {:>8.4}  {:>8.2}  {:>8.2}  {}",
-            o.id,
-            side_str,
-            o.price,
-            o.original_size,
-            o.size_matched,
-            status_str
+            o.id, side_str, o.price, o.original_size, o.size_matched, status_str
         );
         if !o.market.is_empty() {
             println!("  → {}", truncate(&o.market, 80).dimmed());
@@ -340,13 +329,23 @@ pub fn print_order_placed(order_id: &str, side: &Side, token_id: &str, price: f6
         Side::Sell => "SELL".red().bold(),
     };
     println!();
-    println!("  {} {} shares @ {} on token {}", side_str, size, format!("{:.4}", price).yellow(), token_id.dimmed());
+    println!(
+        "  {} {} shares @ {} on token {}",
+        side_str,
+        size,
+        format!("{:.4}", price).yellow(),
+        token_id.dimmed()
+    );
     println!("  Order ID: {}", order_id.cyan().bold());
     println!();
 }
 
 pub fn print_cancelled(order_id: &str) {
-    println!("  {} order {}", "Cancelled".yellow().bold(), order_id.dimmed());
+    println!(
+        "  {} order {}",
+        "Cancelled".yellow().bold(),
+        order_id.dimmed()
+    );
 }
 
 pub fn print_cancelled_all() {

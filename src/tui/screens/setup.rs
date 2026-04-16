@@ -117,12 +117,24 @@ impl SetupForm {
     pub fn backspace(&mut self) {
         self.error = None;
         match self.step {
-            SetupStep::PrivateKey => { self.private_key.pop(); }
-            SetupStep::ApiKey => { self.api_key.pop(); }
-            SetupStep::ApiSecret => { self.api_secret.pop(); }
-            SetupStep::ApiPassphrase => { self.api_passphrase.pop(); }
-            SetupStep::RpcUrl => { self.rpc_url.pop(); }
-            SetupStep::FunderAddress => { self.funder_address.pop(); }
+            SetupStep::PrivateKey => {
+                self.private_key.pop();
+            }
+            SetupStep::ApiKey => {
+                self.api_key.pop();
+            }
+            SetupStep::ApiSecret => {
+                self.api_secret.pop();
+            }
+            SetupStep::ApiPassphrase => {
+                self.api_passphrase.pop();
+            }
+            SetupStep::RpcUrl => {
+                self.rpc_url.pop();
+            }
+            SetupStep::FunderAddress => {
+                self.funder_address.pop();
+            }
             SetupStep::Confirm => {}
         }
     }
@@ -147,7 +159,8 @@ impl SetupForm {
                 } else {
                     let hex = &key[2..];
                     if hex.len() != 64 {
-                        self.error = Some(format!("Expected 64 hex chars after 0x, got {}", hex.len()));
+                        self.error =
+                            Some(format!("Expected 64 hex chars after 0x, got {}", hex.len()));
                         return false;
                     }
                     if !hex.chars().all(|c| c.is_ascii_hexdigit()) {
@@ -159,7 +172,8 @@ impl SetupForm {
             }
             SetupStep::ApiKey => {
                 if self.api_key.trim().is_empty() {
-                    self.error = Some("API key is required. Run `poly derive-keys` to generate one.".into());
+                    self.error =
+                        Some("API key is required. Run `poly derive-keys` to generate one.".into());
                     return false;
                 }
             }
@@ -227,10 +241,7 @@ impl SetupForm {
         // Preserve existing [tui] section if present
         let tui_section = std::fs::read_to_string(&path)
             .ok()
-            .and_then(|text| {
-                text.find("\n[tui]")
-                    .map(|i| text[i..].to_string())
-            })
+            .and_then(|text| text.find("\n[tui]").map(|i| text[i..].to_string()))
             .unwrap_or_default();
 
         let mut content = String::new();
@@ -278,7 +289,9 @@ pub fn render(f: &mut Frame, area: Rect, form: &SetupForm) {
     let block = Block::bordered()
         .title(Span::styled(
             " Setup ",
-            Style::default().fg(theme::CYAN).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(theme::CYAN)
+                .add_modifier(Modifier::BOLD),
         ))
         .border_style(Style::default().fg(theme::BORDER))
         .style(Style::default().bg(theme::PANEL_BG));
@@ -286,7 +299,10 @@ pub fn render(f: &mut Frame, area: Rect, form: &SetupForm) {
     let inner = block.inner(center);
     f.render_widget(block, center);
 
-    let content = inner.inner(Margin { horizontal: 2, vertical: 0 });
+    let content = inner.inner(Margin {
+        horizontal: 2,
+        vertical: 0,
+    });
 
     let rows = Layout::vertical([
         Constraint::Length(2), // header
@@ -314,21 +330,21 @@ pub fn render(f: &mut Frame, area: Rect, form: &SetupForm) {
 
     // Step description
     let (desc, hint) = step_description(&form.step);
-    let mut desc_lines = vec![
-        Line::from(Span::styled(desc, Style::default().fg(theme::DIM))),
-    ];
+    let mut desc_lines = vec![Line::from(Span::styled(
+        desc,
+        Style::default().fg(theme::DIM),
+    ))];
     if !hint.is_empty() {
-        desc_lines.push(Line::from(Span::styled(hint, Style::default().fg(theme::VERY_DIM))));
+        desc_lines.push(Line::from(Span::styled(
+            hint,
+            Style::default().fg(theme::VERY_DIM),
+        )));
     }
     f.render_widget(Paragraph::new(desc_lines), rows[1]);
 
     // Progress bar
     let step_idx = form.step.index();
-    let progress = format!(
-        "Step {}/{}",
-        step_idx + 1,
-        TOTAL_STEPS,
-    );
+    let progress = format!("Step {}/{}", step_idx + 1, TOTAL_STEPS,);
     let bar = render_progress_bar(step_idx, TOTAL_STEPS, rows[3].width as usize);
     f.render_widget(
         Paragraph::new(Line::from(vec![
@@ -380,12 +396,42 @@ pub fn render(f: &mut Frame, area: Rect, form: &SetupForm) {
 
 fn render_fields(f: &mut Frame, area: Rect, form: &SetupForm) {
     let fields: Vec<(&str, &str, bool, bool)> = vec![
-        ("Private Key", &form.private_key, true, form.step == SetupStep::PrivateKey),
-        ("API Key", &form.api_key, false, form.step == SetupStep::ApiKey),
-        ("API Secret", &form.api_secret, true, form.step == SetupStep::ApiSecret),
-        ("API Passphrase", &form.api_passphrase, true, form.step == SetupStep::ApiPassphrase),
-        ("RPC URL (optional)", &form.rpc_url, false, form.step == SetupStep::RpcUrl),
-        ("Funder Address (optional)", &form.funder_address, false, form.step == SetupStep::FunderAddress),
+        (
+            "Private Key",
+            &form.private_key,
+            true,
+            form.step == SetupStep::PrivateKey,
+        ),
+        (
+            "API Key",
+            &form.api_key,
+            false,
+            form.step == SetupStep::ApiKey,
+        ),
+        (
+            "API Secret",
+            &form.api_secret,
+            true,
+            form.step == SetupStep::ApiSecret,
+        ),
+        (
+            "API Passphrase",
+            &form.api_passphrase,
+            true,
+            form.step == SetupStep::ApiPassphrase,
+        ),
+        (
+            "RPC URL (optional)",
+            &form.rpc_url,
+            false,
+            form.step == SetupStep::RpcUrl,
+        ),
+        (
+            "Funder Address (optional)",
+            &form.funder_address,
+            false,
+            form.step == SetupStep::FunderAddress,
+        ),
     ];
 
     let constraints: Vec<Constraint> = fields.iter().map(|_| Constraint::Length(1)).collect();
@@ -405,7 +451,11 @@ fn render_fields(f: &mut Frame, area: Rect, form: &SetupForm) {
         let done = step.index() < form.step.index();
         let masked_buf;
         let display_val: &str = if value.is_empty() {
-            if *active { "█" } else { "" }
+            if *active {
+                "█"
+            } else {
+                ""
+            }
         } else if *secret && !*active {
             masked_buf = mask_str(value);
             &masked_buf
@@ -415,7 +465,9 @@ fn render_fields(f: &mut Frame, area: Rect, form: &SetupForm) {
 
         let (label_style, val_style) = if *active {
             (
-                Style::default().fg(theme::CYAN).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(theme::CYAN)
+                    .add_modifier(Modifier::BOLD),
                 Style::default().fg(theme::TEXT),
             )
         } else if done {
@@ -430,7 +482,13 @@ fn render_fields(f: &mut Frame, area: Rect, form: &SetupForm) {
             )
         };
 
-        let check = if done { "✓ " } else if *active { "> " } else { "  " };
+        let check = if done {
+            "✓ "
+        } else if *active {
+            "> "
+        } else {
+            "  "
+        };
         let check_style = if done {
             Style::default().fg(Color::Rgb(62, 224, 126))
         } else if *active {
@@ -469,14 +527,8 @@ fn step_description(step: &SetupStep) -> (&'static str, &'static str) {
             "CLOB API Key for authenticated requests.",
             "Generate with `poly derive-keys` or from your Polymarket API settings",
         ),
-        SetupStep::ApiSecret => (
-            "CLOB API Secret (used for HMAC signing).",
-            "",
-        ),
-        SetupStep::ApiPassphrase => (
-            "CLOB API Passphrase.",
-            "",
-        ),
+        SetupStep::ApiSecret => ("CLOB API Secret (used for HMAC signing).", ""),
+        SetupStep::ApiPassphrase => ("CLOB API Passphrase.", ""),
         SetupStep::RpcUrl => (
             "Polygon RPC URL — needed only for balance checks.",
             "Get a free key at alchemy.com or infura.io (press Enter to skip)",
@@ -502,7 +554,11 @@ fn mask_str(s: &str) -> String {
 
 fn render_progress_bar(current: usize, total: usize, width: usize) -> Span<'static> {
     let bar_width = width.saturating_sub(12).min(30);
-    let filled = if total > 0 { (current * bar_width) / total } else { 0 };
+    let filled = if total > 0 {
+        (current * bar_width) / total
+    } else {
+        0
+    };
     let empty = bar_width.saturating_sub(filled);
     let bar = format!("[{}{}]", "=".repeat(filled), " ".repeat(empty));
     Span::styled(bar, Style::default().fg(theme::DIM))

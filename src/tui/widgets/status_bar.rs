@@ -22,11 +22,7 @@ pub fn render(f: &mut Frame, area: Rect, app: &mut App) {
 
     // Flash: give the full row (minus version) to the message so it's never clipped.
     if let Some((msg, _, is_err)) = &app.flash {
-        let chunks = Layout::horizontal([
-            Constraint::Min(0),
-            Constraint::Length(12),
-        ])
-        .split(area);
+        let chunks = Layout::horizontal([Constraint::Min(0), Constraint::Length(12)]).split(area);
 
         let color = if *is_err { theme::ERROR } else { theme::YELLOW };
         let left = Paragraph::new(Line::from(vec![
@@ -69,20 +65,24 @@ pub fn render(f: &mut Frame, area: Rect, app: &mut App) {
             ])
             .split(area);
             f.render_widget(
-                Paragraph::new(Line::from(key_hint_spans(app))).style(Style::default().bg(theme::BG)),
+                Paragraph::new(Line::from(key_hint_spans(app)))
+                    .style(Style::default().bg(theme::BG)),
                 chunks[0],
             );
             f.render_widget(
                 Paragraph::new(Line::from(vec![Span::styled(
                     spinner_label.unwrap(),
                     Style::default().fg(theme::VERY_DIM).bg(theme::BG),
-                )])).style(Style::default().bg(theme::BG)),
+                )]))
+                .style(Style::default().bg(theme::BG)),
                 chunks[1],
             );
             f.render_widget(
                 Paragraph::new(Line::from(vec![Span::styled(
-                    aw, Style::default().fg(theme::ERROR).bg(theme::BG),
-                )])).style(Style::default().bg(theme::BG)),
+                    aw,
+                    Style::default().fg(theme::ERROR).bg(theme::BG),
+                )]))
+                .style(Style::default().bg(theme::BG)),
                 chunks[2],
             );
             render_version(f, chunks[3]);
@@ -96,14 +96,16 @@ pub fn render(f: &mut Frame, area: Rect, app: &mut App) {
             ])
             .split(area);
             f.render_widget(
-                Paragraph::new(Line::from(key_hint_spans(app))).style(Style::default().bg(theme::BG)),
+                Paragraph::new(Line::from(key_hint_spans(app)))
+                    .style(Style::default().bg(theme::BG)),
                 chunks[0],
             );
             f.render_widget(
                 Paragraph::new(Line::from(vec![Span::styled(
                     spinner_label.unwrap(),
                     Style::default().fg(theme::VERY_DIM).bg(theme::BG),
-                )])).style(Style::default().bg(theme::BG)),
+                )]))
+                .style(Style::default().bg(theme::BG)),
                 chunks[1],
             );
             render_version(f, chunks[2]);
@@ -117,26 +119,27 @@ pub fn render(f: &mut Frame, area: Rect, app: &mut App) {
             ])
             .split(area);
             f.render_widget(
-                Paragraph::new(Line::from(key_hint_spans(app))).style(Style::default().bg(theme::BG)),
+                Paragraph::new(Line::from(key_hint_spans(app)))
+                    .style(Style::default().bg(theme::BG)),
                 chunks[0],
             );
             f.render_widget(
                 Paragraph::new(Line::from(vec![Span::styled(
-                    aw, Style::default().fg(theme::ERROR).bg(theme::BG),
-                )])).style(Style::default().bg(theme::BG)),
+                    aw,
+                    Style::default().fg(theme::ERROR).bg(theme::BG),
+                )]))
+                .style(Style::default().bg(theme::BG)),
                 chunks[1],
             );
             render_version(f, chunks[2]);
         }
         (false, None) => {
             // Two-column: key hints | version
-            let chunks = Layout::horizontal([
-                Constraint::Min(0),
-                Constraint::Length(12),
-            ])
-            .split(area);
+            let chunks =
+                Layout::horizontal([Constraint::Min(0), Constraint::Length(12)]).split(area);
             f.render_widget(
-                Paragraph::new(Line::from(key_hint_spans(app))).style(Style::default().bg(theme::BG)),
+                Paragraph::new(Line::from(key_hint_spans(app)))
+                    .style(Style::default().bg(theme::BG)),
                 chunks[0],
             );
             render_version(f, chunks[1]);
@@ -281,7 +284,18 @@ fn key_hint_spans(app: &App) -> Vec<Span<'static>> {
             push_hint(&mut s, "r", "recompute");
             push_hint(&mut s, "p", "snapshot");
             push_hint_dyn(&mut s, "t", format!("−{}h (C)", app.calibration_hours));
-            push_hint_dyn(&mut s, "w", format!("fit:{}", if app.regression_weighted { "WLS" } else { "OLS" }));
+            push_hint_dyn(
+                &mut s,
+                "w",
+                format!(
+                    "fit:{}",
+                    if app.regression_weighted {
+                        "WLS"
+                    } else {
+                        "OLS"
+                    }
+                ),
+            );
             push_hint(&mut s, "q", "menu");
         }
     }
