@@ -405,6 +405,17 @@ async fn cmd_market(
         id
     };
 
+    // Validate: must be non-empty and contain only alphanumeric, hyphens, or
+    // hex-prefix for condition IDs.
+    if id.is_empty()
+        || !id
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+    {
+        display::print_error("Invalid market identifier. Expected a slug (e.g. \"will-trump-win\") or condition ID (0x…).");
+        return Ok(());
+    }
+
     if !json {
         display::print_info(&format!("Fetching market \"{}\"…", id));
     }
