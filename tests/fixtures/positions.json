@@ -1,0 +1,13 @@
+[
+  {
+    "conditionId": "0xabc123",
+    "asset": "111111",
+    "size": "50.0",
+    "avgPrice": "0.70",
+    "curPrice": "0.75",
+    "cashPnl": "2.50",
+    "realizedPnl": "0.0",
+    "title": "Will the test pass?",
+    "outcome": "Yes"
+  }
+]
