@@ -1,0 +1,38 @@
+[
+  {
+    "markets": [
+      {
+        "conditionId": "0xevent01",
+        "question": "Will Team A win?",
+        "marketSlug": "will-team-a-win",
+        "slug": "will-team-a-win",
+        "active": true,
+        "closed": false,
+        "endDate": "2030-06-30T00:00:00Z",
+        "volume": 40000.0,
+        "liquidity": 12000.0,
+        "outcomes": "[\"Yes\",\"No\"]",
+        "outcomePrices": "[\"0.65\",\"0.35\"]",
+        "clobTokenIds": "[\"600001\",\"600002\"]",
+        "negRisk": false,
+        "tags": []
+      },
+      {
+        "conditionId": "0xevent02",
+        "question": "Will Team B win?",
+        "marketSlug": "will-team-b-win",
+        "slug": "will-team-b-win",
+        "active": true,
+        "closed": false,
+        "endDate": "2030-06-30T00:00:00Z",
+        "volume": 35000.0,
+        "liquidity": 10000.0,
+        "outcomes": "[\"Yes\",\"No\"]",
+        "outcomePrices": "[\"0.35\",\"0.65\"]",
+        "clobTokenIds": "[\"600003\",\"600004\"]",
+        "negRisk": false,
+        "tags": []
+      }
+    ]
+  }
+]

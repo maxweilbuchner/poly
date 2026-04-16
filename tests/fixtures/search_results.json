@@ -1,0 +1,51 @@
+[
+  {
+    "conditionId": "0xaaa111",
+    "question": "Will Bitcoin reach $100k?",
+    "marketSlug": "will-bitcoin-reach-100k",
+    "slug": "will-bitcoin-reach-100k",
+    "active": true,
+    "closed": false,
+    "endDate": "2030-12-31T00:00:00Z",
+    "volume": 100000.0,
+    "liquidity": 20000.0,
+    "outcomes": "[\"Yes\",\"No\"]",
+    "outcomePrices": "[\"0.45\",\"0.55\"]",
+    "clobTokenIds": "[\"500001\",\"500002\"]",
+    "negRisk": false,
+    "tags": []
+  },
+  {
+    "conditionId": "0xbbb222",
+    "question": "Will Ethereum flip Bitcoin?",
+    "marketSlug": "will-ethereum-flip-bitcoin",
+    "slug": "will-ethereum-flip-bitcoin",
+    "active": true,
+    "closed": false,
+    "endDate": "2030-12-31T00:00:00Z",
+    "volume": 30000.0,
+    "liquidity": 8000.0,
+    "outcomes": "[\"Yes\",\"No\"]",
+    "outcomePrices": "[\"0.10\",\"0.90\"]",
+    "clobTokenIds": "[\"500003\",\"500004\"]",
+    "negRisk": false,
+    "tags": []
+  },
+  {
+    "conditionId": "0xccc333",
+    "question": "Will the S&P 500 hit 6000?",
+    "marketSlug": "will-sp500-hit-6000",
+    "slug": "will-sp500-hit-6000",
+    "active": true,
+    "closed": false,
+    "endDate": "2030-12-31T00:00:00Z",
+    "volume": 15000.0,
+    "liquidity": 4000.0,
+    "outcomes": "[\"Yes\",\"No\"]",
+    "outcomePrices": "[\"0.80\",\"0.20\"]",
+    "clobTokenIds": "[\"500005\",\"500006\"]",
+    "negRisk": false,
+    "tags": [],
+    "category": "finance"
+  }
+]
