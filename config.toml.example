@@ -1,4 +1,4 @@
-# ~/.poly/config.toml — user-level credentials for poly
+# ~/.poly/config.toml — user-level configuration for poly
 #
 # Copy this file to ~/.poly/config.toml and fill in your values.
 # Environment variables always take priority over this file.
@@ -6,16 +6,44 @@
 #
 # Create the directory first:  mkdir -p ~/.poly && chmod 700 ~/.poly
 
+# ── Authentication ────────────────────────────────────────────────────────────
+
+[auth]
 # Wallet private key (EOA that signs EIP-712 orders)
 private_key = "0x..."
 
 # CLOB API credentials (from https://polymarket.com/profile)
-api_key = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-api_secret = "..."
+api_key        = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+api_secret     = "..."
 api_passphrase = "..."
 
 # Polygon mainnet RPC — required for balance/allowance checks
-rpc_url = "https://polygon-mainnet.g.alchemy.com/v2/YOUR_KEY"
+polygon_rpc_url = "https://polygon-mainnet.g.alchemy.com/v2/YOUR_KEY"
 
 # Optional: proxy/funder address if using a Gnosis Safe or proxy wallet
 # funder_address = "0x..."
+
+# ── TUI settings ─────────────────────────────────────────────────────────────
+
+[tui]
+# Auto-refresh interval for positions/orders in seconds (default: 30)
+# refresh_interval_secs = 30
+
+# Maximum number of markets to load (default: 2500)
+# max_markets = 2500
+
+# Open order forms in dry-run mode by default (default: false)
+# default_dry_run = false
+
+# ── Backward compatibility ────────────────────────────────────────────────────
+#
+# The flat format (top-level keys without [auth]) still works:
+#
+#   private_key    = "0x..."
+#   api_key        = "..."
+#   api_secret     = "..."
+#   api_passphrase = "..."
+#   rpc_url        = "..."
+#   funder_address = "0x..."
+#
+# The nested [auth] / [tui] format above is recommended for new configs.
