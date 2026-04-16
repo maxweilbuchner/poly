@@ -37,8 +37,9 @@ fn render_balance_panel(f: &mut Frame, area: Rect, app: &App) {
     } else if app.balance.is_none() {
         if let Some(err) = &app.last_error {
             if is_auth_error(err) {
+                let err_str = err.to_string();
                 let mut lines = vec![Line::from("")];
-                for raw in err.lines() {
+                for raw in err_str.lines() {
                     let line = raw.trim_start_matches("  ");
                     if line.starts_with("Hint:") {
                         lines.push(Line::from(vec![
@@ -120,12 +121,6 @@ fn render_balance_panel(f: &mut Frame, area: Rect, app: &App) {
                 Style::default().fg(theme::BORDER_WARNING),
             )]));
         }
-
-        lines.push(Line::from(""));
-        lines.push(Line::from(vec![Span::styled(
-            "  r refresh",
-            Style::default().fg(theme::VERY_DIM),
-        )]));
 
         lines
     };

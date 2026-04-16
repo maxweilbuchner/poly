@@ -1,12 +1,14 @@
+use chrono::{DateTime, Local, NaiveDate, TimeZone, Utc};
 use ratatui::{
     layout::{Constraint, Layout, Rect},
-    style::{Modifier, Style},
+    style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, List, ListItem, Paragraph},
     Frame,
 };
 
 use crate::tui::{is_auth_error, theme, App};
+use crate::types::{Order, OrderStatus, Position, Side};
 
 pub fn render(f: &mut Frame, area: Rect, app: &mut App) {
     let chunks = Layout::vertical([
@@ -23,153 +25,344 @@ fn render_positions(f: &mut Frame, area: Rect, app: &mut App) {
     let focused = !app.positions_focus_orders;
     let border_color = if focused { theme::BORDER_ACTIVE } else { theme::BORDER };
 
+    let age_str = match app.positions_refreshed_at {
+        Some(t) => {
+            let secs = t.elapsed().as_secs();
+            if secs < 5 {
+                " [just now] ".to_string()
+            } else if secs < 60 {
+                format!(" [{}s ago] ", secs)
+            } else if secs < 3600 {
+                format!(" [{}m ago] ", secs / 60)
+            } else {
+                format!(" [{}h ago] ", secs / 3600)
+            }
+        }
+        None => String::new(),
+    };
+
+    let title = Line::from(vec![
+        Span::styled(" Positions", Style::default().fg(theme::CYAN).add_modifier(Modifier::BOLD)),
+        Span::styled(age_str, Style::default().fg(theme::VERY_DIM)),
+    ]);
+
     let block = Block::bordered()
-        .title(Span::styled(
-            " Positions ",
-            Style::default().fg(theme::CYAN).add_modifier(Modifier::BOLD),
-        ))
+        .title(title)
         .border_style(Style::default().fg(border_color))
         .style(Style::default().bg(theme::PANEL_BG));
 
     if app.positions.is_empty() {
-        let para = if app.loading {
-            Paragraph::new(Span::styled("Loading…", Style::default().fg(theme::DIM))).block(block)
+        if app.loading {
+            f.render_widget(Paragraph::new(Span::styled("Loading…", Style::default().fg(theme::DIM))).block(block), area);
         } else if let Some(err) = &app.last_error {
+            let err_str = err.to_string();
             if is_auth_error(err) {
-                auth_error_paragraph(err, block)
+                f.render_widget(auth_error_paragraph(&err_str, block), area);
             } else {
-                Paragraph::new(Span::styled("No open positions.", Style::default().fg(theme::DIM))).block(block)
+                f.render_widget(Paragraph::new(Span::styled("No open positions.", Style::default().fg(theme::DIM))).block(block), area);
             }
         } else {
-            Paragraph::new(Span::styled("No open positions.", Style::default().fg(theme::DIM))).block(block)
-        };
-        f.render_widget(para, area);
+            f.render_widget(Paragraph::new(Span::styled("No open positions.", Style::default().fg(theme::DIM))).block(block), area);
+        }
         return;
     }
 
-    let items: Vec<ListItem> = app
-        .positions
-        .iter()
-        .map(|p| {
-            let pnl_color = if p.unrealized_pnl >= 0.0 { theme::GREEN } else { theme::RED };
-            let pnl_sign = if p.unrealized_pnl >= 0.0 { "+" } else { "" };
-            let line = Line::from(vec![
-                Span::styled(
-                    format!("{:<45}", truncate(&p.market_question, 44)),
-                    Style::default().fg(theme::TEXT),
-                ),
-                Span::styled(
-                    format!(" {:>8}", p.outcome),
-                    Style::default().fg(theme::CYAN),
-                ),
-                Span::styled(
-                    format!(" {:>7.2}", p.size),
-                    Style::default().fg(theme::TEXT),
-                ),
-                Span::styled(
-                    format!(" @{:.4}", p.avg_price),
-                    Style::default().fg(theme::DIM),
-                ),
-                Span::styled(
-                    format!(" {}{:.4}", pnl_sign, p.unrealized_pnl),
-                    Style::default().fg(pnl_color).add_modifier(Modifier::BOLD),
-                ),
-            ]);
-            ListItem::new(line)
-        })
-        .collect();
+    // Render block shell first, then split the inner area.
+    let inner = block.inner(area);
+    f.render_widget(block, area);
 
+    let inner_chunks = Layout::vertical([
+        Constraint::Length(1), // summary line
+        Constraint::Length(1), // spacer
+        Constraint::Min(0),    // list
+    ])
+    .split(inner);
+
+    // Summary line
+    let total_unreal: f64 = app.positions.iter().map(|p| p.unrealized_pnl).sum();
+    let total_real: f64 = app.positions.iter().map(|p| p.realized_pnl).sum();
+    let cost_basis: f64 = app.positions.iter().map(|p| p.size * p.avg_price).sum();
+    let count = app.positions.len();
+    let unreal_sign = if total_unreal >= 0.0 { "+" } else { "" };
+    let unreal_color = if total_unreal >= 0.0 { theme::GREEN } else { theme::RED };
+    let real_sign = if total_real >= 0.0 { "+" } else { "" };
+    let real_color = if total_real >= 0.0 { theme::GREEN } else { theme::RED };
+    let mut summary_spans = vec![
+        Span::styled("  P&L ", Style::default().fg(theme::DIM)),
+        Span::styled(
+            format!("{}{:.4}", unreal_sign, total_unreal),
+            Style::default().fg(unreal_color).add_modifier(Modifier::BOLD),
+        ),
+        Span::styled(" unreal", Style::default().fg(theme::VERY_DIM)),
+    ];
+    if total_real != 0.0 {
+        summary_spans.extend([
+            Span::styled("  · ", Style::default().fg(theme::VERY_DIM)),
+            Span::styled(
+                format!("{}{:.4}", real_sign, total_real),
+                Style::default().fg(real_color).add_modifier(Modifier::BOLD),
+            ),
+            Span::styled(" realized", Style::default().fg(theme::VERY_DIM)),
+        ]);
+    }
+    summary_spans.extend([
+        Span::styled("  · ", Style::default().fg(theme::VERY_DIM)),
+        Span::styled(
+            format!("{} position{}", count, if count == 1 { "" } else { "s" }),
+            Style::default().fg(theme::DIM),
+        ),
+        Span::styled("  · ", Style::default().fg(theme::VERY_DIM)),
+        Span::styled("cost basis ", Style::default().fg(theme::DIM)),
+        Span::styled(format!("${:.4}", cost_basis), Style::default().fg(theme::TEXT)),
+        Span::styled("  · ", Style::default().fg(theme::VERY_DIM)),
+        Span::styled(
+            format!("{:.2} shares", app.positions.iter().map(|p| p.size).sum::<f64>()),
+            Style::default().fg(theme::DIM),
+        ),
+    ]);
+    let summary = Line::from(summary_spans);
+    f.render_widget(Paragraph::new(summary), inner_chunks[0]);
+
+    let end_dates: Vec<Option<String>> = app.positions.iter().map(|p| {
+        // Prefer the end_date fetched with the position (covers expired/low-volume markets).
+        // Fall back to the in-memory market list for markets still actively loaded.
+        p.end_date.clone().or_else(|| {
+            app.markets.iter()
+                .find(|m| m.condition_id == p.market_id)
+                .and_then(|m| m.end_date.clone())
+        })
+    }).collect();
+
+    let items = build_position_items(&app.positions, area.width as usize, &end_dates);
     let list = List::new(items)
-        .block(block)
         .highlight_style(
             Style::default()
-                .bg(theme::BORDER_ACTIVE)
-                .fg(theme::TEXT)
+                .bg(Color::Rgb(32, 38, 72))
+                .fg(Color::Rgb(255, 255, 255))
                 .add_modifier(Modifier::BOLD),
         )
         .highlight_symbol("▸ ");
 
-    f.render_stateful_widget(list, area, &mut app.positions_list_state);
+    f.render_stateful_widget(list, inner_chunks[2], &mut app.positions_list_state);
+}
+
+fn build_position_items(positions: &[Position], area_width: usize, end_dates: &[Option<String>]) -> Vec<ListItem<'static>> {
+    // ── Pre-pass: compute max expiry label width so we can reserve space on line1 ─
+
+    struct PRow {
+        question:   String,
+        outcome:    String,
+        size_num:   String,
+        avg_str:    String,
+        cur_str:    String,
+        pnl_str:    String,
+        exp_str:    String,
+        pnl_color:  Color,
+        cur_color:  Color,
+        exp_color:  Color,
+        redeemable: bool,
+        /// "won" / "lost" when the market has resolved, empty otherwise.
+        resolution: &'static str,
+        res_color:  Color,
+    }
+
+    let max_exp: usize = positions
+        .iter()
+        .zip(end_dates.iter())
+        .map(|(_, ed)| match ed.as_deref() {
+            Some(s) => format_expiry(s).0.len(),
+            None    => "expired".len(),
+        })
+        .max()
+        .unwrap_or(7);
+
+    // Reserve space for the resolution column: "open"/"won"/"lost" (4) + "  · " (4) = 8.
+    let res_col_width = if positions.is_empty() { 0 } else { 8 };
+
+    // Reserve space for the [R] badge if any position is redeemable.
+    let has_redeemable = positions.iter().any(|p| p.redeemable);
+    let badge_width = if has_redeemable { 5 } else { 0 };
+
+    // borders(2) + highlight(2) + indent(2) + separator(4) + exp + optional res col + optional badge
+    let q_width = area_width.saturating_sub(6 + 4 + max_exp + res_col_width + badge_width).max(20);
+
+    // ── Pass 1: format every field, measure column widths ─────────────────────
+
+    let rows: Vec<PRow> = positions
+        .iter()
+        .zip(end_dates.iter())
+        .map(|(p, ed)| {
+            let pnl_sign = if p.unrealized_pnl >= 0.0 { "+" } else { "" };
+            let (exp_str, exp_color) = match ed.as_deref() {
+                Some(s) => format_expiry(s),
+                None    => ("expired".to_string(), theme::RED),
+            };
+            PRow {
+                question:  truncate(&p.market_question, q_width),
+                outcome:   p.outcome.clone(),
+                size_num:  format!("{:.2}", p.size),
+                avg_str:   format!("avg {:.4}", p.avg_price),
+                cur_str:   format!("cur {:.4}", p.current_price),
+                pnl_str:   format!("PnL {}{:.4}", pnl_sign, p.unrealized_pnl),
+                exp_str,
+                pnl_color: if p.unrealized_pnl >= 0.0 { theme::GREEN } else { theme::RED },
+                cur_color: if p.current_price > p.avg_price + 0.01 {
+                    theme::GREEN
+                } else if p.current_price < p.avg_price - 0.01 {
+                    theme::RED
+                } else {
+                    theme::TEXT
+                },
+                exp_color,
+                redeemable: p.redeemable,
+                resolution: if p.market_closed {
+                    if p.current_price > 0.95 { "won" } else { "lost" }
+                } else { "open" },
+                res_color: if p.market_closed && p.current_price > 0.95 {
+                    theme::GREEN
+                } else if p.market_closed {
+                    theme::VERY_DIM
+                } else {
+                    theme::DIM
+                },
+            }
+        })
+        .collect();
+
+    // Max width of each variable column across all rows.
+    let max_size = rows.iter().map(|r| r.size_num.len()).max().unwrap_or(4);
+    let max_avg  = rows.iter().map(|r| r.avg_str.len()).max().unwrap_or(10);
+    let max_cur  = rows.iter().map(|r| r.cur_str.len()).max().unwrap_or(10);
+    let max_pnl  = rows.iter().map(|r| r.pnl_str.len()).max().unwrap_or(11);
+
+    // Fixed overhead: indent(2) + 4 separators(16) + " shares"(7)
+    // Subtract 4 extra for borders(2) + highlight symbol "▸ "(2) not in line content.
+    let fixed = 2 + 4 * 4 + max_size + 7 + max_avg + max_cur + max_pnl;
+    let outcome_width = area_width.saturating_sub(4).saturating_sub(fixed).max(4);
+
+    // ── Pass 2: build ListItems with padded columns ───────────────────────────
+
+    rows.into_iter()
+        .map(|r| {
+            // Line 1: question  ·  [resolution]  ·  exp  [R]
+            let mut line1_spans = vec![
+                Span::raw("  "),
+                Span::styled(pad_right(r.question, q_width), Style::default().fg(theme::TEXT)),
+            ];
+            line1_spans.push(Span::styled("  · ", Style::default().fg(theme::VERY_DIM)));
+            line1_spans.push(Span::styled(
+                r.resolution,
+                Style::default().fg(r.res_color).add_modifier(Modifier::BOLD),
+            ));
+            line1_spans.push(Span::styled("  · ", Style::default().fg(theme::VERY_DIM)));
+            line1_spans.push(Span::styled(r.exp_str, Style::default().fg(r.exp_color)));
+            if r.redeemable {
+                line1_spans.push(Span::styled(
+                    "  [R]",
+                    Style::default().fg(theme::GREEN).add_modifier(Modifier::BOLD),
+                ));
+            }
+            let line1 = Line::from(line1_spans);
+
+            // Line 2: outcome · shares · avg · cur · PnL
+            let outcome_cell = pad_right(truncate(&r.outcome, outcome_width), outcome_width);
+            let size_cell    = format!("{:>width$} shares", r.size_num, width = max_size);
+            let avg_cell     = pad_right(r.avg_str, max_avg);
+            let cur_cell     = pad_right(r.cur_str, max_cur);
+            let pnl_cell     = pad_right(r.pnl_str, max_pnl);
+
+            let line2 = Line::from(vec![
+                Span::raw("  "),
+                Span::styled(outcome_cell, Style::default().fg(theme::CYAN)),
+                Span::styled("  · ", Style::default().fg(theme::VERY_DIM)),
+                Span::styled(size_cell, Style::default().fg(theme::TEXT)),
+                Span::styled("  · ", Style::default().fg(theme::VERY_DIM)),
+                Span::styled(avg_cell, Style::default().fg(theme::DIM)),
+                Span::styled("  · ", Style::default().fg(theme::VERY_DIM)),
+                Span::styled(cur_cell, Style::default().fg(r.cur_color)),
+                Span::styled("  · ", Style::default().fg(theme::VERY_DIM)),
+                Span::styled(pnl_cell, Style::default().fg(r.pnl_color).add_modifier(Modifier::BOLD)),
+            ]);
+
+            ListItem::new(vec![line1, line2])
+        })
+        .collect()
+}
+
+/// Parse an end-date string and return a human-readable "exp Xd/Xh/Xm" label plus its colour.
+fn format_expiry(end: &str) -> (String, Color) {
+    let dt: Option<DateTime<Local>> = DateTime::parse_from_rfc3339(end)
+        .map(|dt| dt.with_timezone(&Local))
+        .ok()
+        .or_else(|| {
+            NaiveDate::parse_from_str(end.get(..10).unwrap_or(""), "%Y-%m-%d")
+                .ok()
+                .and_then(|d| d.and_hms_opt(0, 0, 0))
+                .map(|ndt| Utc.from_utc_datetime(&ndt).with_timezone(&Local))
+        });
+
+    match dt {
+        None => (String::new(), theme::VERY_DIM),
+        Some(dt) => {
+            let now = Local::now();
+            if dt <= now {
+                return ("expired".to_string(), theme::RED);
+            }
+            let dur = dt.signed_duration_since(now);
+            let days  = dur.num_days();
+            let hours = dur.num_hours();
+            let mins  = dur.num_minutes();
+            let (label, color) = if days >= 7 {
+                (format!("exp {}d", days), theme::DIM)
+            } else if days >= 2 {
+                (format!("exp {}d", days), theme::TEXT)
+            } else if hours >= 2 {
+                (format!("exp {}h", hours), theme::YELLOW)
+            } else if mins >= 1 {
+                (format!("exp {}m", mins), theme::RED)
+            } else {
+                ("exp <1m".to_string(), theme::RED)
+            };
+            (label, color)
+        }
+    }
 }
 
 fn render_orders(f: &mut Frame, area: Rect, app: &mut App) {
     let focused = app.positions_focus_orders;
     let border_color = if focused { theme::BORDER_ACTIVE } else { theme::BORDER };
 
-    let title = if focused {
-        " Open Orders [c cancel  C cancel-all] "
-    } else {
-        " Open Orders "
-    };
-
     let block = Block::bordered()
         .title(Span::styled(
-            title,
+            " Open Orders ",
             Style::default().fg(theme::CYAN).add_modifier(Modifier::BOLD),
         ))
         .border_style(Style::default().fg(border_color))
         .style(Style::default().bg(theme::PANEL_BG));
 
     if app.orders.is_empty() {
-        let para = if app.loading {
-            Paragraph::new(Span::styled("Loading…", Style::default().fg(theme::DIM))).block(block)
+        if app.loading {
+            f.render_widget(Paragraph::new(Span::styled("Loading…", Style::default().fg(theme::DIM))).block(block), area);
         } else if let Some(err) = &app.last_error {
+            let err_str = err.to_string();
             if is_auth_error(err) {
-                auth_error_paragraph(err, block)
+                f.render_widget(auth_error_paragraph(&err_str, block), area);
             } else {
-                Paragraph::new(Span::styled("No open orders.", Style::default().fg(theme::DIM))).block(block)
+                f.render_widget(Paragraph::new(Span::styled("No open orders.", Style::default().fg(theme::DIM))).block(block), area);
             }
         } else {
-            Paragraph::new(Span::styled("No open orders.", Style::default().fg(theme::DIM))).block(block)
-        };
-        f.render_widget(para, area);
+            f.render_widget(Paragraph::new(Span::styled("No open orders.", Style::default().fg(theme::DIM))).block(block), area);
+        }
         return;
     }
 
-    let items: Vec<ListItem> = app
-        .orders
-        .iter()
-        .map(|o| {
-            let side_color = match o.side {
-                crate::types::Side::Buy => theme::GREEN,
-                crate::types::Side::Sell => theme::RED,
-            };
-            let line = Line::from(vec![
-                Span::styled(
-                    format!("{:<20}", truncate(&o.id, 19)),
-                    Style::default().fg(theme::VERY_DIM),
-                ),
-                Span::styled(
-                    format!(" {:>4}", o.side),
-                    Style::default().fg(side_color).add_modifier(Modifier::BOLD),
-                ),
-                Span::styled(
-                    format!(" @{:.4}", o.price),
-                    Style::default().fg(theme::TEXT),
-                ),
-                Span::styled(
-                    format!(" {:>8.2}", o.original_size),
-                    Style::default().fg(theme::TEXT),
-                ),
-                Span::styled(
-                    format!(" filled: {:.2}", o.size_matched),
-                    Style::default().fg(theme::DIM),
-                ),
-                Span::styled(
-                    format!(" [{}]", o.status),
-                    Style::default().fg(theme::BLUE),
-                ),
-            ]);
-            ListItem::new(line)
-        })
-        .collect();
-
+    let items = build_order_items(&app.orders, area.width as usize);
     let list = List::new(items)
         .block(block)
         .highlight_style(
             Style::default()
-                .bg(theme::BORDER_ACTIVE)
-                .fg(theme::TEXT)
+                .bg(Color::Rgb(32, 38, 72))
+                .fg(Color::Rgb(255, 255, 255))
                 .add_modifier(Modifier::BOLD),
         )
         .highlight_symbol("▸ ");
@@ -177,9 +370,140 @@ fn render_orders(f: &mut Frame, area: Rect, app: &mut App) {
     f.render_stateful_widget(list, area, &mut app.orders_list_state);
 }
 
+fn build_order_items(orders: &[Order], area_width: usize) -> Vec<ListItem<'static>> {
+    // ── Pass 1: format every field, measure column widths ─────────────────────
+
+    struct ORow {
+        question:    String,
+        side_str:    String,
+        outcome:     String,
+        price_str:   String,
+        size_num:    String,
+        filled_str:  String, // empty if not partially filled
+        status_str:  String,
+        side_color:  Color,
+        status_color: Color,
+    }
+
+    let q_width = area_width.saturating_sub(6);
+
+    let rows: Vec<ORow> = orders
+        .iter()
+        .map(|o| {
+            let label = if o.market.is_empty() { &o.id } else { &o.market };
+            let remaining = o.original_size - o.size_matched;
+            ORow {
+                question:    truncate(label, q_width),
+                side_str:    format!("{}", o.side),
+                outcome:     o.outcome.clone(),
+                price_str:   format!("@{:.4}", o.price),
+                size_num:    format!("{:.2}", o.original_size),
+                filled_str:  if o.size_matched > 0.0 {
+                    format!("filled {:.2}  rem {:.2}", o.size_matched, remaining)
+                } else {
+                    String::new()
+                },
+                status_str:  format!("[{}]", o.status),
+                side_color:  match o.side {
+                    Side::Buy  => theme::GREEN,
+                    Side::Sell => theme::RED,
+                },
+                status_color: match o.status {
+                    OrderStatus::Live           => theme::BLUE,
+                    OrderStatus::Filled         => theme::GREEN,
+                    OrderStatus::Cancelled      => theme::RED,
+                    OrderStatus::PartiallyFilled => theme::YELLOW,
+                    OrderStatus::Unknown        => theme::VERY_DIM,
+                },
+            }
+        })
+        .collect();
+
+    let max_side   = rows.iter().map(|r| r.side_str.len()).max().unwrap_or(4);
+    let max_size   = rows.iter().map(|r| r.size_num.len()).max().unwrap_or(4);
+    let max_price  = rows.iter().map(|r| r.price_str.len()).max().unwrap_or(7);
+    let max_filled = rows.iter().map(|r| r.filled_str.len()).max().unwrap_or(0);
+    let max_status = rows.iter().map(|r| r.status_str.len()).max().unwrap_or(6);
+    let has_outcome = rows.iter().any(|r| !r.outcome.is_empty());
+    let has_filled  = rows.iter().any(|r| !r.filled_str.is_empty());
+
+    // Fixed overhead: indent(2) + side + sep(4) + price + sep(4) + " shares"(7) + size + sep(4) + status
+    //   + if outcome column exists: sep(4)
+    //   + if filled column exists:  sep(4) + filled
+    // Subtract 4 extra for borders(2) + highlight symbol "▸ "(2) not in line content.
+    let fixed = 2
+        + max_side + 4
+        + max_price + 4
+        + max_size + 7 + 4
+        + max_status
+        + if has_outcome { 4 } else { 0 }
+        + if has_filled { 4 + max_filled } else { 0 };
+    let area_width = area_width.saturating_sub(4);
+    let outcome_width = if has_outcome {
+        area_width.saturating_sub(fixed).max(4)
+    } else {
+        0
+    };
+
+    // ── Pass 2: build ListItems with padded columns ───────────────────────────
+
+    rows.into_iter()
+        .map(|r| {
+            let line1 = Line::from(vec![
+                Span::raw("  "),
+                Span::styled(r.question, Style::default().fg(theme::TEXT)),
+            ]);
+
+            let side_cell   = pad_right(r.side_str, max_side);
+            let price_cell  = pad_right(r.price_str, max_price);
+            let size_cell   = format!("{:>width$} shares", r.size_num, width = max_size);
+            let status_cell = pad_right(r.status_str, max_status);
+
+            let mut spans = vec![
+                Span::raw("  "),
+                Span::styled(side_cell, Style::default().fg(r.side_color).add_modifier(Modifier::BOLD)),
+            ];
+            if has_outcome {
+                let outcome_cell = pad_right(truncate(&r.outcome, outcome_width), outcome_width);
+                spans.push(Span::styled("  · ", Style::default().fg(theme::VERY_DIM)));
+                spans.push(Span::styled(outcome_cell, Style::default().fg(theme::CYAN)));
+            }
+            spans.extend([
+                Span::styled("  · ", Style::default().fg(theme::VERY_DIM)),
+                Span::styled(price_cell, Style::default().fg(theme::TEXT)),
+                Span::styled("  · ", Style::default().fg(theme::VERY_DIM)),
+                Span::styled(size_cell, Style::default().fg(theme::TEXT)),
+            ]);
+            if has_filled {
+                let filled_cell = pad_right(r.filled_str, max_filled);
+                spans.push(Span::styled("  · ", Style::default().fg(theme::VERY_DIM)));
+                spans.push(Span::styled(filled_cell, Style::default().fg(theme::DIM)));
+            }
+            spans.extend([
+                Span::styled("  · ", Style::default().fg(theme::VERY_DIM)),
+                Span::styled(status_cell, Style::default().fg(r.status_color)),
+            ]);
+
+            let line2 = Line::from(spans);
+            ListItem::new(vec![line1, line2])
+        })
+        .collect()
+}
+
+/// Left-pad `s` with spaces to exactly `width` chars. If `s` is already wider, return as-is.
+fn pad_right(s: String, width: usize) -> String {
+    let len = s.chars().count();
+    if len >= width {
+        s
+    } else {
+        let mut out = s;
+        out.extend(std::iter::repeat_n(' ', width - len));
+        out
+    }
+}
+
 /// Build a Paragraph that shows an auth/credentials error persistently inside a panel.
 fn auth_error_paragraph<'a>(err: &'a str, block: Block<'a>) -> Paragraph<'a> {
-    // Split on the hint line so we can colour them differently.
     let mut lines = vec![Line::from("")];
     for raw in err.lines() {
         let line = raw.trim_start_matches("  ");
