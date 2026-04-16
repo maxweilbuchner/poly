@@ -267,6 +267,8 @@ async fn main() {
         std::process::exit(1);
     }
 
+    warn_config_permissions();
+
     let client = build_client();
 
     let json = cli.json;
@@ -1002,6 +1004,31 @@ fn load_config() -> PolyConfig {
         .and_then(|p| std::fs::read_to_string(p).ok())
         .and_then(|s| toml::from_str(&s).ok())
         .unwrap_or_default()
+}
+
+/// Warn (like SSH does) when the config file containing secrets is readable by
+/// other users. Only effective on Unix; a no-op on Windows.
+fn warn_config_permissions() {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        if let Some(path) = config_path() {
+            if let Ok(meta) = std::fs::metadata(&path) {
+                let mode = meta.permissions().mode();
+                // group or other readable/writable bits
+                if mode & 0o077 != 0 {
+                    display::print_warning(&format!(
+                        "Config file {} has permissions {:o}, which are too open.\n\
+                         \x20        It is recommended that your config file is NOT accessible by others.\n\
+                         \x20        Run: chmod 600 {}",
+                        path.display(),
+                        mode & 0o777,
+                        path.display(),
+                    ));
+                }
+            }
+        }
+    }
 }
 
 // ── Logging ──────────────────────────────────────────────────────────────────

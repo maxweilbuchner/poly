@@ -358,6 +358,10 @@ pub fn print_error(msg: &str) {
     eprintln!("{} {}", "error:".red().bold(), msg);
 }
 
+pub fn print_warning(msg: &str) {
+    eprintln!("{} {}", "warning:".yellow().bold(), msg);
+}
+
 pub fn print_info(msg: &str) {
     println!("{} {}", "→".dimmed(), msg);
 }
