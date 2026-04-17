@@ -61,7 +61,6 @@ impl ClobAuth {
     }
 
     /// Auth message for the user WebSocket channel.
-    #[allow(dead_code)]
     pub fn ws_auth_message(&self) -> serde_json::Value {
         serde_json::json!({
             "type": "user",

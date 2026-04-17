@@ -22,7 +22,7 @@ pub fn render(f: &mut Frame, area: Rect, app: &mut App) {
 
     // Flash: give the full row (minus version) to the message so it's never clipped.
     if let Some((msg, _, is_err)) = &app.flash {
-        let chunks = Layout::horizontal([Constraint::Min(0), Constraint::Length(12)]).split(area);
+        let chunks = Layout::horizontal([Constraint::Min(0), Constraint::Length(16)]).split(area);
 
         let color = if *is_err { theme::ERROR } else { theme::YELLOW };
         let left = Paragraph::new(Line::from(vec![
@@ -32,7 +32,7 @@ pub fn render(f: &mut Frame, area: Rect, app: &mut App) {
         .style(Style::default().bg(theme::BG));
         f.render_widget(left, chunks[0]);
 
-        render_version(f, chunks[1]);
+        render_version(f, chunks[1], app.user_ws_connected);
         return;
     }
 
@@ -61,7 +61,7 @@ pub fn render(f: &mut Frame, area: Rect, app: &mut App) {
                 Constraint::Min(0),
                 Constraint::Length(spin_w),
                 Constraint::Length(AUTH_WARN_W),
-                Constraint::Length(12),
+                Constraint::Length(16),
             ])
             .split(area);
             f.render_widget(
@@ -85,14 +85,14 @@ pub fn render(f: &mut Frame, area: Rect, app: &mut App) {
                 .style(Style::default().bg(theme::BG)),
                 chunks[2],
             );
-            render_version(f, chunks[3]);
+            render_version(f, chunks[3], app.user_ws_connected);
         }
         (true, None) => {
             // Three-column: key hints | spinner | version
             let chunks = Layout::horizontal([
                 Constraint::Min(0),
                 Constraint::Length(spin_w),
-                Constraint::Length(12),
+                Constraint::Length(16),
             ])
             .split(area);
             f.render_widget(
@@ -108,14 +108,14 @@ pub fn render(f: &mut Frame, area: Rect, app: &mut App) {
                 .style(Style::default().bg(theme::BG)),
                 chunks[1],
             );
-            render_version(f, chunks[2]);
+            render_version(f, chunks[2], app.user_ws_connected);
         }
         (false, Some(aw)) => {
             // Three-column: key hints | auth warn | version
             let chunks = Layout::horizontal([
                 Constraint::Min(0),
                 Constraint::Length(AUTH_WARN_W),
-                Constraint::Length(12),
+                Constraint::Length(16),
             ])
             .split(area);
             f.render_widget(
@@ -131,29 +131,35 @@ pub fn render(f: &mut Frame, area: Rect, app: &mut App) {
                 .style(Style::default().bg(theme::BG)),
                 chunks[1],
             );
-            render_version(f, chunks[2]);
+            render_version(f, chunks[2], app.user_ws_connected);
         }
         (false, None) => {
             // Two-column: key hints | version
             let chunks =
-                Layout::horizontal([Constraint::Min(0), Constraint::Length(12)]).split(area);
+                Layout::horizontal([Constraint::Min(0), Constraint::Length(16)]).split(area);
             f.render_widget(
                 Paragraph::new(Line::from(key_hint_spans(app)))
                     .style(Style::default().bg(theme::BG)),
                 chunks[0],
             );
-            render_version(f, chunks[1]);
+            render_version(f, chunks[1], app.user_ws_connected);
         }
     }
 }
 
-fn render_version(f: &mut Frame, area: Rect) {
-    let v = Paragraph::new(Line::from(vec![Span::styled(
-        " poly v0.2 ",
+fn render_version(f: &mut Frame, area: Rect, ws_connected: bool) {
+    let mut spans = Vec::new();
+    if ws_connected {
+        spans.push(Span::styled(" WS", Style::default().fg(theme::GREEN).bg(theme::BG)));
+        spans.push(Span::styled(" ", Style::default().bg(theme::BG)));
+    }
+    spans.push(Span::styled(
+        "poly v0.2 ",
         Style::default().fg(theme::VERY_DIM).bg(theme::BG),
-    )]))
-    .style(Style::default().bg(theme::BG))
-    .alignment(ratatui::layout::Alignment::Right);
+    ));
+    let v = Paragraph::new(Line::from(spans))
+        .style(Style::default().bg(theme::BG))
+        .alignment(ratatui::layout::Alignment::Right);
     f.render_widget(v, area);
 }
 

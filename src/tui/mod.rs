@@ -28,7 +28,7 @@ use tokio::sync::watch;
 use crate::client::{self, PolyClient};
 use crate::error::AppError;
 use crate::types::{
-    Market, MarketStatus, Order, OrderBook, OrderStatus, OrderType, OutcomeSeries,
+    Market, MarketStatus, Order, OrderBook, OrderType, OutcomeSeries,
     PlaceOrderParams, Position, PricePoint, Side,
 };
 
@@ -280,6 +280,13 @@ pub enum AppEvent {
     /// Background-loaded startup data (avoids blocking App::new on disk I/O).
     SnapshotMetaLoaded(crate::persist::SnapshotMeta),
     ResolvedIdsLoaded(HashSet<String>),
+
+    /// User WebSocket channel: an order status changed (order_id, new_status).
+    UserOrderUpdate(String, String),
+    /// User WebSocket channel connected.
+    UserWsConnected,
+    /// User WebSocket channel disconnected (fell back to REST polling).
+    UserWsDisconnected,
 }
 
 // ── Analytics stats ───────────────────────────────────────────────────────────
@@ -387,6 +394,10 @@ pub struct App {
     pub ws_cancel: Option<tokio::sync::watch::Sender<bool>>,
     /// Timestamp of the last received order book update (WS or HTTP fallback).
     pub order_book_updated_at: Option<Instant>,
+
+    // User WebSocket channel — cancel signal and connection state
+    pub user_ws_cancel: Option<tokio::sync::watch::Sender<bool>>,
+    pub user_ws_connected: bool,
 
     // Root menu cursor position
     pub menu_index: usize,
@@ -501,6 +512,8 @@ impl App {
 
             ws_cancel: None,
             order_book_updated_at: None,
+            user_ws_cancel: None,
+            user_ws_connected: false,
 
             loading: false,
             markets_loading_more: false,
@@ -1040,6 +1053,18 @@ async fn run_app(
     app.loading = true;
     spawn_load_markets(Arc::clone(&client), tx.clone(), app.max_markets);
 
+    // Preload all tabs in the background so data is ready when the user switches.
+    spawn_load_positions(Arc::clone(&client), tx.clone());
+    spawn_load_orders(Arc::clone(&client), tx.clone());
+    spawn_load_balance(Arc::clone(&client), tx.clone());
+    app.analytics_loading = true;
+    spawn_compute_analytics(
+        app.db_path.clone(),
+        tx.clone(),
+        Arc::clone(&client),
+        app.calibration_hours,
+    );
+
     // Probe credentials in the background so any auth problem is visible before
     // the user navigates to trading screens and attempts to place an order.
     {
@@ -1049,6 +1074,14 @@ async fn run_app(
             let warning = client2.check_credentials().await;
             let _ = tx2.send(AppEvent::AuthChecked(warning));
         });
+    }
+
+    // Start the user WebSocket channel for live order/trade events.
+    // Only when CLOB credentials are available.
+    if let Some(auth) = client.auth.clone() {
+        let (cancel_tx, cancel_rx) = tokio::sync::watch::channel(false);
+        app.user_ws_cancel = Some(cancel_tx);
+        spawn_ws_user_channel(auth, tx.clone(), cancel_rx);
     }
 
     // Load snapshot metadata and resolved IDs off the main thread so the first
@@ -1111,8 +1144,15 @@ fn handle_event(
                     app.flash = None;
                 }
             }
-            // Auto-refresh positions every 30s while the Positions tab is active.
-            // Skip if already loading, or if a modal (quit/help) is open.
+            // Auto-refresh positions via REST polling.
+            // When the user WebSocket is connected, fills trigger instant refreshes,
+            // so we only need a slow safety-net poll (4× the configured interval).
+            // Without WS, keep the normal interval.
+            let poll_secs = if app.user_ws_connected {
+                app.refresh_interval_secs * 4
+            } else {
+                app.refresh_interval_secs
+            };
             if app.active_tab == Tab::Positions
                 && !app.loading
                 && !matches!(
@@ -1121,7 +1161,7 @@ fn handle_event(
                 )
                 && app
                     .positions_refreshed_at
-                    .is_some_and(|t| t.elapsed() >= Duration::from_secs(app.refresh_interval_secs))
+                    .is_some_and(|t| t.elapsed() >= Duration::from_secs(poll_secs))
             {
                 app.loading = true;
                 spawn_load_positions(Arc::clone(&client), tx.clone());
@@ -1162,15 +1202,6 @@ fn handle_event(
             app.last_error = None;
             if app.market_list_state.selected().is_none() && !app.markets.is_empty() {
                 app.market_list_state.select(Some(0));
-            }
-            if app.active_tab == Tab::Analytics && !app.analytics_loading {
-                app.analytics_loading = true;
-                spawn_compute_analytics(
-                    app.db_path.clone(),
-                    tx.clone(),
-                    Arc::clone(&client),
-                    app.calibration_hours,
-                );
             }
         }
 
@@ -1277,7 +1308,11 @@ fn handle_event(
             // Update tracked live order IDs for next comparison
             app.prev_live_order_ids = orders.iter().map(|o| o.id.clone()).collect();
             app.orders = orders;
-            app.loading = false;
+            // Only clear the shared loading spinner when we're on the tab that
+            // triggered this load; background preloads must not clobber it.
+            if app.active_tab == Tab::Positions {
+                app.loading = false;
+            }
             app.last_error = None;
             if app.orders_list_state.selected().is_none() && !app.orders.is_empty() {
                 app.orders_list_state.select(Some(0));
@@ -1287,7 +1322,9 @@ fn handle_event(
         AppEvent::BalanceLoaded(balance, allowance) => {
             app.balance = Some(balance);
             app.allowance = Some(allowance);
-            app.loading = false;
+            if app.active_tab == Tab::Balance {
+                app.loading = false;
+            }
             app.last_error = None;
         }
 
@@ -1424,6 +1461,32 @@ fn handle_event(
         AppEvent::ResolvedIdsLoaded(ids) => {
             app.known_resolved_ids = ids;
         }
+
+        AppEvent::UserOrderUpdate(order_id, status) => {
+            let upper = status.to_uppercase();
+            tracing::info!(order_id = %order_id, status = %upper, "user WS order event");
+            if upper == "MATCHED" || upper == "FILLED" {
+                app.set_flash(format!("Order filled: {}", &order_id[..order_id.len().min(12)]));
+                // Ring the terminal bell.
+                print!("\x07");
+                // Remove from prev_live_order_ids so the REST-based fill detection
+                // doesn't double-fire when the next OrdersLoaded arrives.
+                app.prev_live_order_ids.remove(&order_id);
+                // Trigger immediate refresh of orders + positions.
+                spawn_load_orders(Arc::clone(&client), tx.clone());
+                spawn_load_positions(Arc::clone(&client), tx.clone());
+            } else if upper == "CANCELED" || upper == "CANCELLED" {
+                app.prev_live_order_ids.remove(&order_id);
+            }
+        }
+
+        AppEvent::UserWsConnected => {
+            app.user_ws_connected = true;
+        }
+
+        AppEvent::UserWsDisconnected => {
+            app.user_ws_connected = false;
+        }
     }
     false
 }
@@ -1546,22 +1609,31 @@ fn switch_tab(app: &mut App, tab: Tab, client: Arc<PolyClient>, tx: &UnboundedSe
             }
         }
         Tab::Positions => {
-            app.loading = true;
-            spawn_load_positions(Arc::clone(&client), tx.clone());
-            spawn_load_orders(client, tx.clone());
+            // Skip reload if already preloaded; auto-refresh will keep it fresh.
+            if app.positions_refreshed_at.is_none() {
+                app.loading = true;
+                spawn_load_positions(Arc::clone(&client), tx.clone());
+                spawn_load_orders(client, tx.clone());
+            }
         }
         Tab::Balance => {
-            app.loading = true;
-            spawn_load_balance(client, tx.clone());
+            if app.balance.is_none() {
+                app.loading = true;
+                spawn_load_balance(client, tx.clone());
+            }
         }
         Tab::Analytics => {
-            app.analytics_loading = true;
-            spawn_compute_analytics(
-                app.db_path.clone(),
-                tx.clone(),
-                Arc::clone(&client),
-                app.calibration_hours,
-            );
+            // Only compute on first visit; cached stats are shown instantly on
+            // subsequent switches.  User can press 'r' to force a refresh.
+            if app.analytics_stats.is_none() && !app.analytics_loading {
+                app.analytics_loading = true;
+                spawn_compute_analytics(
+                    app.db_path.clone(),
+                    tx.clone(),
+                    Arc::clone(&client),
+                    app.calibration_hours,
+                );
+            }
         }
     }
 }
@@ -2878,6 +2950,8 @@ pub fn test_app() -> App {
         sparkline_interval: "1d",
         ws_cancel: None,
         order_book_updated_at: None,
+        user_ws_cancel: None,
+        user_ws_connected: false,
         loading: false,
         markets_loading_more: false,
         last_error: None,
@@ -3774,6 +3848,110 @@ pub fn spawn_ws_order_book(
     });
 }
 
+/// Connects to the Polymarket user WebSocket channel for live order/trade events.
+/// Sends `AppEvent::UserOrderUpdate` when an order status changes (fills, cancels).
+/// Falls back to a no-op sleep loop on auth failure or disconnect — REST polling
+/// in the Tick handler provides the safety net.
+pub fn spawn_ws_user_channel(
+    auth: crate::auth::ClobAuth,
+    tx: UnboundedSender<AppEvent>,
+    mut cancel: watch::Receiver<bool>,
+) {
+    tokio::spawn(async move {
+        use futures_util::{SinkExt, StreamExt};
+        use serde::Deserialize;
+        use tokio_tungstenite::{connect_async, tungstenite::Message};
+
+        const WS_URL: &str = "wss://ws-subscriptions-clob.polymarket.com/ws/user";
+
+        #[derive(Deserialize)]
+        struct WsUserEvent {
+            #[serde(default)]
+            id: String,
+            #[serde(default)]
+            status: String,
+        }
+
+        'ws: {
+            let ws_stream = match connect_async(WS_URL).await {
+                Ok((stream, _)) => stream,
+                Err(e) => {
+                    tracing::warn!("user WS connect failed: {}", e);
+                    break 'ws;
+                }
+            };
+
+            let (mut write, mut read) = ws_stream.split();
+
+            // Authenticate with CLOB credentials.
+            let auth_msg = auth.ws_auth_message().to_string();
+            if write.send(Message::Text(auth_msg)).await.is_err() {
+                break 'ws;
+            }
+
+            let _ = tx.send(AppEvent::UserWsConnected);
+            tracing::info!("user WS channel connected");
+
+            const PING_INTERVAL: std::time::Duration = std::time::Duration::from_secs(15);
+            const READ_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
+            let mut ping_interval = tokio::time::interval(PING_INTERVAL);
+            ping_interval.tick().await; // consume immediate tick
+
+            loop {
+                tokio::select! {
+                    result = tokio::time::timeout(READ_TIMEOUT, read.next()) => {
+                        match result {
+                            Err(_) => break 'ws, // 30s silence → dead connection
+                            Ok(msg) => match msg {
+                                Some(Ok(Message::Text(text))) => {
+                                    // Parse as array or single event.
+                                    let events: Vec<WsUserEvent> =
+                                        match serde_json::from_str::<Vec<WsUserEvent>>(&text)
+                                            .or_else(|_| serde_json::from_str::<WsUserEvent>(&text).map(|e| vec![e]))
+                                        {
+                                            Ok(v) => v,
+                                            Err(_) => continue, // unrecognised frame — skip
+                                        };
+                                    for ev in events {
+                                        if ev.id.is_empty() || ev.status.is_empty() { continue; }
+                                        let _ = tx.send(AppEvent::UserOrderUpdate(ev.id, ev.status));
+                                    }
+                                }
+                                Some(Ok(Message::Ping(d))) => { let _ = write.send(Message::Pong(d)).await; }
+                                Some(Ok(Message::Pong(_))) => {}
+                                Some(Ok(_)) => {}
+                                _ => break 'ws, // closed or error
+                            }
+                        }
+                    }
+                    _ = ping_interval.tick() => {
+                        if write.send(Message::Ping(vec![])).await.is_err() {
+                            break 'ws;
+                        }
+                    }
+                    _ = cancel.changed() => {
+                        if *cancel.borrow() { return; }
+                    }
+                }
+            }
+        }
+
+        // Disconnected — notify and keep the task alive so the cancel watch stays valid.
+        let _ = tx.send(AppEvent::UserWsDisconnected);
+        tracing::info!("user WS disconnected, positions fall back to REST polling");
+
+        // Sleep until cancelled (REST polling in the Tick handler is the fallback).
+        loop {
+            tokio::select! {
+                _ = cancel.changed() => {
+                    if *cancel.borrow() { return; }
+                }
+                _ = tokio::time::sleep(std::time::Duration::from_secs(60)) => {}
+            }
+        }
+    });
+}
+
 fn copy_to_clipboard(text: &str) {
     use std::io::Write;
 
@@ -3918,6 +4096,7 @@ pub fn spawn_cancel_all(client: Arc<PolyClient>, tx: UnboundedSender<AppEvent>) 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::types::OrderStatus;
     use std::time::{Duration, Instant};
 
     // ── Tab switching ────────────────────────────────────────────────────────

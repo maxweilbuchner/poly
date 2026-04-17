@@ -14,10 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TUI unit tests: 38 tests covering state transitions, filters, order form validation, fill detection
 - Order fill notifications: flash message + terminal bell when orders are filled
 - crates.io metadata in Cargo.toml (license, repository, keywords, categories)
+- User WebSocket channel for live order/trade events — instant fill notifications without REST polling
+- "WS" indicator in status bar when the user WebSocket channel is connected
+- All tabs preload data at startup (positions, orders, balance, analytics run in parallel)
 
 ### Changed
 - Improved `--help` text with logical command grouping and quick-start guide
 - buy/sell `--help` now shows formatted examples for limit and market orders
+- REST position polling interval extended to 4× when user WS is connected (safety net only)
+- Analytics tab caches results — no longer recomputes on every tab switch
 
 ### Fixed
 - Clipboard copy now works cross-platform (Linux: xclip/xsel/wl-copy, Windows: clip.exe)
