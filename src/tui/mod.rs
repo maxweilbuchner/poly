@@ -4276,40 +4276,51 @@ mod tests {
 
     #[test]
     fn order_form_cost_calculation() {
-        let mut form = OrderForm::default();
-        form.size_input = "10".into();
-        form.price_input = "0.65".into();
+        let form = OrderForm {
+            size_input: "10".into(),
+            price_input: "0.65".into(),
+            ..Default::default()
+        };
         assert!((form.cost().unwrap() - 6.5).abs() < 1e-9);
     }
 
     #[test]
     fn order_form_cost_returns_none_for_invalid_input() {
-        let mut form = OrderForm::default();
-        form.size_input = "abc".into();
-        form.price_input = "0.50".into();
+        let form = OrderForm {
+            size_input: "abc".into(),
+            price_input: "0.50".into(),
+            ..Default::default()
+        };
         assert!(form.cost().is_none());
 
-        form.size_input = "10".into();
-        form.price_input = "xyz".into();
+        let form = OrderForm {
+            size_input: "10".into(),
+            price_input: "xyz".into(),
+            ..Default::default()
+        };
         assert!(form.cost().is_none());
     }
 
     #[test]
     fn order_form_market_order_cost_uses_market_price() {
-        let mut form = OrderForm::default();
-        form.market_order = true;
-        form.size_input = "20".into();
-        form.price_input = "0.50".into(); // should be ignored
-        form.market_price = Some(0.75);
+        let form = OrderForm {
+            market_order: true,
+            size_input: "20".into(),
+            price_input: "0.50".into(), // should be ignored
+            market_price: Some(0.75),
+            ..Default::default()
+        };
         assert!((form.cost().unwrap() - 15.0).abs() < 1e-9);
     }
 
     #[test]
     fn order_form_market_order_cost_none_without_market_price() {
-        let mut form = OrderForm::default();
-        form.market_order = true;
-        form.size_input = "10".into();
-        form.market_price = None;
+        let form = OrderForm {
+            market_order: true,
+            size_input: "10".into(),
+            market_price: None,
+            ..Default::default()
+        };
         assert!(form.cost().is_none());
     }
 
@@ -4535,7 +4546,7 @@ mod tests {
         app.prev_live_order_ids.insert("def".into());
 
         // New refresh: "def" is still live, "abc" is gone (filled)
-        let new_orders = vec![Order {
+        let new_orders = [Order {
             id: "def".into(),
             asset_id: String::new(),
             side: Side::Buy,
