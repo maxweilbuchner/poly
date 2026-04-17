@@ -398,7 +398,11 @@ impl PolyClient {
     where
         F: Fn() -> reqwest::RequestBuilder,
     {
-        let _permit = self.api_semaphore.acquire().await.expect("semaphore closed");
+        let _permit = self
+            .api_semaphore
+            .acquire()
+            .await
+            .expect("semaphore closed");
         send_with_retry(build).await
     }
 
@@ -1281,8 +1285,8 @@ impl PolyClient {
                     .headers(headers.clone())
                     .body(body_str.clone())
             })
-        .await
-        .map_err(net_err)?;
+            .await
+            .map_err(net_err)?;
 
         if !resp.status().is_success() {
             return Err(api_err(resp).await);
@@ -1334,8 +1338,8 @@ impl PolyClient {
                     .headers(headers.clone())
                     .body(body_str.clone())
             })
-        .await
-        .map_err(net_err)?;
+            .await
+            .map_err(net_err)?;
 
         if !resp.status().is_success() {
             return Err(api_err(resp).await);
@@ -1356,8 +1360,8 @@ impl PolyClient {
                     .delete(format!("{}/orders", clob_url))
                     .headers(headers.clone())
             })
-        .await
-        .map_err(net_err)?;
+            .await
+            .map_err(net_err)?;
 
         if !resp.status().is_success() {
             return Err(api_err(resp).await);
@@ -1763,8 +1767,8 @@ impl PolyClient {
                     .post(format!("{}/auth/api-key", clob_url))
                     .headers(headers.clone())
             })
-        .await
-        .map_err(net_err)?;
+            .await
+            .map_err(net_err)?;
 
         if !resp.status().is_success() {
             return Err(api_err(resp).await);

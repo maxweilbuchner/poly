@@ -426,9 +426,7 @@ fn edge_vs_volume_tiers() {
     let (mut conn, _) = temp_db();
 
     // Market with snapshots (for peak volume) and a calibration price
-    let snaps = vec![
-        snap("2025-01-01T00:00:00Z", "0xvol", "Yes", 0.70),
-    ];
+    let snaps = vec![snap("2025-01-01T00:00:00Z", "0xvol", "Yes", 0.70)];
     db::insert_snapshots(&mut conn, &snaps).unwrap();
 
     let rows = vec![ResolutionRow {
@@ -448,7 +446,7 @@ fn edge_vs_volume_tiers() {
 
     // Volume is 10000 → tier 2 ($10K–$100K) since CASE uses < 10000 for tier 1
     assert_eq!(tiers[2].2, 1); // count = 1
-    // MAE = |0.70 - 1.0| = 0.30
+                               // MAE = |0.70 - 1.0| = 0.30
     assert!((tiers[2].1 - 0.30).abs() < 0.01);
 }
 

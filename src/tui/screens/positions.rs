@@ -154,11 +154,7 @@ fn render_positions(f: &mut Frame, area: Rect, app: &mut App) {
     // Line 2: positions · value · cost · shares
     let line2 = Line::from(vec![
         Span::styled(
-            format!(
-                "  {} position{}",
-                count,
-                if count == 1 { "" } else { "s" }
-            ),
+            format!("  {} position{}", count, if count == 1 { "" } else { "s" }),
             Style::default().fg(theme::DIM),
         ),
         Span::styled("  · ", Style::default().fg(theme::VERY_DIM)),

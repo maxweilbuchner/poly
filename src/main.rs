@@ -61,7 +61,6 @@ struct Cli {
 #[derive(Subcommand)]
 enum Command {
     // ── Browse ───────────────────────────────────────────────────────────────
-
     /// Search markets by keyword
     #[command(display_order = 1)]
     Search {
@@ -102,7 +101,6 @@ enum Command {
     },
 
     // ── Trading ──────────────────────────────────────────────────────────────
-
     /// Place a limit buy order
     #[command(
         display_order = 10,
@@ -236,7 +234,6 @@ enum Command {
     },
 
     // ── Utility ──────────────────────────────────────────────────────────────
-
     /// Export positions or orders to CSV (stdout or file)
     #[command(display_order = 20)]
     Export {
@@ -311,12 +308,7 @@ async fn main() {
         return;
     }
     if let Command::Completions { shell } = &command {
-        clap_complete::generate(
-            *shell,
-            &mut Cli::command(),
-            "poly",
-            &mut std::io::stdout(),
-        );
+        clap_complete::generate(*shell, &mut Cli::command(), "poly", &mut std::io::stdout());
         return;
     }
 

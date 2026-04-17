@@ -150,7 +150,10 @@ pub fn render(f: &mut Frame, area: Rect, app: &mut App) {
 fn render_version(f: &mut Frame, area: Rect, ws_connected: bool) {
     let mut spans = Vec::new();
     if ws_connected {
-        spans.push(Span::styled(" WS", Style::default().fg(theme::GREEN).bg(theme::BG)));
+        spans.push(Span::styled(
+            " WS",
+            Style::default().fg(theme::GREEN).bg(theme::BG),
+        ));
         spans.push(Span::styled(" ", Style::default().bg(theme::BG)));
     }
     spans.push(Span::styled(

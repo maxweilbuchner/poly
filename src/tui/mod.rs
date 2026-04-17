@@ -28,8 +28,8 @@ use tokio::sync::watch;
 use crate::client::{self, PolyClient};
 use crate::error::AppError;
 use crate::types::{
-    Market, MarketStatus, Order, OrderBook, OrderType, OutcomeSeries,
-    PlaceOrderParams, Position, PricePoint, Side,
+    Market, MarketStatus, Order, OrderBook, OrderType, OutcomeSeries, PlaceOrderParams, Position,
+    PricePoint, Side,
 };
 
 // ── TUI configuration (from config file [tui] section) ───────────────────────
@@ -1232,17 +1232,11 @@ fn handle_event(
                 if !token_pairs.is_empty() {
                     let (cancel_tx, cancel_rx) = watch::channel(false);
                     app.ws_cancel = Some(cancel_tx);
-                    spawn_ws_order_book(
-                        Arc::clone(&client),
-                        tx.clone(),
-                        token_pairs,
-                        cancel_rx,
-                    );
+                    spawn_ws_order_book(Arc::clone(&client), tx.clone(), token_pairs, cancel_rx);
                 }
                 let outcome_names: Vec<String> =
                     market.outcomes.iter().map(|o| o.name.clone()).collect();
-                let history_key =
-                    format!("{}:{}", market.condition_id, app.sparkline_interval);
+                let history_key = format!("{}:{}", market.condition_id, app.sparkline_interval);
                 if !app.price_history.contains_key(&history_key) {
                     spawn_load_price_history(
                         Arc::clone(&client),
@@ -1286,8 +1280,7 @@ fn handle_event(
             // Cancels go through OrderCancelled which clears prev_live_order_ids,
             // so remaining disappearances are fills.
             if !app.prev_live_order_ids.is_empty() {
-                let new_ids: HashSet<String> =
-                    orders.iter().map(|o| o.id.clone()).collect();
+                let new_ids: HashSet<String> = orders.iter().map(|o| o.id.clone()).collect();
                 let filled: Vec<&str> = app
                     .prev_live_order_ids
                     .iter()
@@ -1466,7 +1459,10 @@ fn handle_event(
             let upper = status.to_uppercase();
             tracing::info!(order_id = %order_id, status = %upper, "user WS order event");
             if upper == "MATCHED" || upper == "FILLED" {
-                app.set_flash(format!("Order filled: {}", &order_id[..order_id.len().min(12)]));
+                app.set_flash(format!(
+                    "Order filled: {}",
+                    &order_id[..order_id.len().min(12)]
+                ));
                 // Ring the terminal bell.
                 print!("\x07");
                 // Remove from prev_live_order_ids so the REST-based fill detection
@@ -4254,7 +4250,11 @@ mod tests {
         let mut app = test_app();
 
         // Info: expires after 3s
-        app.flash = Some(("info".into(), Instant::now() - Duration::from_secs(4), false));
+        app.flash = Some((
+            "info".into(),
+            Instant::now() - Duration::from_secs(4),
+            false,
+        ));
         let (_, t, is_err) = app.flash.as_ref().unwrap();
         let ttl = if *is_err { 5 } else { 3 };
         assert!(t.elapsed() >= Duration::from_secs(ttl));

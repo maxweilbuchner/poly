@@ -31,14 +31,8 @@ async fn search_filters_by_query_in_question() {
 
     // "bitcoin" appears in questions 1 and 2 (case-insensitive), but not in #3 (S&P 500)
     assert_eq!(results.len(), 2);
-    assert!(results[0]
-        .question
-        .to_lowercase()
-        .contains("bitcoin"));
-    assert!(results[1]
-        .question
-        .to_lowercase()
-        .contains("bitcoin"));
+    assert!(results[0].question.to_lowercase().contains("bitcoin"));
+    assert!(results[1].question.to_lowercase().contains("bitcoin"));
 }
 
 #[tokio::test]
@@ -176,7 +170,8 @@ async fn get_market_by_slug_falls_back_to_markets_endpoint() {
         .and(path("/markets"))
         .and(query_param("slug", "will-bitcoin-reach-100k"))
         .respond_with(
-            ResponseTemplate::new(200).set_body_string(format!("[{}]", fixture("single_market.json"))),
+            ResponseTemplate::new(200)
+                .set_body_string(format!("[{}]", fixture("single_market.json"))),
         )
         .mount(&server)
         .await;
@@ -421,9 +416,7 @@ async fn api_error_extracts_error_field() {
 
     Mock::given(method("GET"))
         .and(path("/book"))
-        .respond_with(
-            ResponseTemplate::new(400).set_body_string(r#"{"error":"Invalid token ID"}"#),
-        )
+        .respond_with(ResponseTemplate::new(400).set_body_string(r#"{"error":"Invalid token ID"}"#))
         .mount(&server)
         .await;
 
