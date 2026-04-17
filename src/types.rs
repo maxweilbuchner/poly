@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 pub struct Market {
     pub condition_id: String,
     pub question: String,
+    pub description: Option<String>,
     pub slug: String,
     pub group_slug: String,
     pub status: MarketStatus,

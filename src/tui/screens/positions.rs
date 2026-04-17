@@ -96,59 +96,83 @@ fn render_positions(f: &mut Frame, area: Rect, app: &mut App) {
     f.render_widget(block, area);
 
     let inner_chunks = Layout::vertical([
-        Constraint::Length(1), // summary line
+        Constraint::Length(2), // summary lines
         Constraint::Length(1), // spacer
         Constraint::Min(0),    // list
     ])
     .split(inner);
 
-    // Summary line
+    // ── Portfolio summary ────────────────────────────────────────────────────
     let total_unreal: f64 = app.positions.iter().map(|p| p.unrealized_pnl).sum();
     let total_real: f64 = app.positions.iter().map(|p| p.realized_pnl).sum();
     let cost_basis: f64 = app.positions.iter().map(|p| p.size * p.avg_price).sum();
+    let portfolio_value: f64 = app.positions.iter().map(|p| p.size * p.current_price).sum();
+    let return_pct = if cost_basis > 0.0 {
+        (portfolio_value - cost_basis) / cost_basis * 100.0
+    } else {
+        0.0
+    };
     let count = app.positions.len();
-    let unreal_sign = if total_unreal >= 0.0 { "+" } else { "" };
-    let unreal_color = if total_unreal >= 0.0 {
-        theme::GREEN
-    } else {
-        theme::RED
-    };
-    let real_sign = if total_real >= 0.0 { "+" } else { "" };
-    let real_color = if total_real >= 0.0 {
-        theme::GREEN
-    } else {
-        theme::RED
-    };
-    let mut summary_spans = vec![
+
+    let pnl_color = |v: f64| if v >= 0.0 { theme::GREEN } else { theme::RED };
+    let sign = |v: f64| if v >= 0.0 { "+" } else { "" };
+
+    // Line 1: P&L unrealized · realized · return %
+    let mut line1 = vec![
         Span::styled("  P&L ", Style::default().fg(theme::DIM)),
         Span::styled(
-            format!("{}{:.4}", unreal_sign, total_unreal),
+            format!("{}{:.4}", sign(total_unreal), total_unreal),
             Style::default()
-                .fg(unreal_color)
+                .fg(pnl_color(total_unreal))
                 .add_modifier(Modifier::BOLD),
         ),
         Span::styled(" unreal", Style::default().fg(theme::VERY_DIM)),
     ];
     if total_real != 0.0 {
-        summary_spans.extend([
+        line1.extend([
             Span::styled("  · ", Style::default().fg(theme::VERY_DIM)),
             Span::styled(
-                format!("{}{:.4}", real_sign, total_real),
-                Style::default().fg(real_color).add_modifier(Modifier::BOLD),
+                format!("{}{:.4}", sign(total_real), total_real),
+                Style::default()
+                    .fg(pnl_color(total_real))
+                    .add_modifier(Modifier::BOLD),
             ),
             Span::styled(" realized", Style::default().fg(theme::VERY_DIM)),
         ]);
     }
-    summary_spans.extend([
+    line1.extend([
         Span::styled("  · ", Style::default().fg(theme::VERY_DIM)),
         Span::styled(
-            format!("{} position{}", count, if count == 1 { "" } else { "s" }),
+            format!("{}{:.1}%", sign(return_pct), return_pct),
+            Style::default()
+                .fg(pnl_color(return_pct))
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::styled(" return", Style::default().fg(theme::VERY_DIM)),
+    ]);
+
+    // Line 2: positions · value · cost · shares
+    let line2 = Line::from(vec![
+        Span::styled(
+            format!(
+                "  {} position{}",
+                count,
+                if count == 1 { "" } else { "s" }
+            ),
             Style::default().fg(theme::DIM),
         ),
         Span::styled("  · ", Style::default().fg(theme::VERY_DIM)),
-        Span::styled("cost basis ", Style::default().fg(theme::DIM)),
+        Span::styled("value ", Style::default().fg(theme::DIM)),
         Span::styled(
-            format!("${:.4}", cost_basis),
+            format!("${:.2}", portfolio_value),
+            Style::default()
+                .fg(theme::TEXT)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::styled("  · ", Style::default().fg(theme::VERY_DIM)),
+        Span::styled("cost ", Style::default().fg(theme::DIM)),
+        Span::styled(
+            format!("${:.2}", cost_basis),
             Style::default().fg(theme::TEXT),
         ),
         Span::styled("  · ", Style::default().fg(theme::VERY_DIM)),
@@ -160,8 +184,9 @@ fn render_positions(f: &mut Frame, area: Rect, app: &mut App) {
             Style::default().fg(theme::DIM),
         ),
     ]);
-    let summary = Line::from(summary_spans);
-    f.render_widget(Paragraph::new(summary), inner_chunks[0]);
+
+    let summary = Paragraph::new(vec![Line::from(line1), line2]);
+    f.render_widget(summary, inner_chunks[0]);
 
     let end_dates: Vec<Option<String>> = app
         .positions

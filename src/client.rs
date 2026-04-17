@@ -214,6 +214,8 @@ struct GammaMarket {
     condition_id: String,
     #[serde(default)]
     question: String,
+    #[serde(default)]
+    description: Option<String>,
     #[serde(rename = "marketSlug", default)]
     market_slug: String,
     #[serde(default)]
@@ -667,6 +669,66 @@ impl PolyClient {
         }
         let gm: GammaMarket = resp.json().await?;
         Ok(self.gamma_to_market(gm, true).await)
+    }
+
+    /// Look up a market by one of its CLOB token IDs (useful for neg-risk markets
+    /// whose condition ID may not be directly queryable via `/markets/{id}`).
+    pub async fn get_market_by_token_id(&self, token_id: &str) -> Result<Option<Market>> {
+        let url = format!(
+            "{}/markets?clobTokenIds={}&limit=1",
+            self.gamma_url, token_id
+        );
+        let resp = self
+            .throttled_send(|| self.http.get(&url))
+            .await
+            .map_err(net_err)?;
+        if !resp.status().is_success() {
+            return Err(api_err(resp).await);
+        }
+        let markets: Vec<GammaMarket> = resp.json().await?;
+        match markets.into_iter().next() {
+            Some(gm) => Ok(self.gamma_to_market(gm, true).await),
+            None => Ok(None),
+        }
+    }
+
+    /// Look up a market by its question text (useful for neg-risk markets where
+    /// both condition ID and token ID lookups fail).
+    /// Searches the Gamma API and matches the result by exact question.
+    pub async fn get_market_by_question(&self, question: &str) -> Result<Option<Market>> {
+        // Strip non-ASCII (e.g. °) for the search query — the Gamma search
+        // engine works best with plain ASCII terms.
+        let ascii_query: String = question
+            .chars()
+            .filter(|c| c.is_ascii())
+            .collect::<String>()
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ");
+        let search_term: String = ascii_query.chars().take(80).collect();
+        if search_term.is_empty() {
+            return Ok(None);
+        }
+        let url = format!(
+            "{}/markets?search={}&limit=20",
+            self.gamma_url,
+            urlencoded(&search_term)
+        );
+        let resp = self
+            .throttled_send(|| self.http.get(&url))
+            .await
+            .map_err(net_err)?;
+        if !resp.status().is_success() {
+            return Err(api_err(resp).await);
+        }
+        let markets: Vec<GammaMarket> = resp.json().await?;
+        // Find the market whose question matches exactly
+        for gm in markets {
+            if gm.question == question {
+                return Ok(self.gamma_to_market(gm, true).await);
+            }
+        }
+        Ok(None)
     }
 
     /// Fetch a market (or markets within an event) by slug.
@@ -1519,6 +1581,7 @@ impl PolyClient {
         Some(Market {
             condition_id: gm.condition_id,
             question: gm.question,
+            description: gm.description,
             slug,
             group_slug,
             status,

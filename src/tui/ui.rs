@@ -37,13 +37,19 @@ pub fn render(f: &mut Frame, app: &mut App) {
     tab_bar::render(f, chunks[0], app);
     status_bar::render(f, chunks[2], app);
 
-    // Render content based on active tab
+    // Render content based on active tab.
+    // MarketDetail can be pushed from any tab, so check the screen stack first.
     let content = chunks[1];
-    match &app.active_tab {
-        Tab::Markets => render_markets_content(f, content, app),
-        Tab::Positions => positions::render(f, content, app),
-        Tab::Balance => balance::render(f, content, app),
-        Tab::Analytics => analytics::render(f, content, app),
+    match app.current_screen().cloned() {
+        Some(Screen::MarketDetail) | Some(Screen::OrderEntry) => {
+            detail::render(f, content, app);
+        }
+        _ => match &app.active_tab {
+            Tab::Markets => render_markets_content(f, content, app),
+            Tab::Positions => positions::render(f, content, app),
+            Tab::Balance => balance::render(f, content, app),
+            Tab::Analytics => analytics::render(f, content, app),
+        },
     }
 
     // Render global modal overlays on top of everything.

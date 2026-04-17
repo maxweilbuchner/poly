@@ -8,7 +8,7 @@ mod setup;
 mod tui;
 mod types;
 
-use clap::{Parser, Subcommand};
+use clap::{CommandFactory, Parser, Subcommand};
 use client::PolyClient;
 use error::AppError;
 use std::env;
@@ -31,7 +31,14 @@ struct TradeArgs {
     name = "poly",
     about = "Universal Polymarket CLI trading tool",
     version,
-    long_about = None
+    long_about = None,
+    after_help = "\x1b[1mQuick start:\x1b[0m\n  \
+        poly setup                          Configure credentials\n  \
+        poly search \"Bitcoin\"               Find markets\n  \
+        poly market <slug|condition-id>     View market details\n  \
+        poly buy <token-id> 10 0.65         Buy 10 shares at $0.65\n  \
+        poly positions                      View your positions\n  \
+        poly                                Launch the TUI dashboard"
 )]
 struct Cli {
     /// Dry-run mode: build and validate the order but do not submit it
@@ -53,7 +60,10 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Command {
+    // ── Browse ───────────────────────────────────────────────────────────────
+
     /// Search markets by keyword
+    #[command(display_order = 1)]
     Search {
         /// Search query (e.g. "Trump", "Bitcoin", "World Cup")
         query: String,
@@ -70,6 +80,7 @@ enum Command {
     /// Show detailed info and order book for a market
     ///
     /// Accepts a market slug (e.g. "will-trump-win-2024") or a condition ID (hex).
+    #[command(display_order = 2)]
     Market {
         /// Market slug or condition ID
         id: String,
@@ -80,6 +91,7 @@ enum Command {
     },
 
     /// Show the order book for a specific outcome token
+    #[command(display_order = 3)]
     Book {
         /// CLOB token ID (decimal integer string from `poly market`)
         token_id: String,
@@ -89,12 +101,17 @@ enum Command {
         label: String,
     },
 
+    // ── Trading ──────────────────────────────────────────────────────────────
+
     /// Place a limit buy order
-    ///
-    /// Limit:  poly buy <token-id> <size> <price>
-    ///   e.g.  poly buy 12345...789 10 0.65   — 10 shares at $0.65
-    /// Market: poly buy <token-id> <size> --market
-    ///   e.g.  poly buy 12345...789 10 --market — 10 shares at best ask (FOK)
+    #[command(
+        display_order = 10,
+        long_about = "Place a limit buy order\n\n\
+            Limit:  poly buy <token-id> <size> <price>\n  \
+            e.g.  poly buy 12345...789 10 0.65   \u{2014} 10 shares at $0.65\n\n\
+            Market: poly buy <token-id> <size> --market\n  \
+            e.g.  poly buy 12345...789 10 --market \u{2014} 10 shares at best ask (FOK)"
+    )]
     Buy {
         /// CLOB token ID (from `poly market`)
         token_id: String,
@@ -119,9 +136,14 @@ enum Command {
     },
 
     /// Place a limit sell order
-    ///
-    /// Limit:  poly sell <token-id> <size> <price>
-    /// Market: poly sell <token-id> <size> --market   — sells at best bid (FOK)
+    #[command(
+        display_order = 11,
+        long_about = "Place a limit sell order\n\n\
+            Limit:  poly sell <token-id> <size> <price>\n  \
+            e.g.  poly sell 12345...789 10 0.90\n\n\
+            Market: poly sell <token-id> <size> --market\n  \
+            e.g.  poly sell 12345...789 10 --market \u{2014} sells at best bid (FOK)"
+    )]
     Sell {
         /// CLOB token ID (from `poly market` or `poly positions`)
         token_id: String,
@@ -146,24 +168,30 @@ enum Command {
     },
 
     /// List your open orders
+    #[command(display_order = 12)]
     Orders,
 
     /// List your current positions
+    #[command(display_order = 13)]
     Positions,
 
     /// Cancel a specific order
+    #[command(display_order = 14)]
     Cancel {
         /// Order ID (from `poly orders`)
         order_id: String,
     },
 
     /// Cancel all open orders
+    #[command(display_order = 15)]
     CancelAll,
 
     /// Show on-chain USDC balance and CTF allowance
+    #[command(display_order = 16)]
     Balance,
 
     /// List top markets by trading volume
+    #[command(display_order = 4)]
     Top {
         /// Maximum number of results to show
         #[arg(short, long, default_value_t = 20)]
@@ -175,6 +203,7 @@ enum Command {
     },
 
     /// Show filled order history
+    #[command(display_order = 17)]
     History {
         /// Maximum number of past orders to show (most recent first)
         #[arg(short, long, default_value_t = 20)]
@@ -182,6 +211,7 @@ enum Command {
     },
 
     /// Watch an order book, refreshing in-place until Ctrl+C
+    #[command(display_order = 5)]
     Watch {
         /// CLOB token ID (from `poly market`)
         token_id: String,
@@ -199,12 +229,16 @@ enum Command {
     ///
     /// Looks up the market's outcome token IDs and cancels any open orders
     /// whose asset matches. Accepts a condition ID (hex).
+    #[command(display_order = 18)]
     CancelMarket {
         /// Market condition ID (hex, with or without 0x prefix)
         condition_id: String,
     },
 
+    // ── Utility ──────────────────────────────────────────────────────────────
+
     /// Export positions or orders to CSV (stdout or file)
+    #[command(display_order = 20)]
     Export {
         /// What to export: "positions" or "orders"
         what: String,
@@ -215,12 +249,14 @@ enum Command {
     },
 
     /// Open the interactive TUI dashboard (default when no subcommand is given)
+    #[command(display_order = 21)]
     Tui,
 
     /// Derive CLOB API credentials from your private key
     ///
     /// Signs a ClobAuth EIP-712 message with POLY_MARKET_KEY and calls
     /// /auth/api-key on the CLOB. Prints the credentials to add to .env.
+    #[command(display_order = 22)]
     DeriveKeys,
 
     /// Import existing CSV snapshot and resolution data into the SQLite database.
@@ -228,13 +264,29 @@ enum Command {
     /// This is a one-time migration. It is also run automatically on the first
     /// TUI launch, so you only need this command if you want to migrate before
     /// opening the TUI.
+    #[command(display_order = 23)]
     Migrate,
 
     /// Interactive setup wizard — configure credentials for trading
     ///
     /// Walks you through setting up your private key, CLOB API credentials,
     /// and optional RPC URL. Can auto-derive CLOB keys from your wallet.
+    #[command(display_order = 24)]
     Setup,
+
+    /// Generate shell completions for bash, zsh, or fish
+    #[command(
+        display_order = 25,
+        long_about = "Generate shell completions for bash, zsh, or fish\n\n\
+            Install:\n  \
+            poly completions bash > ~/.local/share/bash-completion/completions/poly\n  \
+            poly completions zsh  > ~/.zfunc/_poly\n  \
+            poly completions fish > ~/.config/fish/completions/poly.fish"
+    )]
+    Completions {
+        /// Shell to generate completions for
+        shell: clap_complete::Shell,
+    },
 }
 
 #[tokio::main]
@@ -250,12 +302,21 @@ async fn main() {
 
     let command = cli.command.unwrap_or(Command::Tui);
 
-    // `poly setup` runs before building the client (which needs no credentials).
+    // `poly setup` and `poly completions` run before building the client.
     if matches!(command, Command::Setup) {
         if let Err(e) = setup::run().await {
             display::print_error(&e.to_string());
             std::process::exit(1);
         }
+        return;
+    }
+    if let Command::Completions { shell } = &command {
+        clap_complete::generate(
+            *shell,
+            &mut Cli::command(),
+            "poly",
+            &mut std::io::stdout(),
+        );
         return;
     }
 
@@ -347,7 +408,7 @@ async fn main() {
         Command::Export { what, output } => cmd_export(&client, &what, output.as_deref()).await,
         Command::DeriveKeys => cmd_derive_keys(&client).await,
         Command::Migrate => cmd_migrate().await,
-        Command::Setup => unreachable!(),
+        Command::Setup | Command::Completions { .. } => unreachable!(),
     };
 
     if let Err(e) = result {

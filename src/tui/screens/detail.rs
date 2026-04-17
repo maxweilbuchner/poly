@@ -20,9 +20,14 @@ pub fn render(f: &mut Frame, area: Rect, app: &mut App) {
     let history_key = format!("{}:{}", condition_id, app.sparkline_interval);
     let has_history = app.price_history.contains_key(&history_key);
 
+    // Compute header height: base rows + description lines (capped at 20%
+    // of available height unless 'e' was pressed to expand).
+    let desc_lines = description_line_count(app, area.width, area.height);
+    let header_height = 7 + desc_lines as u16;
+
     let chunks = if has_history {
         Layout::vertical([
-            Constraint::Length(8),
+            Constraint::Length(header_height),
             Constraint::Length(4),
             Constraint::Min(0),
         ])
@@ -30,7 +35,7 @@ pub fn render(f: &mut Frame, area: Rect, app: &mut App) {
     } else {
         // No sparkline row — use a zero-height slot to keep the same 3-chunk indexing
         Layout::vertical([
-            Constraint::Length(8),
+            Constraint::Length(header_height),
             Constraint::Length(0),
             Constraint::Min(0),
         ])
@@ -42,6 +47,29 @@ pub fn render(f: &mut Frame, area: Rect, app: &mut App) {
         render_sparklines(f, chunks[1], app);
     }
     render_books(f, chunks[2], app);
+}
+
+/// Count how many lines the description will occupy in the header
+/// (including the "..." indicator when truncated).
+fn description_line_count(app: &App, area_width: u16, area_height: u16) -> usize {
+    let desc = match &app.selected_market {
+        Some(m) => m.description.as_deref().unwrap_or(""),
+        None => "",
+    };
+    if desc.is_empty() {
+        return 0;
+    }
+    let usable = (area_width as usize).saturating_sub(4).max(1);
+    let total = wrap_text(desc, usable).len();
+    if app.description_expanded {
+        total
+    } else {
+        let fifth = (area_height as usize).saturating_sub(7) / 5;
+        let max_text = total.min(fifth.max(2).saturating_sub(1));
+        let truncated = max_text < total;
+        // text lines + optional "..." indicator
+        max_text + if truncated { 1 } else { 0 }
+    }
 }
 
 fn render_header(f: &mut Frame, area: Rect, app: &App) {
@@ -65,53 +93,74 @@ fn render_header(f: &mut Frame, area: Rect, app: &App) {
             let liq = format_volume(m.liquidity);
             let end = m.end_date.as_deref().unwrap_or("—");
             let cat = m.category.as_deref().unwrap_or("—");
-            vec![
-                Line::from(""),
-                Line::from(vec![
-                    Span::styled("  ", Style::default()),
-                    Span::styled(
-                        &m.question,
-                        Style::default()
-                            .fg(theme::TEXT)
-                            .add_modifier(Modifier::BOLD),
-                    ),
-                ]),
-                Line::from(""),
-                Line::from(vec![
-                    Span::styled("  Status: ", Style::default().fg(theme::DIM)),
-                    Span::styled(m.status.to_string(), Style::default().fg(theme::CYAN)),
-                    Span::styled("   Vol: ", Style::default().fg(theme::DIM)),
-                    Span::styled(vol, Style::default().fg(theme::YELLOW)),
-                    Span::styled("   Liq: ", Style::default().fg(theme::DIM)),
-                    Span::styled(liq, Style::default().fg(theme::YELLOW)),
-                ]),
-                {
-                    let mut ends_line = vec![
-                        Span::styled("  Category: ", Style::default().fg(theme::DIM)),
-                        Span::styled(cat, Style::default().fg(theme::TEXT)),
-                        Span::styled("   Ends: ", Style::default().fg(theme::DIM)),
-                        Span::styled(end, Style::default().fg(theme::TEXT)),
-                    ];
-                    if let Some((label, color)) = remaining_time(end) {
-                        ends_line.push(Span::styled("  (", Style::default().fg(theme::DIM)));
-                        ends_line.push(Span::styled(
-                            label,
-                            Style::default().fg(color).add_modifier(Modifier::BOLD),
-                        ));
-                        ends_line.push(Span::styled(")", Style::default().fg(theme::DIM)));
-                    }
-                    Line::from(ends_line)
-                },
-                Line::from(vec![
-                    Span::styled("  ID: ", Style::default().fg(theme::DIM)),
-                    Span::styled(&m.condition_id, Style::default().fg(theme::VERY_DIM)),
-                ]),
-                Line::from(""),
-                Line::from(vec![Span::styled(
-                    "  ←→/Tab outcome  b buy  s sell  t sparkline  c copy  r refresh  Esc back",
-                    Style::default().fg(theme::VERY_DIM),
-                )]),
-            ]
+            // Stats first
+            let mut lines = vec![Line::from(vec![
+                Span::styled("  Status: ", Style::default().fg(theme::DIM)),
+                Span::styled(m.status.to_string(), Style::default().fg(theme::CYAN)),
+                Span::styled("   Vol: ", Style::default().fg(theme::DIM)),
+                Span::styled(vol, Style::default().fg(theme::YELLOW)),
+                Span::styled("   Liq: ", Style::default().fg(theme::DIM)),
+                Span::styled(liq, Style::default().fg(theme::YELLOW)),
+            ])];
+            {
+                let mut ends_line = vec![
+                    Span::styled("  Category: ", Style::default().fg(theme::DIM)),
+                    Span::styled(cat, Style::default().fg(theme::TEXT)),
+                    Span::styled("   Ends: ", Style::default().fg(theme::DIM)),
+                    Span::styled(end, Style::default().fg(theme::TEXT)),
+                ];
+                if let Some((label, color)) = remaining_time(end) {
+                    ends_line.push(Span::styled("  (", Style::default().fg(theme::DIM)));
+                    ends_line.push(Span::styled(
+                        label,
+                        Style::default().fg(color).add_modifier(Modifier::BOLD),
+                    ));
+                    ends_line.push(Span::styled(")", Style::default().fg(theme::DIM)));
+                }
+                lines.push(Line::from(ends_line));
+            }
+            lines.push(Line::from(vec![
+                Span::styled("  ID: ", Style::default().fg(theme::DIM)),
+                Span::styled(&m.condition_id, Style::default().fg(theme::VERY_DIM)),
+            ]));
+            // Question
+            lines.push(Line::from(""));
+            lines.push(Line::from(vec![
+                Span::styled("  ", Style::default()),
+                Span::styled(
+                    &m.question,
+                    Style::default()
+                        .fg(theme::TEXT)
+                        .add_modifier(Modifier::BOLD),
+                ),
+            ]));
+            // Description, capped unless expanded
+            let desc = m.description.as_deref().unwrap_or("");
+            if !desc.is_empty() {
+                let usable = (area.width as usize).saturating_sub(4).max(1);
+                let wrapped = wrap_text(desc, usable);
+                let total = wrapped.len();
+                let max_desc = if app.description_expanded {
+                    total
+                } else {
+                    let fifth = (area.height as usize).saturating_sub(7) / 5;
+                    total.min(fifth.max(2).saturating_sub(1))
+                };
+                let truncated = !app.description_expanded && max_desc < total;
+                for line in wrapped.into_iter().take(max_desc) {
+                    lines.push(Line::from(vec![
+                        Span::styled("  ", Style::default()),
+                        Span::styled(line, Style::default().fg(theme::DIM)),
+                    ]));
+                }
+                if truncated {
+                    lines.push(Line::from(vec![Span::styled(
+                        "  ... [e expand]",
+                        Style::default().fg(theme::VERY_DIM),
+                    )]));
+                }
+            }
+            lines
         }
     };
 
@@ -298,4 +347,31 @@ fn format_volume(v: f64) -> String {
     } else {
         format!("${:.2}", v)
     }
+}
+
+/// Word-wrap `text` into lines of at most `max_width` characters.
+fn wrap_text(text: &str, max_width: usize) -> Vec<String> {
+    let mut lines = Vec::new();
+    for paragraph in text.lines() {
+        if paragraph.is_empty() {
+            lines.push(String::new());
+            continue;
+        }
+        let mut current = String::new();
+        for word in paragraph.split_whitespace() {
+            if current.is_empty() {
+                current = word.to_string();
+            } else if current.len() + 1 + word.len() <= max_width {
+                current.push(' ');
+                current.push_str(word);
+            } else {
+                lines.push(current);
+                current = word.to_string();
+            }
+        }
+        if !current.is_empty() {
+            lines.push(current);
+        }
+    }
+    lines
 }

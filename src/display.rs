@@ -69,6 +69,12 @@ pub fn print_market_detail(market: &Market) {
     println!("{}", "═".repeat(80).dimmed());
     println!("{}", market.question.bold().white());
     println!("{}", "─".repeat(80).dimmed());
+    if let Some(desc) = &market.description {
+        if !desc.is_empty() {
+            println!("  {}", desc.dimmed());
+            println!("{}", "─".repeat(80).dimmed());
+        }
+    }
     println!("  Condition ID : {}", market.condition_id.cyan());
     println!("  Slug         : {}", market.slug.dimmed());
     println!("  Status       : {}", status_str);
@@ -299,6 +305,22 @@ pub fn print_positions(positions: &[Position]) {
         "",
         unrlzd
     );
+
+    let cost_basis: f64 = positions.iter().map(|p| p.size * p.avg_price).sum();
+    let portfolio_value: f64 = positions.iter().map(|p| p.size * p.current_price).sum();
+    let return_pct = if cost_basis > 0.0 {
+        (portfolio_value - cost_basis) / cost_basis * 100.0
+    } else {
+        0.0
+    };
+    let val_str = format!("${:.2}", portfolio_value).bold();
+    let cost_str = format!("${:.2}", cost_basis);
+    println!(
+        "  Portfolio value: {}  Cost basis: {}  Return: {}",
+        val_str,
+        cost_str,
+        format_pnl_pct(return_pct),
+    );
     println!("  Realized PnL: {}", format_pnl(total_realized));
 }
 
@@ -392,5 +414,13 @@ fn format_pnl(v: f64) -> String {
         format!("{:>+.4}", v).green().to_string()
     } else {
         format!("{:>+.4}", v).red().to_string()
+    }
+}
+
+fn format_pnl_pct(v: f64) -> String {
+    if v >= 0.0 {
+        format!("{:>+.1}%", v).green().to_string()
+    } else {
+        format!("{:>+.1}%", v).red().to_string()
     }
 }

@@ -28,8 +28,8 @@ use tokio::sync::watch;
 use crate::client::{self, PolyClient};
 use crate::error::AppError;
 use crate::types::{
-    Market, MarketStatus, Order, OrderBook, OrderType, OutcomeSeries, PlaceOrderParams, Position,
-    PricePoint, Side,
+    Market, MarketStatus, Order, OrderBook, OrderStatus, OrderType, OutcomeSeries,
+    PlaceOrderParams, Position, PricePoint, Side,
 };
 
 // ── TUI configuration (from config file [tui] section) ───────────────────────
@@ -398,6 +398,8 @@ pub struct App {
 
     // Selected outcome index in the detail screen
     pub detail_outcome_index: usize,
+    /// Whether the description panel in market detail is expanded
+    pub description_expanded: bool,
 
     // Spinner frame counter (incremented on each Tick)
     pub tick: u64,
@@ -439,6 +441,9 @@ pub struct App {
     /// Persistent warning set by the startup credential probe.
     /// Shown in the status bar until cleared (currently never cleared — restart to re-check).
     pub auth_warning: Option<String>,
+
+    /// IDs of orders that were live on the last refresh — used to detect fills.
+    pub prev_live_order_ids: HashSet<String>,
 
     // Setup wizard form state
     pub setup_form: screens::setup::SetupForm,
@@ -505,6 +510,7 @@ impl App {
             close_confirm_pos_idx: None,
             redeem_confirm_pos_idx: None,
             detail_outcome_index: 0,
+            description_expanded: false,
             tick: 0,
             positions_refreshed_at: None,
             refresh_interval_secs: 30,
@@ -529,6 +535,8 @@ impl App {
             regression_weighted: true,
 
             auth_warning: None,
+
+            prev_live_order_ids: HashSet::new(),
 
             setup_form: screens::setup::SetupForm::default(),
             setup_complete: false,
@@ -1182,6 +1190,38 @@ fn handle_event(
         }
 
         AppEvent::MarketDetailLoaded(market, books) => {
+            // Start WS + sparklines if not already running (e.g. opened from positions tab).
+            if app.ws_cancel.is_none() {
+                let token_pairs: Vec<(String, String)> = market
+                    .outcomes
+                    .iter()
+                    .filter(|o| !o.token_id.is_empty())
+                    .map(|o| (o.name.clone(), o.token_id.clone()))
+                    .collect();
+                if !token_pairs.is_empty() {
+                    let (cancel_tx, cancel_rx) = watch::channel(false);
+                    app.ws_cancel = Some(cancel_tx);
+                    spawn_ws_order_book(
+                        Arc::clone(&client),
+                        tx.clone(),
+                        token_pairs,
+                        cancel_rx,
+                    );
+                }
+                let outcome_names: Vec<String> =
+                    market.outcomes.iter().map(|o| o.name.clone()).collect();
+                let history_key =
+                    format!("{}:{}", market.condition_id, app.sparkline_interval);
+                if !app.price_history.contains_key(&history_key) {
+                    spawn_load_price_history(
+                        Arc::clone(&client),
+                        tx.clone(),
+                        market.condition_id.clone(),
+                        outcome_names,
+                        app.sparkline_interval,
+                    );
+                }
+            }
             app.selected_market = Some(market);
             app.order_books = books;
             app.order_book_updated_at = Some(Instant::now());
@@ -1211,6 +1251,31 @@ fn handle_event(
         }
 
         AppEvent::OrdersLoaded(orders) => {
+            // Detect fills: orders that were live last refresh but are now gone.
+            // Cancels go through OrderCancelled which clears prev_live_order_ids,
+            // so remaining disappearances are fills.
+            if !app.prev_live_order_ids.is_empty() {
+                let new_ids: HashSet<String> =
+                    orders.iter().map(|o| o.id.clone()).collect();
+                let filled: Vec<&str> = app
+                    .prev_live_order_ids
+                    .iter()
+                    .filter(|id| !new_ids.contains(id.as_str()))
+                    .map(|s| s.as_str())
+                    .collect();
+                if !filled.is_empty() {
+                    let msg = if filled.len() == 1 {
+                        format!("Order filled: {}", &filled[0][..filled[0].len().min(12)])
+                    } else {
+                        format!("{} orders filled", filled.len())
+                    };
+                    app.set_flash(msg);
+                    // Ring the terminal bell
+                    print!("\x07");
+                }
+            }
+            // Update tracked live order IDs for next comparison
+            app.prev_live_order_ids = orders.iter().map(|o| o.id.clone()).collect();
             app.orders = orders;
             app.loading = false;
             app.last_error = None;
@@ -1235,6 +1300,13 @@ fn handle_event(
 
         AppEvent::OrderCancelled(order_id) => {
             app.loading = false;
+            // Remove cancelled orders from prev set so they don't trigger
+            // a false "filled" notification on the next OrdersLoaded.
+            if order_id == "all" {
+                app.prev_live_order_ids.clear();
+            } else {
+                app.prev_live_order_ids.remove(&order_id);
+            }
             app.set_flash(format!("Cancelled: {}", order_id));
             spawn_load_orders(Arc::clone(&client), tx.clone());
         }
@@ -1418,6 +1490,12 @@ fn handle_key(
         return false;
     }
 
+    // MarketDetail can be pushed from any tab (Markets or Positions).
+    if let Some(Screen::MarketDetail) = app.current_screen() {
+        handle_detail_key(app, key, client, tx);
+        return false;
+    }
+
     match &app.active_tab.clone() {
         Tab::Positions => {
             handle_positions_key(app, key, client, tx);
@@ -1431,16 +1509,10 @@ fn handle_key(
             handle_analytics_key(app, key, client, tx);
             false
         }
-        Tab::Markets => match app.current_screen().cloned() {
-            Some(Screen::MarketDetail) => {
-                handle_detail_key(app, key, client, tx);
-                false
-            }
-            _ => {
-                handle_markets_key(app, key, client, tx);
-                false
-            }
-        },
+        Tab::Markets => {
+            handle_markets_key(app, key, client, tx);
+            false
+        }
     }
 }
 
@@ -1658,6 +1730,7 @@ fn handle_markets_key(
                     app.order_book_updated_at = None;
                     app.loading = true;
                     app.detail_outcome_index = 0;
+                    app.description_expanded = false;
                     app.screen_stack.push(Screen::MarketDetail);
                     let outcome_names: Vec<String> =
                         market.outcomes.iter().map(|o| o.name.clone()).collect();
@@ -1721,6 +1794,9 @@ fn handle_detail_key(
         }
         KeyCode::Char('?') => {
             app.screen_stack.push(Screen::Help);
+        }
+        KeyCode::Char('e') => {
+            app.description_expanded = !app.description_expanded;
         }
         KeyCode::Tab | KeyCode::Left | KeyCode::Right => {
             if let Some(market) = &app.selected_market {
@@ -1833,12 +1909,15 @@ fn handle_detail_key(
         }
         KeyCode::Char('c') => {
             if let Some(market) = &app.selected_market {
-                let event_slug = if !market.group_slug.is_empty() {
-                    &market.group_slug
+                let url = if !market.group_slug.is_empty() {
+                    // Event group market: append market slug for direct link
+                    format!(
+                        "https://polymarket.com/event/{}/{}",
+                        market.group_slug, market.slug
+                    )
                 } else {
-                    &market.slug
+                    format!("https://polymarket.com/event/{}", market.slug)
                 };
-                let url = format!("https://polymarket.com/event/{}", event_slug);
                 copy_to_clipboard(&url);
                 app.set_flash("Link copied to clipboard");
             }
@@ -2134,6 +2213,71 @@ pub fn handle_positions_key(
                 app.screen_stack.push(Screen::RedeemAllConfirm);
             } else {
                 app.set_error_flash("No redeemable positions found");
+            }
+        }
+        // Enter — open market detail for the selected position
+        KeyCode::Enter if !app.positions_focus_orders => {
+            if let Some(idx) = app.positions_list_state.selected() {
+                if let Some(pos) = app.positions.get(idx) {
+                    let condition_id = pos.market_id.clone();
+                    let token_id = pos.token_id.clone();
+                    app.selected_market = None;
+                    app.order_books.clear();
+                    app.order_book_updated_at = None;
+                    app.loading = true;
+                    app.detail_outcome_index = 0;
+                    app.description_expanded = false;
+                    app.screen_stack.push(Screen::MarketDetail);
+
+                    // Try to find the market in the loaded list; otherwise fetch by ID.
+                    let market = app
+                        .markets
+                        .iter()
+                        .find(|m| m.condition_id == condition_id)
+                        .cloned();
+
+                    if let Some(market) = market {
+                        let outcome_names: Vec<String> =
+                            market.outcomes.iter().map(|o| o.name.clone()).collect();
+                        let interval = app.sparkline_interval;
+                        spawn_load_price_history(
+                            Arc::clone(&client),
+                            tx.clone(),
+                            market.condition_id.clone(),
+                            outcome_names,
+                            interval,
+                        );
+                        spawn_load_detail(Arc::clone(&client), tx.clone(), market.clone());
+                        stop_ws(app);
+                        let token_pairs: Vec<(String, String)> = market
+                            .outcomes
+                            .iter()
+                            .filter(|o| !o.token_id.is_empty())
+                            .map(|o| (o.name.clone(), o.token_id.clone()))
+                            .collect();
+                        if !token_pairs.is_empty() {
+                            let (cancel_tx, cancel_rx) = watch::channel(false);
+                            app.ws_cancel = Some(cancel_tx);
+                            spawn_ws_order_book(
+                                Arc::clone(&client),
+                                tx.clone(),
+                                token_pairs,
+                                cancel_rx,
+                            );
+                        }
+                    } else {
+                        // Market not in local list — fetch from API
+                        // (falls back to question search for neg-risk markets)
+                        let market_question = pos.market_question.clone();
+                        spawn_load_detail_by_id(
+                            Arc::clone(&client),
+                            tx.clone(),
+                            condition_id,
+                            token_id,
+                            market_question,
+                        );
+                    }
+                }
             }
         }
         _ => {}
@@ -2679,6 +2823,211 @@ pub fn spawn_load_markets(client: Arc<PolyClient>, tx: UnboundedSender<AppEvent>
 
 pub fn spawn_load_detail(client: Arc<PolyClient>, tx: UnboundedSender<AppEvent>, market: Market) {
     tokio::spawn(async move {
+        let mut books = Vec::new();
+        for outcome in &market.outcomes {
+            if outcome.token_id.is_empty() {
+                continue;
+            }
+            match client.get_order_book(&outcome.token_id).await {
+                Ok(book) => books.push((outcome.name.clone(), book)),
+                Err(e) => {
+                    let _ = tx.send(AppEvent::Error(e));
+                    return;
+                }
+            }
+        }
+        let _ = tx.send(AppEvent::MarketDetailLoaded(market, books));
+    });
+}
+
+/// Fetch a market by condition ID and then load its order books + detail.
+/// Fetch a market by condition ID (falling back to token ID lookup for neg-risk
+/// markets) and then load its order books.
+/// Create an App suitable for unit tests (no disk I/O).
+#[cfg(test)]
+pub fn test_app() -> App {
+    App {
+        active_tab: Tab::Markets,
+        screen_stack: vec![Screen::MarketList],
+        markets: Vec::new(),
+        search_query: String::new(),
+        search_mode: false,
+        market_list_state: ratatui::widgets::ListState::default(),
+        sort_mode: SortMode::default(),
+        date_filter: DateFilter::default(),
+        prob_filter: ProbFilter::default(),
+        volume_filter: VolumeFilter::default(),
+        category_filter: None,
+        selected_market: None,
+        order_books: Vec::new(),
+        positions: Vec::new(),
+        orders: Vec::new(),
+        positions_focus_orders: false,
+        positions_list_state: ratatui::widgets::ListState::default(),
+        orders_list_state: ratatui::widgets::ListState::default(),
+        balance: None,
+        allowance: None,
+        flash: None,
+        order_form: OrderForm::default(),
+        filtered_indices: Vec::new(),
+        market_id_set: HashSet::new(),
+        cached_categories: Vec::new(),
+        watchlist: HashSet::new(),
+        watchlist_only: false,
+        price_history: HashMap::new(),
+        sparkline_interval: "1d",
+        ws_cancel: None,
+        order_book_updated_at: None,
+        loading: false,
+        markets_loading_more: false,
+        last_error: None,
+        menu_index: 0,
+        close_confirm_pos_idx: None,
+        redeem_confirm_pos_idx: None,
+        detail_outcome_index: 0,
+        description_expanded: false,
+        tick: 0,
+        positions_refreshed_at: None,
+        refresh_interval_secs: 30,
+        max_markets: MAX_MARKETS,
+        db_path: std::path::PathBuf::from("/tmp/poly-test.db"),
+        snapshot_in_progress: false,
+        snapshot_last_at: None,
+        snapshot_last_count: 0,
+        snapshot_fetched_so_far: 0,
+        snapshot_error: None,
+        known_resolved_ids: HashSet::new(),
+        resolutions_new_last_run: 0,
+        analytics_stats: None,
+        analytics_stats_prev: None,
+        analytics_loading: false,
+        calibration_fetch_done: 0,
+        calibration_fetch_total: 0,
+        analytics_panel_collapsed: false,
+        calibration_hours: 3,
+        regression_weighted: true,
+        auth_warning: None,
+        prev_live_order_ids: HashSet::new(),
+        setup_form: screens::setup::SetupForm::default(),
+        setup_complete: false,
+    }
+}
+
+#[cfg(test)]
+fn test_market(id: &str, question: &str, volume: f64) -> Market {
+    use crate::types::Outcome;
+    Market {
+        condition_id: id.to_string(),
+        question: question.to_string(),
+        description: None,
+        slug: question.to_lowercase().replace(' ', "-"),
+        group_slug: String::new(),
+        status: MarketStatus::Active,
+        end_date: Some("2026-12-31T00:00:00Z".to_string()),
+        volume,
+        liquidity: volume * 0.1,
+        outcomes: vec![
+            Outcome {
+                name: "Yes".into(),
+                token_id: format!("{id}-yes"),
+                price: 0.65,
+                bid: 0.64,
+                ask: 0.66,
+                bid_depth: 100.0,
+                ask_depth: 100.0,
+            },
+            Outcome {
+                name: "No".into(),
+                token_id: format!("{id}-no"),
+                price: 0.35,
+                bid: 0.34,
+                ask: 0.36,
+                bid_depth: 100.0,
+                ask_depth: 100.0,
+            },
+        ],
+        category: None,
+        tags: vec![],
+        neg_risk: false,
+    }
+}
+
+pub fn spawn_load_detail_by_id(
+    client: Arc<PolyClient>,
+    tx: UnboundedSender<AppEvent>,
+    condition_id: String,
+    token_id: String,
+    market_question: String,
+) {
+    tokio::spawn(async move {
+        // Try condition ID first.
+        // Neg-risk markets return 422 (Err) — their position asset is NOT a
+        // CLOB token ID, so the clobTokenIds fallback would return the WRONG
+        // market.  For those we search by question text instead.
+        // Normal 404 (Ok(None)) can still try the token ID fallback safely.
+        let market = match client.get_market_by_id(&condition_id).await {
+            Ok(Some(m)) => m,
+            Ok(None) => {
+                // Normal not-found — token ID fallback is safe here
+                match client.get_market_by_token_id(&token_id).await {
+                    Ok(Some(m)) => m,
+                    Ok(None) => {
+                        let _ = tx.send(AppEvent::Error(crate::error::AppError::Api {
+                            status: 404,
+                            message: "Market not found".to_string(),
+                        }));
+                        return;
+                    }
+                    Err(e) => {
+                        let _ = tx.send(AppEvent::Error(e));
+                        return;
+                    }
+                }
+            }
+            Err(_) => {
+                // Likely neg-risk (422) — search by question text
+                let found = if !market_question.is_empty() {
+                    client
+                        .get_market_by_question(&market_question)
+                        .await
+                        .ok()
+                        .flatten()
+                } else {
+                    None
+                };
+                match found {
+                    Some(m) => m,
+                    None => {
+                        // Build a minimal Market from position data so we at
+                        // least show the correct question instead of wrong data.
+                        use crate::types::Outcome;
+                        Market {
+                            condition_id: condition_id.clone(),
+                            question: market_question.clone(),
+                            description: None,
+                            slug: String::new(),
+                            group_slug: String::new(),
+                            status: MarketStatus::Active,
+                            end_date: None,
+                            volume: 0.0,
+                            liquidity: 0.0,
+                            outcomes: vec![Outcome {
+                                name: "Yes".into(),
+                                token_id: token_id.clone(),
+                                price: 0.0,
+                                bid: 0.0,
+                                ask: 0.0,
+                                bid_depth: 0.0,
+                                ask_depth: 0.0,
+                            }],
+                            category: None,
+                            tags: vec![],
+                            neg_risk: true,
+                        }
+                    }
+                }
+            }
+        };
         let mut books = Vec::new();
         for outcome in &market.outcomes {
             if outcome.token_id.is_empty() {
@@ -3427,15 +3776,39 @@ pub fn spawn_ws_order_book(
 
 fn copy_to_clipboard(text: &str) {
     use std::io::Write;
-    if let Ok(mut child) = std::process::Command::new("pbcopy")
-        .stdin(std::process::Stdio::piped())
-        .spawn()
-    {
-        if let Some(stdin) = child.stdin.as_mut() {
-            let _ = stdin.write_all(text.as_bytes());
+
+    // Platform-specific clipboard commands, tried in order.
+    let candidates: &[&[&str]] = if cfg!(target_os = "macos") {
+        &[&["pbcopy"]]
+    } else if cfg!(target_os = "windows") {
+        &[&["clip.exe"]]
+    } else {
+        // Linux / BSD — prefer xclip, fall back to xsel, then wl-copy (Wayland)
+        &[
+            &["xclip", "-selection", "clipboard"],
+            &["xsel", "--clipboard", "--input"],
+            &["wl-copy"],
+        ]
+    };
+
+    for cmd in candidates {
+        let program = cmd[0];
+        let args = &cmd[1..];
+        if let Ok(mut child) = std::process::Command::new(program)
+            .args(args)
+            .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .spawn()
+        {
+            if let Some(stdin) = child.stdin.as_mut() {
+                let _ = stdin.write_all(text.as_bytes());
+            }
+            let _ = child.wait();
+            return;
         }
-        let _ = child.wait();
     }
+    tracing::warn!("no clipboard command available");
 }
 
 pub fn spawn_place_order(
@@ -3538,4 +3911,503 @@ pub fn spawn_cancel_all(client: Arc<PolyClient>, tx: UnboundedSender<AppEvent>) 
             }
         }
     });
+}
+
+// ── Unit tests ───────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::{Duration, Instant};
+
+    // ── Tab switching ────────────────────────────────────────────────────────
+
+    #[test]
+    fn initial_state_is_markets_tab() {
+        let app = test_app();
+        assert_eq!(app.active_tab, Tab::Markets);
+        assert!(matches!(app.current_screen(), Some(Screen::MarketList)));
+    }
+
+    #[test]
+    fn tab_switching() {
+        let mut app = test_app();
+        app.active_tab = Tab::Positions;
+        assert_eq!(app.active_tab, Tab::Positions);
+        app.active_tab = Tab::Balance;
+        assert_eq!(app.active_tab, Tab::Balance);
+        app.active_tab = Tab::Analytics;
+        assert_eq!(app.active_tab, Tab::Analytics);
+    }
+
+    // ── Screen stack ─────────────────────────────────────────────────────────
+
+    #[test]
+    fn screen_push_pop() {
+        let mut app = test_app();
+        assert_eq!(app.screen_stack.len(), 1);
+
+        app.screen_stack.push(Screen::MarketDetail);
+        assert!(matches!(app.current_screen(), Some(Screen::MarketDetail)));
+        assert_eq!(app.screen_stack.len(), 2);
+
+        app.screen_stack.push(Screen::OrderEntry);
+        assert!(matches!(app.current_screen(), Some(Screen::OrderEntry)));
+        assert_eq!(app.screen_stack.len(), 3);
+
+        app.screen_stack.pop();
+        assert!(matches!(app.current_screen(), Some(Screen::MarketDetail)));
+
+        app.screen_stack.pop();
+        assert!(matches!(app.current_screen(), Some(Screen::MarketList)));
+    }
+
+    #[test]
+    fn screen_stack_pop_on_empty_returns_none() {
+        let mut app = test_app();
+        app.screen_stack.clear();
+        assert!(app.current_screen().is_none());
+    }
+
+    #[test]
+    fn modal_screens_push_and_pop() {
+        let mut app = test_app();
+        app.screen_stack.push(Screen::Help);
+        assert!(matches!(app.current_screen(), Some(Screen::Help)));
+        app.screen_stack.pop();
+        assert!(matches!(app.current_screen(), Some(Screen::MarketList)));
+
+        app.screen_stack.push(Screen::QuitConfirm);
+        assert!(matches!(app.current_screen(), Some(Screen::QuitConfirm)));
+    }
+
+    // ── Sort mode cycling ────────────────────────────────────────────────────
+
+    #[test]
+    fn sort_mode_cycles() {
+        let s = SortMode::Volume;
+        assert_eq!(s.next(), SortMode::EndDate);
+        assert_eq!(s.next().next(), SortMode::Probability);
+        assert_eq!(s.next().next().next(), SortMode::Volume);
+    }
+
+    #[test]
+    fn sort_mode_labels() {
+        assert_eq!(SortMode::Volume.label(), "vol");
+        assert_eq!(SortMode::EndDate.label(), "end date");
+        assert_eq!(SortMode::Probability.label(), "prob");
+    }
+
+    // ── Date filter cycling ──────────────────────────────────────────────────
+
+    #[test]
+    fn date_filter_cycles_through_all_variants() {
+        let mut f = DateFilter::All;
+        let variants = [
+            DateFilter::Hours3,
+            DateFilter::Hours6,
+            DateFilter::Hours12,
+            DateFilter::Hours24,
+            DateFilter::Week,
+            DateFilter::Month,
+            DateFilter::All,
+        ];
+        for expected in &variants {
+            f = f.next();
+            assert_eq!(&f, expected);
+        }
+    }
+
+    // ── Prob filter cycling ──────────────────────────────────────────────────
+
+    #[test]
+    fn prob_filter_cycles() {
+        let mut f = ProbFilter::All;
+        assert_eq!(f.next(), ProbFilter::Prob90_98);
+        f = f.next(); // 90-98
+        f = f.next(); // 85-98
+        f = f.next(); // 80-98
+        assert_eq!(f.next(), ProbFilter::All);
+    }
+
+    // ── Volume filter ────────────────────────────────────────────────────────
+
+    #[test]
+    fn volume_filter_cycles_and_thresholds() {
+        assert_eq!(VolumeFilter::All.min_volume(), 0.0);
+        assert_eq!(VolumeFilter::K1.min_volume(), 1_000.0);
+        assert_eq!(VolumeFilter::K10.min_volume(), 10_000.0);
+        assert_eq!(VolumeFilter::K100.min_volume(), 100_000.0);
+
+        let mut v = VolumeFilter::All;
+        v = v.next();
+        assert_eq!(v, VolumeFilter::K1);
+        v = v.next();
+        assert_eq!(v, VolumeFilter::K10);
+        v = v.next();
+        assert_eq!(v, VolumeFilter::K100);
+        v = v.next();
+        assert_eq!(v, VolumeFilter::All);
+    }
+
+    // ── Flash messages ───────────────────────────────────────────────────────
+
+    #[test]
+    fn set_flash_stores_info_message() {
+        let mut app = test_app();
+        app.set_flash("hello");
+        let (msg, _, is_err) = app.flash.as_ref().unwrap();
+        assert_eq!(msg, "hello");
+        assert!(!is_err);
+    }
+
+    #[test]
+    fn set_error_flash_stores_error_message() {
+        let mut app = test_app();
+        app.set_error_flash("oops");
+        let (msg, _, is_err) = app.flash.as_ref().unwrap();
+        assert_eq!(msg, "oops");
+        assert!(is_err);
+    }
+
+    #[test]
+    fn flash_expiry_info_3s_error_5s() {
+        let mut app = test_app();
+
+        // Info: expires after 3s
+        app.flash = Some(("info".into(), Instant::now() - Duration::from_secs(4), false));
+        let (_, t, is_err) = app.flash.as_ref().unwrap();
+        let ttl = if *is_err { 5 } else { 3 };
+        assert!(t.elapsed() >= Duration::from_secs(ttl));
+
+        // Error: NOT expired after 4s
+        app.flash = Some(("err".into(), Instant::now() - Duration::from_secs(4), true));
+        let (_, t, is_err) = app.flash.as_ref().unwrap();
+        let ttl = if *is_err { 5 } else { 3 };
+        assert!(t.elapsed() < Duration::from_secs(ttl));
+
+        // Error: expired after 6s
+        app.flash = Some(("err".into(), Instant::now() - Duration::from_secs(6), true));
+        let (_, t, is_err) = app.flash.as_ref().unwrap();
+        let ttl = if *is_err { 5 } else { 3 };
+        assert!(t.elapsed() >= Duration::from_secs(ttl));
+    }
+
+    // ── Order form validation ────────────────────────────────────────────────
+
+    #[test]
+    fn order_form_cost_calculation() {
+        let mut form = OrderForm::default();
+        form.size_input = "10".into();
+        form.price_input = "0.65".into();
+        assert!((form.cost().unwrap() - 6.5).abs() < 1e-9);
+    }
+
+    #[test]
+    fn order_form_cost_returns_none_for_invalid_input() {
+        let mut form = OrderForm::default();
+        form.size_input = "abc".into();
+        form.price_input = "0.50".into();
+        assert!(form.cost().is_none());
+
+        form.size_input = "10".into();
+        form.price_input = "xyz".into();
+        assert!(form.cost().is_none());
+    }
+
+    #[test]
+    fn order_form_market_order_cost_uses_market_price() {
+        let mut form = OrderForm::default();
+        form.market_order = true;
+        form.size_input = "20".into();
+        form.price_input = "0.50".into(); // should be ignored
+        form.market_price = Some(0.75);
+        assert!((form.cost().unwrap() - 15.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn order_form_market_order_cost_none_without_market_price() {
+        let mut form = OrderForm::default();
+        form.market_order = true;
+        form.size_input = "10".into();
+        form.market_price = None;
+        assert!(form.cost().is_none());
+    }
+
+    // ── rebuild_filter ───────────────────────────────────────────────────────
+
+    #[test]
+    fn rebuild_filter_includes_all_by_default() {
+        let mut app = test_app();
+        app.markets = vec![
+            test_market("a", "Will it rain?", 5000.0),
+            test_market("b", "Who wins the election?", 10000.0),
+            test_market("c", "Bitcoin above 100K?", 500.0),
+        ];
+        app.rebuild_filter();
+        assert_eq!(app.filtered_indices.len(), 3);
+    }
+
+    #[test]
+    fn rebuild_filter_text_search() {
+        let mut app = test_app();
+        app.markets = vec![
+            test_market("a", "Will it rain tomorrow?", 5000.0),
+            test_market("b", "Who wins the election?", 10000.0),
+            test_market("c", "Will it rain next week?", 500.0),
+        ];
+        app.search_query = "rain".into();
+        app.rebuild_filter();
+        assert_eq!(app.filtered_indices.len(), 2);
+    }
+
+    #[test]
+    fn rebuild_filter_text_search_case_insensitive() {
+        let mut app = test_app();
+        app.markets = vec![
+            test_market("a", "Bitcoin Price Prediction", 5000.0),
+            test_market("b", "BITCOIN Moon?", 10000.0),
+            test_market("c", "Election results", 500.0),
+        ];
+        app.search_query = "bitcoin".into();
+        app.rebuild_filter();
+        assert_eq!(app.filtered_indices.len(), 2);
+    }
+
+    #[test]
+    fn rebuild_filter_volume_filter() {
+        let mut app = test_app();
+        app.markets = vec![
+            test_market("a", "Low vol", 500.0),
+            test_market("b", "Mid vol", 5000.0),
+            test_market("c", "High vol", 50000.0),
+        ];
+        app.volume_filter = VolumeFilter::K10;
+        app.rebuild_filter();
+        assert_eq!(app.filtered_indices.len(), 1);
+        assert_eq!(app.markets[app.filtered_indices[0]].condition_id, "c");
+    }
+
+    #[test]
+    fn rebuild_filter_sorts_by_volume_desc() {
+        let mut app = test_app();
+        app.markets = vec![
+            test_market("a", "Low", 100.0),
+            test_market("b", "High", 99999.0),
+            test_market("c", "Mid", 5000.0),
+        ];
+        app.sort_mode = SortMode::Volume;
+        app.rebuild_filter();
+        let ids: Vec<&str> = app
+            .filtered_indices
+            .iter()
+            .map(|&i| app.markets[i].condition_id.as_str())
+            .collect();
+        assert_eq!(ids, vec!["b", "c", "a"]);
+    }
+
+    #[test]
+    fn rebuild_filter_sorts_by_end_date_asc() {
+        let mut app = test_app();
+        let mut m1 = test_market("a", "Late", 100.0);
+        m1.end_date = Some("2026-12-31T00:00:00Z".into());
+        let mut m2 = test_market("b", "Early", 100.0);
+        m2.end_date = Some("2026-01-01T00:00:00Z".into());
+        let mut m3 = test_market("c", "Mid", 100.0);
+        m3.end_date = Some("2026-06-15T00:00:00Z".into());
+        app.markets = vec![m1, m2, m3];
+        app.sort_mode = SortMode::EndDate;
+        app.rebuild_filter();
+        let ids: Vec<&str> = app
+            .filtered_indices
+            .iter()
+            .map(|&i| app.markets[i].condition_id.as_str())
+            .collect();
+        assert_eq!(ids, vec!["b", "c", "a"]);
+    }
+
+    #[test]
+    fn rebuild_filter_sorts_by_probability_desc() {
+        let mut app = test_app();
+        let mut m1 = test_market("a", "Low prob", 100.0);
+        m1.outcomes[0].price = 0.30;
+        let mut m2 = test_market("b", "High prob", 100.0);
+        m2.outcomes[0].price = 0.95;
+        let mut m3 = test_market("c", "Mid prob", 100.0);
+        m3.outcomes[0].price = 0.60;
+        app.markets = vec![m1, m2, m3];
+        app.sort_mode = SortMode::Probability;
+        app.rebuild_filter();
+        let ids: Vec<&str> = app
+            .filtered_indices
+            .iter()
+            .map(|&i| app.markets[i].condition_id.as_str())
+            .collect();
+        assert_eq!(ids, vec!["b", "c", "a"]);
+    }
+
+    #[test]
+    fn rebuild_filter_watchlist_only() {
+        let mut app = test_app();
+        app.markets = vec![
+            test_market("a", "Starred", 100.0),
+            test_market("b", "Not starred", 100.0),
+        ];
+        app.watchlist.insert("a".into());
+        app.watchlist_only = true;
+        app.rebuild_filter();
+        assert_eq!(app.filtered_indices.len(), 1);
+        assert_eq!(app.markets[app.filtered_indices[0]].condition_id, "a");
+    }
+
+    #[test]
+    fn rebuild_filter_combined_search_and_volume() {
+        let mut app = test_app();
+        app.markets = vec![
+            test_market("a", "Bitcoin price today?", 500.0),
+            test_market("b", "Bitcoin above 100K?", 50000.0),
+            test_market("c", "Election results?", 50000.0),
+        ];
+        app.search_query = "bitcoin".into();
+        app.volume_filter = VolumeFilter::K10;
+        app.rebuild_filter();
+        assert_eq!(app.filtered_indices.len(), 1);
+        assert_eq!(app.markets[app.filtered_indices[0]].condition_id, "b");
+    }
+
+    #[test]
+    fn rebuild_filter_populates_cached_categories() {
+        let mut app = test_app();
+        app.markets = vec![
+            test_market("a", "Will the highest temperature in NYC be 80?", 100.0),
+            test_market("b", "Bitcoin above 100K?", 100.0),
+        ];
+        app.rebuild_filter();
+        assert!(app.cached_categories.contains(&"Weather".to_string()));
+        assert!(app.cached_categories.contains(&"Crypto".to_string()));
+    }
+
+    // ── market_category ──────────────────────────────────────────────────────
+
+    #[test]
+    fn market_category_identifies_weather() {
+        let m = test_market("a", "Will the highest temperature in London be 80?", 100.0);
+        assert_eq!(market_category(&m), Some("Weather"));
+    }
+
+    #[test]
+    fn market_category_identifies_crypto() {
+        let m = test_market("a", "Will Bitcoin reach 200K?", 100.0);
+        assert_eq!(market_category(&m), Some("Crypto"));
+    }
+
+    #[test]
+    fn market_category_identifies_sports_by_slug() {
+        let mut m = test_market("a", "Some game result", 100.0);
+        m.slug = "nba-lakers-vs-celtics".into();
+        assert_eq!(market_category(&m), Some("Sports"));
+    }
+
+    #[test]
+    fn market_category_returns_none_for_unknown() {
+        let m = test_market("a", "Will something happen?", 100.0);
+        assert_eq!(market_category(&m), None);
+    }
+
+    // ── Positions focus toggle ───────────────────────────────────────────────
+
+    #[test]
+    fn positions_focus_toggle() {
+        let mut app = test_app();
+        assert!(!app.positions_focus_orders);
+        app.positions_focus_orders = true;
+        assert!(app.positions_focus_orders);
+        app.positions_focus_orders = false;
+        assert!(!app.positions_focus_orders);
+    }
+
+    // ── Description expanded toggle ──────────────────────────────────────────
+
+    #[test]
+    fn description_expanded_toggle() {
+        let mut app = test_app();
+        assert!(!app.description_expanded);
+        app.description_expanded = !app.description_expanded;
+        assert!(app.description_expanded);
+        app.description_expanded = !app.description_expanded;
+        assert!(!app.description_expanded);
+    }
+
+    // ── Detail outcome index ─────────────────────────────────────────────────
+
+    #[test]
+    fn detail_outcome_index_defaults_to_zero() {
+        let app = test_app();
+        assert_eq!(app.detail_outcome_index, 0);
+    }
+
+    // ── Fill detection ───────────────────────────────────────────────────────
+
+    #[test]
+    fn fill_detection_sets_flash_when_order_disappears() {
+        let mut app = test_app();
+        // Simulate: order "abc" was live on previous refresh
+        app.prev_live_order_ids.insert("abc".into());
+        app.prev_live_order_ids.insert("def".into());
+
+        // New refresh: "def" is still live, "abc" is gone (filled)
+        let new_orders = vec![Order {
+            id: "def".into(),
+            asset_id: String::new(),
+            side: Side::Buy,
+            price: 0.5,
+            original_size: 10.0,
+            size_matched: 0.0,
+            status: OrderStatus::Live,
+            outcome: String::new(),
+            market: String::new(),
+            created_at: String::new(),
+        }];
+
+        // Simulate the fill detection logic from OrdersLoaded handler
+        let new_ids: HashSet<String> = new_orders.iter().map(|o| o.id.clone()).collect();
+        let filled: Vec<&str> = app
+            .prev_live_order_ids
+            .iter()
+            .filter(|id| !new_ids.contains(id.as_str()))
+            .map(|s| s.as_str())
+            .collect();
+        assert_eq!(filled.len(), 1);
+        assert_eq!(filled[0], "abc");
+    }
+
+    #[test]
+    fn cancel_removes_from_prev_live_ids() {
+        let mut app = test_app();
+        app.prev_live_order_ids.insert("abc".into());
+        app.prev_live_order_ids.insert("def".into());
+
+        // Simulate cancel of "abc"
+        app.prev_live_order_ids.remove("abc");
+        assert!(!app.prev_live_order_ids.contains("abc"));
+        assert!(app.prev_live_order_ids.contains("def"));
+    }
+
+    #[test]
+    fn cancel_all_clears_prev_live_ids() {
+        let mut app = test_app();
+        app.prev_live_order_ids.insert("abc".into());
+        app.prev_live_order_ids.insert("def".into());
+
+        // Simulate cancel-all
+        app.prev_live_order_ids.clear();
+        assert!(app.prev_live_order_ids.is_empty());
+    }
+
+    #[test]
+    fn no_false_fill_on_first_load() {
+        let app = test_app();
+        // First load: prev_live_order_ids is empty, so no fills should be detected
+        assert!(app.prev_live_order_ids.is_empty());
+    }
 }

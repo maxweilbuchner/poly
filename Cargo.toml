@@ -3,6 +3,13 @@ name = "poly"
 version = "0.2.0"
 edition = "2021"
 description = "Universal Polymarket CLI trading tool"
+license = "MIT"
+repository = "https://gitlab.com/maxweilbuchner/poly-v2"
+homepage = "https://gitlab.com/maxweilbuchner/poly-v2"
+authors = ["Maximilian Weilbuchner"]
+readme = "README.md"
+keywords = ["polymarket", "trading", "cli", "tui", "prediction-markets"]
+categories = ["command-line-utilities", "finance"]
 
 [lib]
 name = "poly"
@@ -33,6 +40,7 @@ serde_json = "1"
 
 # CLI
 clap = { version = "4", features = ["derive"] }
+clap_complete = "4"
 
 # Logging / tracing
 tracing = "0.1"
