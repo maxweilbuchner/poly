@@ -78,7 +78,9 @@ fn render_balance_panel(f: &mut Frame, area: Rect, app: &App) {
             None => "—".to_string(),
         };
 
+        // Max uint256 / 1e6 ≈ 1.15e71 — treat anything above 1e18 as "unlimited".
         let allowance_str = match app.allowance {
+            Some(a) if a > 1e18 => "Unlimited".to_string(),
             Some(a) => format!("${:.6} USDC", a),
             None => "—".to_string(),
         };

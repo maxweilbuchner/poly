@@ -334,7 +334,9 @@ pub fn print_balance(balance: f64, allowance: f64) {
     );
     println!(
         "  CTF Allowance : {}",
-        if allowance >= 10.0 {
+        if allowance > 1e18 {
+            "Unlimited".green().to_string()
+        } else if allowance >= 10.0 {
             format!("${:.2}", allowance).green().to_string()
         } else {
             format!("${:.2} ⚠ low", allowance).yellow().to_string()
