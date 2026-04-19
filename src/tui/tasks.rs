@@ -316,8 +316,7 @@ pub fn spawn_log_net_worth(
 ) {
     tokio::spawn(async move {
         // Fetch balance and positions concurrently.
-        let (bal_result, pos_result) =
-            tokio::join!(client.get_balance(), client.get_positions(),);
+        let (bal_result, pos_result) = tokio::join!(client.get_balance(), client.get_positions(),);
 
         let balance = bal_result.unwrap_or(0.0);
         let positions = pos_result.unwrap_or_default();
@@ -347,10 +346,7 @@ pub fn spawn_log_net_worth(
     });
 }
 
-pub fn spawn_load_net_worth_history(
-    tx: UnboundedSender<AppEvent>,
-    db_path: std::path::PathBuf,
-) {
+pub fn spawn_load_net_worth_history(tx: UnboundedSender<AppEvent>, db_path: std::path::PathBuf) {
     tokio::task::spawn_blocking(move || {
         let history = crate::db::open(&db_path)
             .and_then(|c| crate::db::query_net_worth_history(&c))

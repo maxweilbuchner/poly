@@ -92,11 +92,7 @@ fn render_balance_panel(f: &mut Frame, area: Rect, app: &App) {
         };
 
         // ── Portfolio calculations ───────────────────────────────────
-        let positions_value: f64 = app
-            .positions
-            .iter()
-            .map(|p| p.size * p.current_price)
-            .sum();
+        let positions_value: f64 = app.positions.iter().map(|p| p.size * p.current_price).sum();
         let total_shares: f64 = app.positions.iter().map(|p| p.size).sum();
         let net_worth = bal + positions_value;
         let max_payout = bal + total_shares;
@@ -154,7 +150,10 @@ fn render_balance_panel(f: &mut Frame, area: Rect, app: &App) {
         ]));
         lines.push(Line::from(vec![
             Span::styled("   Shares held       ", label),
-            Span::styled(format!("{:.2}", total_shares), Style::default().fg(theme::TEXT)),
+            Span::styled(
+                format!("{:.2}", total_shares),
+                Style::default().fg(theme::TEXT),
+            ),
         ]));
 
         // ── Totals section ───────────────────────────────────────────

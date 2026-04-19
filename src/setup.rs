@@ -41,18 +41,21 @@ pub async fn run() -> crate::client::Result<()> {
     println!("  Or find them in your Polymarket account API settings.");
     println!();
 
-    let (api_key, api_secret, api_passphrase) =
-        match (&existing.api_key, &existing.api_secret, &existing.api_passphrase) {
-            (Some(k), Some(s), Some(p)) => {
-                println!("  Already configured: API key {}", mask_secret(k));
-                if prompt_yes_no("  Keep existing? [Y/n] ", true)? {
-                    (k.clone(), s.clone(), p.clone())
-                } else {
-                    read_clob_keys_loop()?
-                }
+    let (api_key, api_secret, api_passphrase) = match (
+        &existing.api_key,
+        &existing.api_secret,
+        &existing.api_passphrase,
+    ) {
+        (Some(k), Some(s), Some(p)) => {
+            println!("  Already configured: API key {}", mask_secret(k));
+            if prompt_yes_no("  Keep existing? [Y/n] ", true)? {
+                (k.clone(), s.clone(), p.clone())
+            } else {
+                read_clob_keys_loop()?
             }
-            _ => read_clob_keys_loop()?,
-        };
+        }
+        _ => read_clob_keys_loop()?,
+    };
     println!();
 
     // ── Step 3: RPC URL ──────────────────────────────────────────────

@@ -21,7 +21,7 @@ variables:
 
 fmt:
   stage: check
-  image: rust:1.85
+  image: rust:1.86
   <<: *rust-cache
   script:
     - rustup component add rustfmt
@@ -29,7 +29,7 @@ fmt:
 
 clippy:
   stage: check
-  image: rust:1.85
+  image: rust:1.86
   <<: *rust-cache
   script:
     - rustup component add clippy
@@ -39,7 +39,7 @@ clippy:
 
 test:
   stage: test
-  image: rust:1.85
+  image: rust:1.86
   <<: *rust-cache
   script:
     - cargo test --all-targets
@@ -48,7 +48,7 @@ test:
 
 build-linux:
   stage: build
-  image: rust:1.85
+  image: rust:1.86
   <<: *rust-cache
   script:
     - cargo build --release
