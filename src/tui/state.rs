@@ -34,10 +34,10 @@ pub enum Screen {
     MarketList,
     MarketDetail,
     OrderEntry,
-    CloseConfirm,      // fast-path: confirm closing a full position without the order form
-    CancelAllConfirm,  // confirm cancelling all open orders
-    RedeemConfirm,     // confirm on-chain redemption of a single resolved position
-    RedeemAllConfirm,  // confirm on-chain redemption of all redeemable positions
+    CloseConfirm, // fast-path: confirm closing a full position without the order form
+    CancelAllConfirm, // confirm cancelling all open orders
+    RedeemConfirm, // confirm on-chain redemption of a single resolved position
+    RedeemAllConfirm, // confirm on-chain redemption of all redeemable positions
     Help,
     QuitConfirm,
     Setup,

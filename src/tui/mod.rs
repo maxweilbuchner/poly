@@ -17,9 +17,9 @@ pub mod widgets {
 pub mod theme;
 mod ui;
 
-mod state;
 mod events;
 mod keys;
+mod state;
 pub(crate) mod tasks;
 
 // Re-export public API so external `use crate::tui::*` paths keep working.
@@ -241,9 +241,9 @@ async fn run_app(
 // ── Test helpers ─────────────────────────────────────────────────────────────
 
 #[cfg(test)]
-use std::collections::HashSet;
-#[cfg(test)]
 use crate::types::{Market, MarketStatus, Outcome};
+#[cfg(test)]
+use std::collections::HashSet;
 
 /// Create an App suitable for unit tests (no disk I/O).
 #[cfg(test)]

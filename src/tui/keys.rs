@@ -567,7 +567,12 @@ fn handle_order_key(
                         app.order_form.market_price_failed = false;
                         let token_id = app.order_form.token_id.clone();
                         let side = app.order_form.side.clone().unwrap_or(Side::Buy);
-                        tasks::spawn_fetch_market_price(Arc::clone(&client), tx.clone(), token_id, side);
+                        tasks::spawn_fetch_market_price(
+                            Arc::clone(&client),
+                            tx.clone(),
+                            token_id,
+                            side,
+                        );
                         OrderType::Gtc // placeholder; market_order flag takes precedence
                     }
                 };

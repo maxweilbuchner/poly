@@ -5,9 +5,7 @@ use tokio::sync::mpsc::UnboundedSender;
 use tokio::sync::watch;
 
 use crate::client::PolyClient;
-use crate::types::{
-    Market, MarketStatus, OrderBook, PlaceOrderParams, PricePoint, Side,
-};
+use crate::types::{Market, MarketStatus, OrderBook, PlaceOrderParams, PricePoint, Side};
 
 use super::state::{market_category, market_category_from_parts, AnalyticsStats, AppEvent};
 
@@ -1118,7 +1116,11 @@ pub fn spawn_cancel_order(
     });
 }
 
-pub(super) fn spawn_fetch_fee_rate(client: Arc<PolyClient>, tx: UnboundedSender<AppEvent>, token_id: String) {
+pub(super) fn spawn_fetch_fee_rate(
+    client: Arc<PolyClient>,
+    tx: UnboundedSender<AppEvent>,
+    token_id: String,
+) {
     tokio::spawn(async move {
         // Default to 0: most active markets return 404 (no fee), only special
         // markets return a non-zero base_fee. This matches py-clob-client behaviour.

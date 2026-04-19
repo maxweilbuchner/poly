@@ -81,8 +81,7 @@ fn ui_state_defaults_on_missing_file() {
 #[test]
 fn ui_state_defaults_on_corrupt_json() {
     with_temp_data_dir(|| {
-        let dir =
-            std::path::PathBuf::from(std::env::var("XDG_DATA_HOME").unwrap()).join("poly");
+        let dir = std::path::PathBuf::from(std::env::var("XDG_DATA_HOME").unwrap()).join("poly");
         std::fs::create_dir_all(&dir).unwrap();
         std::fs::write(dir.join("ui_state.json"), "not valid json {{{").unwrap();
         let loaded = load_ui_state();
@@ -96,8 +95,7 @@ fn ui_state_defaults_on_corrupt_json() {
 #[test]
 fn ui_state_defaults_on_future_version() {
     with_temp_data_dir(|| {
-        let dir =
-            std::path::PathBuf::from(std::env::var("XDG_DATA_HOME").unwrap()).join("poly");
+        let dir = std::path::PathBuf::from(std::env::var("XDG_DATA_HOME").unwrap()).join("poly");
         std::fs::create_dir_all(&dir).unwrap();
         std::fs::write(
             dir.join("ui_state.json"),
@@ -172,14 +170,9 @@ fn watchlist_empty_round_trip() {
 fn watchlist_v0_compat_reads_raw_array() {
     with_temp_data_dir(|| {
         // Older binaries wrote a bare JSON array without version wrapper.
-        let dir =
-            std::path::PathBuf::from(std::env::var("XDG_DATA_HOME").unwrap()).join("poly");
+        let dir = std::path::PathBuf::from(std::env::var("XDG_DATA_HOME").unwrap()).join("poly");
         std::fs::create_dir_all(&dir).unwrap();
-        std::fs::write(
-            dir.join("watchlist.json"),
-            r#"["old-id-1","old-id-2"]"#,
-        )
-        .unwrap();
+        std::fs::write(dir.join("watchlist.json"), r#"["old-id-1","old-id-2"]"#).unwrap();
         let loaded = load_watchlist();
         assert_eq!(loaded.len(), 2);
         assert!(loaded.contains("old-id-1"));
@@ -190,8 +183,7 @@ fn watchlist_v0_compat_reads_raw_array() {
 #[test]
 fn watchlist_defaults_on_corrupt_json() {
     with_temp_data_dir(|| {
-        let dir =
-            std::path::PathBuf::from(std::env::var("XDG_DATA_HOME").unwrap()).join("poly");
+        let dir = std::path::PathBuf::from(std::env::var("XDG_DATA_HOME").unwrap()).join("poly");
         std::fs::create_dir_all(&dir).unwrap();
         std::fs::write(dir.join("watchlist.json"), "garbage").unwrap();
         let loaded = load_watchlist();

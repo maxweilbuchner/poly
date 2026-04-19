@@ -77,7 +77,9 @@ fn empty_body_treated_as_empty_string() {
     );
     let address = "0x2222222222222222222222222222222222222222";
 
-    let headers = auth.headers("GET", "/data/positions", None, address).unwrap();
+    let headers = auth
+        .headers("GET", "/data/positions", None, address)
+        .unwrap();
 
     let timestamp = headers.get("POLY_TIMESTAMP").unwrap().to_str().unwrap();
     let signature = headers.get("POLY_SIGNATURE").unwrap().to_str().unwrap();

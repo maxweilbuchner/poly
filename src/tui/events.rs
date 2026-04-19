@@ -114,7 +114,12 @@ pub(super) fn handle_event(
                 if !token_pairs.is_empty() {
                     let (cancel_tx, cancel_rx) = tokio::sync::watch::channel(false);
                     app.ws_cancel = Some(cancel_tx);
-                    tasks::spawn_ws_order_book(Arc::clone(&client), tx.clone(), token_pairs, cancel_rx);
+                    tasks::spawn_ws_order_book(
+                        Arc::clone(&client),
+                        tx.clone(),
+                        token_pairs,
+                        cancel_rx,
+                    );
                 }
                 let outcome_names: Vec<String> =
                     market.outcomes.iter().map(|o| o.name.clone()).collect();
