@@ -46,7 +46,7 @@ Running `poly` with no subcommand opens the interactive dashboard.
 |---|---|---|
 | Markets | `1` | Browse, search, filter, and star markets |
 | Positions | `2` | View open positions and orders, close/cancel/redeem |
-| Balance | `3` | On-chain USDC balance and CTF allowance |
+| Balance | `3` | USDC balance, portfolio summary, net worth chart |
 | Analytics | `4` | Prediction calibration curves, resolution stats, calibration matrix |
 
 ### Key Bindings
@@ -74,10 +74,15 @@ Running `poly` with no subcommand opens the interactive dashboard.
 - `c` cancel order, `C` cancel all orders
 - `R` redeem resolved position, `A` redeem all redeemable
 
+**Balance**
+- `r` refresh balance
+
 **Analytics**
+- `p` pull market snapshot, `r` recompute analytics
+- `s` collapse/expand status panel
 - `t` cycle calibration time window (3h/6h/9h/12h)
 - `w` toggle WLS/OLS regression
-- `r` refresh
+- `c` copy DB path, `o` open data folder
 
 ## CLI Commands
 
