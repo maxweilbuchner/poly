@@ -816,18 +816,16 @@ pub fn spawn_snapshot_markets(
                 })
                 .collect();
 
-            for result in join_all(futs).await {
-                if let Ok(Some(mr)) = result {
-                    xref_rows.push(ResolutionRow {
-                        condition_id: mr.condition_id.clone(),
-                        question: mr.question.clone(),
-                        slug: mr.slug.clone(),
-                        end_date: mr.end_date.as_deref().unwrap_or("").to_string(),
-                        resolution: mr.resolution.clone(),
-                        last_trade_price: mr.last_trade_price,
-                        clob_token_id: mr.clob_token_id.clone(),
-                    });
-                }
+            for mr in join_all(futs).await.into_iter().flatten().flatten() {
+                xref_rows.push(ResolutionRow {
+                    condition_id: mr.condition_id.clone(),
+                    question: mr.question.clone(),
+                    slug: mr.slug.clone(),
+                    end_date: mr.end_date.as_deref().unwrap_or("").to_string(),
+                    resolution: mr.resolution.clone(),
+                    last_trade_price: mr.last_trade_price,
+                    clob_token_id: mr.clob_token_id.clone(),
+                });
             }
         }
 
