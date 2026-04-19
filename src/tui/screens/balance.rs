@@ -9,7 +9,7 @@ use ratatui::{
 use crate::tui::{is_auth_error, theme, App};
 
 pub fn render(f: &mut Frame, area: Rect, app: &App) {
-    let chunks = Layout::vertical([Constraint::Length(10), Constraint::Min(0)]).split(area);
+    let chunks = Layout::vertical([Constraint::Length(16), Constraint::Min(0)]).split(area);
 
     render_balance_panel(f, chunks[0], app);
 }
@@ -121,6 +121,44 @@ fn render_balance_panel(f: &mut Frame, area: Rect, app: &App) {
                 "  ⚠ Low allowance — approve more USDC to place orders",
                 Style::default().fg(theme::BORDER_WARNING),
             )]));
+        }
+
+        // ── Portfolio summary ────────────────────────────────────────
+        let positions_value: f64 = app
+            .positions
+            .iter()
+            .map(|p| p.size * p.current_price)
+            .sum();
+
+        lines.push(Line::from(""));
+        lines.push(Line::from(vec![Span::styled(
+            "  ────────────────────────────────",
+            Style::default().fg(theme::BORDER),
+        )]));
+
+        lines.push(Line::from(vec![
+            Span::styled("  Positions     ", Style::default().fg(theme::DIM)),
+            Span::styled(
+                format!("${:.2}", positions_value),
+                Style::default().fg(theme::TEXT),
+            ),
+            Span::styled(
+                format!("  ({} open)", app.positions.len()),
+                Style::default().fg(theme::VERY_DIM),
+            ),
+        ]));
+
+        if let Some(bal) = app.balance {
+            let net_worth = bal + positions_value;
+            lines.push(Line::from(vec![
+                Span::styled("  Net Worth     ", Style::default().fg(theme::DIM)),
+                Span::styled(
+                    format!("${:.2}", net_worth),
+                    Style::default()
+                        .fg(theme::GREEN)
+                        .add_modifier(Modifier::BOLD),
+                ),
+            ]));
         }
 
         lines
