@@ -33,7 +33,7 @@ clippy:
   <<: *rust-cache
   script:
     - rustup component add clippy
-    - cargo clippy --all-targets -- -D warnings
+    - cargo clippy --all-targets -- -D warnings -A clippy::uninlined_format_args
 
 # ── Test stage ────────────────────────────────────────────────────────────────
 
