@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Shell completion generation for bash, zsh, fish (`poly completions <shell>`)
 - Aggregate portfolio P&L summary on the Positions tab (value, cost, return %)
 - Market description display in TUI detail view (collapsible, 20% cap)
+- Net worth time-series chart on the Balance tab (logs to SQLite every 10 min, Braille line chart)
+- Complete help screen (`?`) — now covers all tabs including Balance and Analytics keybindings
 - TUI unit tests: 38 tests covering state transitions, filters, order form validation, fill detection
 - Order fill notifications: flash message + terminal bell when orders are filled
 - crates.io metadata in Cargo.toml (license, repository, keywords, categories)
@@ -31,11 +33,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TUI internals split into focused modules (state, events, keys, tasks)
 - Resolution Bias chart bars dynamically fill panel width
 - README updated with full architecture diagram, shell completions docs
+- Balance tab redesigned with wallet/portfolio/totals sections
 
 ### Fixed
 - Clipboard copy now works cross-platform (Linux: xclip/xsel/wl-copy, Windows: clip.exe)
 - Neg-risk (weather) market detail from Positions tab no longer shows wrong market data
 - Description panel capped at 20% height when collapsed (was 25%)
+- Replaced bare `.unwrap()` calls in client with `.expect()` for clearer panic messages
 
 ## [0.2.0] - 2026-04-16
 
