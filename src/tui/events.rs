@@ -69,6 +69,24 @@ pub(super) fn handle_event(
                     );
                 }
             }
+
+            // 10-minute net worth logging.
+            // First run: ~30 s after startup.
+            // Subsequent runs: 10 min after the last completed log (wall-clock).
+            if !app.net_worth_in_progress {
+                let should = match app.net_worth_last_at {
+                    None => app.tick >= 600, // ~30 s at 50 ms/tick
+                    Some(last) => (chrono::Utc::now() - last).num_seconds() >= 600,
+                };
+                if should {
+                    app.net_worth_in_progress = true;
+                    tasks::spawn_log_net_worth(
+                        Arc::clone(&client),
+                        tx.clone(),
+                        app.db_path.clone(),
+                    );
+                }
+            }
         }
 
         AppEvent::Key(key) => {
@@ -369,6 +387,18 @@ pub(super) fn handle_event(
 
         AppEvent::UserWsDisconnected => {
             app.user_ws_connected = false;
+        }
+
+        AppEvent::NetWorthLogged(balance, _positions_value, _net_worth, history) => {
+            app.net_worth_in_progress = false;
+            app.net_worth_last_at = Some(chrono::Utc::now());
+            app.net_worth_history = history;
+            // Also update the live balance display as a side effect.
+            app.balance = Some(balance);
+        }
+
+        AppEvent::NetWorthHistoryLoaded(history) => {
+            app.net_worth_history = history;
         }
     }
     false

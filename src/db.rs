@@ -53,6 +53,13 @@ CREATE TABLE IF NOT EXISTS resolutions (
     calibration_price REAL,
     calibration_hours INTEGER
 );
+
+CREATE TABLE IF NOT EXISTS net_worth_log (
+    logged_at TEXT NOT NULL PRIMARY KEY,
+    balance   REAL NOT NULL,
+    positions REAL NOT NULL,
+    net_worth REAL NOT NULL
+);
 ";
 
 // ── Open / initialise ─────────────────────────────────────────────────────────
@@ -572,6 +579,48 @@ pub fn query_unresolved_closed(conn: &Connection) -> rusqlite::Result<Vec<Unreso
         })?
         .filter_map(|r| r.ok())
         .collect();
+    Ok(rows)
+}
+
+// ── Net worth log ─────────────────────────────────────────────────────────────
+
+/// Insert a single net worth data point. Ignores duplicates (same timestamp).
+pub fn insert_net_worth(
+    conn: &Connection,
+    logged_at: &str,
+    balance: f64,
+    positions_value: f64,
+    net_worth: f64,
+) -> rusqlite::Result<()> {
+    conn.execute(
+        "INSERT OR IGNORE INTO net_worth_log (logged_at, balance, positions, net_worth)
+         VALUES (?1, ?2, ?3, ?4)",
+        params![logged_at, balance, positions_value, net_worth],
+    )?;
+    Ok(())
+}
+
+/// Load recent net worth history as `(epoch_secs, net_worth)` in chronological order.
+/// Returns up to 1000 rows (~7 days at 10-minute intervals).
+pub fn query_net_worth_history(conn: &Connection) -> rusqlite::Result<Vec<(f64, f64)>> {
+    let mut stmt = conn.prepare(
+        "SELECT logged_at, net_worth FROM net_worth_log
+         ORDER BY logged_at DESC LIMIT 1000",
+    )?;
+    let mut rows: Vec<(f64, f64)> = stmt
+        .query_map([], |r| {
+            let ts: String = r.get(0)?;
+            let nw: f64 = r.get(1)?;
+            Ok((ts, nw))
+        })?
+        .filter_map(|r| r.ok())
+        .filter_map(|(ts, nw)| {
+            chrono::DateTime::parse_from_rfc3339(&ts)
+                .ok()
+                .map(|dt| (dt.timestamp() as f64, nw))
+        })
+        .collect();
+    rows.reverse(); // chronological order (oldest first)
     Ok(rows)
 }
 

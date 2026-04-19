@@ -309,6 +309,58 @@ pub fn spawn_load_balance(client: Arc<PolyClient>, tx: UnboundedSender<AppEvent>
     });
 }
 
+pub fn spawn_log_net_worth(
+    client: Arc<PolyClient>,
+    tx: UnboundedSender<AppEvent>,
+    db_path: std::path::PathBuf,
+) {
+    tokio::spawn(async move {
+        // Fetch balance and positions concurrently.
+        let (bal_result, pos_result) =
+            tokio::join!(client.get_balance(), client.get_positions(),);
+
+        let balance = bal_result.unwrap_or(0.0);
+        let positions = pos_result.unwrap_or_default();
+        let positions_value: f64 = positions.iter().map(|p| p.size * p.current_price).sum();
+        let net_worth = balance + positions_value;
+
+        // Insert into DB and load history.
+        let history = tokio::task::spawn_blocking(move || -> Vec<(f64, f64)> {
+            let conn = match crate::db::open(&db_path) {
+                Ok(c) => c,
+                Err(_) => return vec![],
+            };
+            let logged_at = chrono::Utc::now().to_rfc3339();
+            let _ =
+                crate::db::insert_net_worth(&conn, &logged_at, balance, positions_value, net_worth);
+            crate::db::query_net_worth_history(&conn).unwrap_or_default()
+        })
+        .await
+        .unwrap_or_default();
+
+        let _ = tx.send(AppEvent::NetWorthLogged(
+            balance,
+            positions_value,
+            net_worth,
+            history,
+        ));
+    });
+}
+
+pub fn spawn_load_net_worth_history(
+    tx: UnboundedSender<AppEvent>,
+    db_path: std::path::PathBuf,
+) {
+    tokio::task::spawn_blocking(move || {
+        let history = crate::db::open(&db_path)
+            .and_then(|c| crate::db::query_net_worth_history(&c))
+            .unwrap_or_default();
+        if !history.is_empty() {
+            let _ = tx.send(AppEvent::NetWorthHistoryLoaded(history));
+        }
+    });
+}
+
 pub fn spawn_redeem_position(
     client: Arc<PolyClient>,
     tx: UnboundedSender<AppEvent>,

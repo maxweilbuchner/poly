@@ -1,8 +1,9 @@
 use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::{Modifier, Style},
+    symbols,
     text::{Line, Span},
-    widgets::{Block, Paragraph},
+    widgets::{Axis, Block, Chart, Dataset, GraphType, Paragraph},
     Frame,
 };
 
@@ -12,6 +13,7 @@ pub fn render(f: &mut Frame, area: Rect, app: &App) {
     let chunks = Layout::vertical([Constraint::Length(22), Constraint::Min(0)]).split(area);
 
     render_balance_panel(f, chunks[0], app);
+    render_net_worth_chart(f, chunks[1], app);
 }
 
 fn render_balance_panel(f: &mut Frame, area: Rect, app: &App) {
@@ -197,4 +199,113 @@ fn render_balance_panel(f: &mut Frame, area: Rect, app: &App) {
 
     let para = Paragraph::new(lines).block(block);
     f.render_widget(para, area);
+}
+
+// ── Net worth time-series chart ──────────────────────────────────────────────
+
+fn render_net_worth_chart(f: &mut Frame, area: Rect, app: &App) {
+    if area.height < 4 {
+        return;
+    }
+
+    let block = Block::bordered()
+        .title(Span::styled(
+            " Net Worth ",
+            Style::default()
+                .fg(theme::CYAN)
+                .add_modifier(Modifier::BOLD),
+        ))
+        .border_style(Style::default().fg(theme::BORDER))
+        .style(Style::default().bg(theme::PANEL_BG));
+
+    if app.net_worth_history.len() < 3 {
+        let msg = if app.net_worth_history.is_empty() {
+            "Collecting data… first log in ~30s".to_string()
+        } else {
+            format!(
+                "Collecting data… {}/3 points (logs every 10m)",
+                app.net_worth_history.len()
+            )
+        };
+        let inner = block.inner(area);
+        f.render_widget(block, area);
+        f.render_widget(
+            Paragraph::new(Line::from(vec![
+                Span::raw("  "),
+                Span::styled(msg, Style::default().fg(theme::VERY_DIM)),
+            ])),
+            inner,
+        );
+        return;
+    }
+
+    let data = &app.net_worth_history;
+
+    // Compute axis bounds.
+    let x_min = data.first().map(|d| d.0).unwrap_or(0.0);
+    let x_max = data.last().map(|d| d.0).unwrap_or(1.0);
+    let y_min = data.iter().map(|d| d.1).fold(f64::INFINITY, f64::min);
+    let y_max = data.iter().map(|d| d.1).fold(f64::NEG_INFINITY, f64::max);
+
+    // Add 5% padding to Y axis.
+    let y_range = (y_max - y_min).max(1.0);
+    let y_lo = (y_min - y_range * 0.05).max(0.0);
+    let y_hi = y_max + y_range * 0.05;
+
+    let x_labels = make_time_labels(x_min, x_max);
+    let y_labels = make_value_labels(y_lo, y_hi);
+
+    let datasets = vec![Dataset::default()
+        .data(data)
+        .graph_type(GraphType::Line)
+        .marker(symbols::Marker::Braille)
+        .style(Style::default().fg(theme::GREEN))];
+
+    let chart = Chart::new(datasets)
+        .block(block)
+        .style(Style::default().bg(theme::PANEL_BG))
+        .x_axis(
+            Axis::default()
+                .bounds([x_min, x_max])
+                .labels(x_labels)
+                .style(Style::default().fg(theme::VERY_DIM)),
+        )
+        .y_axis(
+            Axis::default()
+                .title(Span::styled("$", Style::default().fg(theme::DIM)))
+                .bounds([y_lo, y_hi])
+                .labels(y_labels)
+                .style(Style::default().fg(theme::VERY_DIM)),
+        );
+
+    f.render_widget(chart, area);
+}
+
+fn make_time_labels(x_min: f64, x_max: f64) -> Vec<Span<'static>> {
+    use chrono::{Local, TimeZone};
+    let fmt = if (x_max - x_min) > 86400.0 {
+        "%b %d"
+    } else {
+        "%H:%M"
+    };
+    let mid = (x_min + x_max) / 2.0;
+    [x_min, mid, x_max]
+        .iter()
+        .map(|&ts| {
+            let label = Local
+                .timestamp_opt(ts as i64, 0)
+                .single()
+                .map(|dt| dt.format(fmt).to_string())
+                .unwrap_or_default();
+            Span::styled(label, Style::default().fg(theme::VERY_DIM))
+        })
+        .collect()
+}
+
+fn make_value_labels(y_lo: f64, y_hi: f64) -> Vec<Span<'static>> {
+    let mid = (y_lo + y_hi) / 2.0;
+    [y_lo, mid, y_hi]
+        .iter()
+        .map(|&v| Span::styled(format!("${:.0}", v), Style::default().fg(theme::VERY_DIM)))
+        .collect()
 }

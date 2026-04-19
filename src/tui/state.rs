@@ -283,6 +283,14 @@ pub struct App {
     pub balance: Option<f64>,
     pub allowance: Option<f64>,
 
+    // Net worth tracking
+    /// Cached net worth history for chart: Vec<(epoch_secs, net_worth)>
+    pub net_worth_history: Vec<(f64, f64)>,
+    /// Wall-clock time of the last net worth log — used for 10-minute scheduling
+    pub net_worth_last_at: Option<chrono::DateTime<chrono::Utc>>,
+    /// Whether a net worth log task is currently in-flight
+    pub net_worth_in_progress: bool,
+
     // Flash message — (text, shown_at, is_error). Errors stay 5s; others 3s.
     pub flash: Option<(String, Instant, bool)>,
 
@@ -423,6 +431,10 @@ impl App {
 
             balance: None,
             allowance: None,
+
+            net_worth_history: Vec::new(),
+            net_worth_last_at: None,
+            net_worth_in_progress: false,
 
             flash: None,
 
@@ -898,4 +910,9 @@ pub enum AppEvent {
     UserWsConnected,
     /// User WebSocket channel disconnected (fell back to REST polling).
     UserWsDisconnected,
+
+    /// Net worth logged: (balance, positions_value, net_worth, full_history).
+    NetWorthLogged(f64, f64, f64, Vec<(f64, f64)>),
+    /// Startup-only: net worth history loaded from DB (no new data point written).
+    NetWorthHistoryLoaded(Vec<(f64, f64)>),
 }

@@ -403,6 +403,30 @@ fn render_help(f: &mut Frame, area: Rect) {
         ]));
     }
 
+    right.push(Line::from(""));
+    right.push(Line::from(Span::styled("  Balance", h)));
+    right.push(Line::from(vec![
+        Span::styled(format!("  {:>12}  ", "r"), k),
+        Span::styled("Refresh balance", d),
+    ]));
+
+    right.push(Line::from(""));
+    right.push(Line::from(Span::styled("  Analytics", h)));
+    for (key, desc) in [
+        ("p", "Pull market snapshot"),
+        ("r", "Recompute analytics"),
+        ("s", "Collapse / expand panel"),
+        ("t", "Calibration window (3–12h)"),
+        ("w", "Regression: WLS ↔ OLS"),
+        ("c", "Copy DB path"),
+        ("o", "Open data folder"),
+    ] {
+        right.push(Line::from(vec![
+            Span::styled(format!("  {:>12}  ", key), k),
+            Span::styled(desc, d),
+        ]));
+    }
+
     f.render_widget(Paragraph::new(left), cols[0]);
     f.render_widget(Paragraph::new(right), cols[2]);
 

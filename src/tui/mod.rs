@@ -217,6 +217,10 @@ async fn run_app(
         });
     }
 
+    // Load net worth history from DB so the chart is immediately available
+    // if previous sessions logged data.
+    tasks::spawn_load_net_worth_history(tx.clone(), app.db_path.clone());
+
     loop {
         if let Err(e) = terminal.draw(|f| ui::render(f, &mut app)) {
             return (Err(AppError::other(e)), app.setup_complete);
@@ -269,6 +273,9 @@ pub fn test_app() -> App {
         orders_list_state: ratatui::widgets::ListState::default(),
         balance: None,
         allowance: None,
+        net_worth_history: Vec::new(),
+        net_worth_last_at: None,
+        net_worth_in_progress: false,
         flash: None,
         order_form: OrderForm::default(),
         filtered_indices: Vec::new(),
