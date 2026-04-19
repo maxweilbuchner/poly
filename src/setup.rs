@@ -41,23 +41,18 @@ pub async fn run() -> crate::client::Result<()> {
     println!("  Or find them in your Polymarket account API settings.");
     println!();
 
-    let (api_key, api_secret, api_passphrase) = if existing.has_clob_auth() {
-        println!(
-            "  Already configured: API key {}",
-            mask_secret(existing.api_key.as_ref().unwrap())
-        );
-        if prompt_yes_no("  Keep existing? [Y/n] ", true)? {
-            (
-                existing.api_key.unwrap(),
-                existing.api_secret.unwrap(),
-                existing.api_passphrase.unwrap(),
-            )
-        } else {
-            read_clob_keys_loop()?
-        }
-    } else {
-        read_clob_keys_loop()?
-    };
+    let (api_key, api_secret, api_passphrase) =
+        match (&existing.api_key, &existing.api_secret, &existing.api_passphrase) {
+            (Some(k), Some(s), Some(p)) => {
+                println!("  Already configured: API key {}", mask_secret(k));
+                if prompt_yes_no("  Keep existing? [Y/n] ", true)? {
+                    (k.clone(), s.clone(), p.clone())
+                } else {
+                    read_clob_keys_loop()?
+                }
+            }
+            _ => read_clob_keys_loop()?,
+        };
     println!();
 
     // ── Step 3: RPC URL ──────────────────────────────────────────────
@@ -277,12 +272,6 @@ struct ExistingConfig {
     rpc_url: Option<String>,
     funder_address: Option<String>,
     tui_section: String,
-}
-
-impl ExistingConfig {
-    fn has_clob_auth(&self) -> bool {
-        self.api_key.is_some() && self.api_secret.is_some() && self.api_passphrase.is_some()
-    }
 }
 
 fn load_existing(path: &PathBuf) -> ExistingConfig {

@@ -71,7 +71,7 @@ pub fn render(f: &mut Frame, area: Rect, app: &mut App) {
             );
             f.render_widget(
                 Paragraph::new(Line::from(vec![Span::styled(
-                    spinner_label.unwrap(),
+                    spinner_label.clone().unwrap_or_default(),
                     Style::default().fg(theme::VERY_DIM).bg(theme::BG),
                 )]))
                 .style(Style::default().bg(theme::BG)),
@@ -102,7 +102,7 @@ pub fn render(f: &mut Frame, area: Rect, app: &mut App) {
             );
             f.render_widget(
                 Paragraph::new(Line::from(vec![Span::styled(
-                    spinner_label.unwrap(),
+                    spinner_label.unwrap_or_default(),
                     Style::default().fg(theme::VERY_DIM).bg(theme::BG),
                 )]))
                 .style(Style::default().bg(theme::BG)),
@@ -157,7 +157,7 @@ fn render_version(f: &mut Frame, area: Rect, ws_connected: bool) {
         spans.push(Span::styled(" ", Style::default().bg(theme::BG)));
     }
     spans.push(Span::styled(
-        "poly v0.2 ",
+        concat!("poly v", env!("CARGO_PKG_VERSION"), " "),
         Style::default().fg(theme::VERY_DIM).bg(theme::BG),
     ));
     let v = Paragraph::new(Line::from(spans))
