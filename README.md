@@ -109,6 +109,11 @@ poly derive-keys                           # derive CLOB API keys from private k
 poly watch <token-id> --interval 2         # live order book
 poly migrate                               # import legacy CSV data to SQLite
 
+# Shell completions
+poly completions bash > ~/.local/share/bash-completion/completions/poly
+poly completions zsh  > ~/.zfunc/_poly
+poly completions fish > ~/.config/fish/completions/poly.fish
+
 # Global flags
 poly --json positions                      # JSON output
 poly --dry-run buy <token-id> 10 0.65      # dry-run any trade
@@ -161,7 +166,11 @@ src/
 ├── persist.rs    JSON state persistence (UI state, watchlist, snapshot meta)
 ├── error.rs      Typed error handling with actionable messages
 ├── tui/
-│   ├── mod.rs        App state, event loop, key handlers
+│   ├── mod.rs        Event loop entry point, tests
+│   ├── state.rs      App state, enums, AppEvent
+│   ├── events.rs     Event dispatch (AppEvent → state mutations)
+│   ├── keys.rs       Key bindings and input handling
+│   ├── tasks.rs      Background task spawners (API, WS, analytics)
 │   ├── ui.rs         Top-level layout, modal overlays
 │   ├── theme.rs      Color constants
 │   ├── screens/      Tab content (markets, positions, balance, analytics, setup, etc.)
@@ -171,4 +180,4 @@ src/
 
 ## License
 
-Private — all rights reserved.
+[MIT](LICENSE)

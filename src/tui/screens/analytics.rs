@@ -801,8 +801,8 @@ fn render_resolution_bias(f: &mut Frame, area: Rect, app: &App, focused: bool) {
     let inner = block.inner(area);
     f.render_widget(block, area);
 
-    // Dynamic bar width: label(7) + pct(6) + count(~9) + right margin(2) = 24.
-    let bar_w = (inner.width as usize).saturating_sub(24).clamp(6, 60);
+    // Dynamic bar width: label(8) + pct(6) + count(~9) + right margin(2) = 25.
+    let bar_w = (inner.width as usize).saturating_sub(25).max(6);
     let make_bar = |pct: f64| -> (String, String) {
         let filled = (pct * bar_w as f64).round() as usize;
         let empty = bar_w.saturating_sub(filled);
@@ -825,7 +825,7 @@ fn render_resolution_bias(f: &mut Frame, area: Rect, app: &App, focused: bool) {
         // YES — row 1: label + bar + stats
         Line::from(vec![
             Span::styled(
-                "  YES  ",
+                "  YES   ",
                 Style::default()
                     .fg(theme::GREEN)
                     .add_modifier(Modifier::BOLD),
@@ -845,7 +845,7 @@ fn render_resolution_bias(f: &mut Frame, area: Rect, app: &App, focused: bool) {
         ]),
         // YES — row 2: bar repeated for height
         Line::from(vec![
-            Span::raw("       "),
+            Span::raw("        "),
             Span::styled(yes_f, Style::default().fg(theme::GREEN)),
             Span::styled(yes_e, Style::default().fg(theme::VERY_DIM)),
         ]),
@@ -853,7 +853,7 @@ fn render_resolution_bias(f: &mut Frame, area: Rect, app: &App, focused: bool) {
         // NO — row 1
         Line::from(vec![
             Span::styled(
-                "  NO   ",
+                "  NO    ",
                 Style::default().fg(theme::RED).add_modifier(Modifier::BOLD),
             ),
             Span::styled(no_f.clone(), Style::default().fg(theme::RED)),
@@ -871,7 +871,7 @@ fn render_resolution_bias(f: &mut Frame, area: Rect, app: &App, focused: bool) {
         ]),
         // NO — row 2
         Line::from(vec![
-            Span::raw("       "),
+            Span::raw("        "),
             Span::styled(no_f, Style::default().fg(theme::RED)),
             Span::styled(no_e, Style::default().fg(theme::VERY_DIM)),
         ]),
@@ -879,7 +879,7 @@ fn render_resolution_bias(f: &mut Frame, area: Rect, app: &App, focused: bool) {
         // OTHER — row 1
         Line::from(vec![
             Span::styled(
-                "  OTHER",
+                "  OTHER ",
                 Style::default()
                     .fg(theme::YELLOW)
                     .add_modifier(Modifier::BOLD),
@@ -899,7 +899,7 @@ fn render_resolution_bias(f: &mut Frame, area: Rect, app: &App, focused: bool) {
         ]),
         // OTHER — row 2
         Line::from(vec![
-            Span::raw("       "),
+            Span::raw("        "),
             Span::styled(oth_f, Style::default().fg(theme::YELLOW)),
             Span::styled(oth_e, Style::default().fg(theme::VERY_DIM)),
         ]),

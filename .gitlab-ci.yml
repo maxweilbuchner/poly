@@ -53,6 +53,7 @@ build-linux:
   script:
     - cargo build --release
     - strip target/release/poly
+    - ./target/release/poly --version
   artifacts:
     paths:
       - target/release/poly

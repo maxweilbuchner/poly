@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-04-19
+
 ### Added
 - Shell completion generation for bash, zsh, fish (`poly completions <shell>`)
 - Aggregate portfolio P&L summary on the Positions tab (value, cost, return %)
@@ -17,12 +19,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - User WebSocket channel for live order/trade events — instant fill notifications without REST polling
 - "WS" indicator in status bar when the user WebSocket channel is connected
 - All tabs preload data at startup (positions, orders, balance, analytics run in parallel)
+- MIT license
+- Integration test suites: HMAC auth (5 tests), persist round-trip (10 tests)
+- CI smoke test (`--version` check after build)
 
 ### Changed
 - Improved `--help` text with logical command grouping and quick-start guide
 - buy/sell `--help` now shows formatted examples for limit and market orders
 - REST position polling interval extended to 4× when user WS is connected (safety net only)
 - Analytics tab caches results — no longer recomputes on every tab switch
+- TUI internals split into focused modules (state, events, keys, tasks)
+- Resolution Bias chart bars dynamically fill panel width
+- README updated with full architecture diagram, shell completions docs
 
 ### Fixed
 - Clipboard copy now works cross-platform (Linux: xclip/xsel/wl-copy, Windows: clip.exe)
@@ -74,6 +82,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - HMAC-SHA256 authentication for CLOB API
 - Colored terminal output
 
-[Unreleased]: https://gitlab.com/maxweilbuchner/poly-v2/-/compare/v0.2.0...HEAD
+[Unreleased]: https://gitlab.com/maxweilbuchner/poly-v2/-/compare/v0.3.0...HEAD
+[0.3.0]: https://gitlab.com/maxweilbuchner/poly-v2/-/compare/v0.2.0...v0.3.0
 [0.2.0]: https://gitlab.com/maxweilbuchner/poly-v2/-/compare/v0.1.0...v0.2.0
 [0.1.0]: https://gitlab.com/maxweilbuchner/poly-v2/-/releases/tag/v0.1.0

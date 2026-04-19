@@ -34,7 +34,22 @@ src/
 ├── client.rs     PolyClient — Gamma API + CLOB API + EIP-712 order signing
 ├── auth.rs       HMAC-SHA256 signing for CLOB REST headers
 ├── types.rs      Shared data types (Market, Outcome, Order, Position, etc.)
-└── display.rs    All terminal output (tables, colors via `colored`)
+├── display.rs    CLI terminal output (tables, colors)
+├── db.rs         SQLite persistence (snapshots, resolutions, calibration)
+├── persist.rs    JSON state persistence (UI state, watchlist, snapshot meta)
+├── setup.rs      Interactive setup wizard (CLI + TUI shared logic)
+├── error.rs      Typed error handling with actionable messages
+├── tui/
+│   ├── mod.rs        Event loop entry point, tests
+│   ├── state.rs      App state, enums, AppEvent
+│   ├── events.rs     Event dispatch (AppEvent → state mutations)
+│   ├── keys.rs       Key bindings and input handling
+│   ├── tasks.rs      Background task spawners (API, WS, analytics)
+│   ├── ui.rs         Top-level layout, modal overlays
+│   ├── theme.rs      Color constants
+│   ├── screens/      Tab content (markets, positions, balance, analytics, setup, etc.)
+│   └── widgets/      Reusable components (order book, status bar, tab bar)
+└── lib.rs
 ```
 
 ## API Layers
