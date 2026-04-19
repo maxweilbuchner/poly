@@ -62,6 +62,40 @@ build-linux:
     - if: $CI_COMMIT_TAG
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
+build-macos-arm:
+  stage: build
+  tags:
+    - saas-macos-medium-m2
+  script:
+    - cargo build --release
+    - strip target/release/poly
+    - mv target/release/poly target/release/poly-macos-aarch64
+    - ./target/release/poly-macos-aarch64 --version
+  artifacts:
+    paths:
+      - target/release/poly-macos-aarch64
+    expire_in: 30 days
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+build-macos-x86:
+  stage: build
+  tags:
+    - saas-macos-medium-m2
+  script:
+    - rustup target add x86_64-apple-darwin
+    - cargo build --release --target x86_64-apple-darwin
+    - strip target/x86_64-apple-darwin/release/poly
+    - mv target/x86_64-apple-darwin/release/poly target/release/poly-macos-x86_64
+  artifacts:
+    paths:
+      - target/release/poly-macos-x86_64
+    expire_in: 30 days
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
 # ── Release stage (tagged commits only) ──────────────────────────────────────
 
 release:
@@ -70,6 +104,12 @@ release:
   needs:
     - job: build-linux
       artifacts: true
+    - job: build-macos-arm
+      artifacts: true
+      optional: true
+    - job: build-macos-x86
+      artifacts: true
+      optional: true
   script:
     - echo "Creating release for ${CI_COMMIT_TAG}"
   release:
@@ -80,5 +120,9 @@ release:
       links:
         - name: "poly-linux-x86_64"
           url: "${CI_PROJECT_URL}/-/jobs/${CI_JOB_ID}/artifacts/raw/target/release/poly"
+        - name: "poly-macos-aarch64"
+          url: "${CI_PROJECT_URL}/-/jobs/${CI_JOB_ID}/artifacts/raw/target/release/poly-macos-aarch64"
+        - name: "poly-macos-x86_64"
+          url: "${CI_PROJECT_URL}/-/jobs/${CI_JOB_ID}/artifacts/raw/target/release/poly-macos-x86_64"
   rules:
     - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+/

@@ -5,7 +5,12 @@ A CLI and TUI for trading on [Polymarket](https://polymarket.com). Search market
 ## Quick Start
 
 ```bash
-cargo install --path .
+# Install from source (requires Rust toolchain)
+cargo install --git https://gitlab.com/maxweilbuchner/poly-v2.git
+
+# Or clone and build locally
+git clone https://gitlab.com/maxweilbuchner/poly-v2.git
+cd poly-v2 && cargo install --path .
 
 # Interactive setup — walks you through credentials step by step
 poly setup
