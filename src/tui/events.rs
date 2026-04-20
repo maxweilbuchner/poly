@@ -400,6 +400,21 @@ pub(super) fn handle_event(
         AppEvent::NetWorthHistoryLoaded(history) => {
             app.net_worth_history = history;
         }
+
+        AppEvent::ViewerPositionsLoaded(mut positions) => {
+            positions.sort_by(|a, b| {
+                let va = b.size * b.current_price;
+                let vb = a.size * a.current_price;
+                va.total_cmp(&vb)
+            });
+            app.viewer_positions = positions;
+            if app.active_tab == Tab::Viewer {
+                app.loading = false;
+            }
+            if app.viewer_list_state.selected().is_none() && !app.viewer_positions.is_empty() {
+                app.viewer_list_state.select(Some(0));
+            }
+        }
     }
     false
 }

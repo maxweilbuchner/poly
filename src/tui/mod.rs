@@ -6,6 +6,7 @@ pub mod screens {
     pub mod order;
     pub mod positions;
     pub mod setup;
+    pub mod viewer;
 }
 
 pub mod widgets {
@@ -333,6 +334,11 @@ pub fn test_app() -> App {
         prev_live_order_ids: HashSet::new(),
         setup_form: screens::setup::SetupForm::default(),
         setup_complete: false,
+        viewer_address_input: String::new(),
+        viewer_address_editing: false,
+        viewer_address: None,
+        viewer_positions: Vec::new(),
+        viewer_list_state: ratatui::widgets::ListState::default(),
     }
 }
 

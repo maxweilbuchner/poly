@@ -27,6 +27,7 @@ pub enum Tab {
     Positions,
     Balance,
     Analytics,
+    Viewer,
 }
 
 #[derive(Debug, Clone)]
@@ -392,6 +393,13 @@ pub struct App {
     pub setup_form: screens::setup::SetupForm,
     /// Set to true after setup completes — signals the event loop to exit for restart.
     pub setup_complete: bool,
+
+    // Viewer tab — browse any user's portfolio by address
+    pub viewer_address_input: String,
+    pub viewer_address_editing: bool,
+    pub viewer_address: Option<String>,
+    pub viewer_positions: Vec<crate::types::Position>,
+    pub viewer_list_state: ratatui::widgets::ListState,
 }
 
 /// Maximum number of markets to load in total. Keeps memory bounded and
@@ -493,6 +501,12 @@ impl App {
 
             setup_form: screens::setup::SetupForm::default(),
             setup_complete: false,
+
+            viewer_address_input: String::new(),
+            viewer_address_editing: false,
+            viewer_address: None,
+            viewer_positions: Vec::new(),
+            viewer_list_state: ratatui::widgets::ListState::default(),
         }
     }
 
@@ -915,4 +929,7 @@ pub enum AppEvent {
     NetWorthLogged(f64, f64, f64, Vec<(f64, f64)>),
     /// Startup-only: net worth history loaded from DB (no new data point written).
     NetWorthHistoryLoaded(Vec<(f64, f64)>),
+
+    /// Viewer tab: positions loaded for an arbitrary address.
+    ViewerPositionsLoaded(Vec<Position>),
 }

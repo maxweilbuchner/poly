@@ -65,7 +65,11 @@ pub(super) fn handle_key(
     }
 
     // Global `/` — jump to Markets tab and activate search from any screen.
-    if key.code == KeyCode::Char('/') && app.active_tab != Tab::Markets {
+    // (Viewer tab handles `/` locally for address input.)
+    if key.code == KeyCode::Char('/')
+        && app.active_tab != Tab::Markets
+        && app.active_tab != Tab::Viewer
+    {
         switch_tab(app, Tab::Markets, Arc::clone(&client), tx);
         app.search_mode = true;
         app.search_query.clear();
@@ -95,6 +99,10 @@ pub(super) fn handle_key(
             handle_markets_key(app, key, client, tx);
             false
         }
+        Tab::Viewer => {
+            handle_viewer_key(app, key, client, tx);
+            false
+        }
     }
 }
 
@@ -118,6 +126,7 @@ fn switch_tab(app: &mut App, tab: Tab, client: Arc<PolyClient>, tx: &UnboundedSe
         Tab::Positions => vec![Screen::MarketList], // reuse stack slot; render uses active_tab
         Tab::Balance => vec![Screen::MarketList],
         Tab::Analytics => vec![Screen::MarketList],
+        Tab::Viewer => vec![Screen::MarketList],
     };
 
     match tab {
@@ -152,6 +161,12 @@ fn switch_tab(app: &mut App, tab: Tab, client: Arc<PolyClient>, tx: &UnboundedSe
                     Arc::clone(&client),
                     app.calibration_hours,
                 );
+            }
+        }
+        Tab::Viewer => {
+            // Activate address editing if no address has been entered yet.
+            if app.viewer_address.is_none() && app.viewer_address_input.is_empty() {
+                app.viewer_address_editing = true;
             }
         }
     }
@@ -193,6 +208,7 @@ fn handle_markets_key(
         KeyCode::Char('2') => switch_tab(app, Tab::Positions, client, tx),
         KeyCode::Char('3') => switch_tab(app, Tab::Balance, client, tx),
         KeyCode::Char('4') => switch_tab(app, Tab::Analytics, client, tx),
+        KeyCode::Char('5') => switch_tab(app, Tab::Viewer, client, tx),
         KeyCode::Tab => switch_tab(app, Tab::Positions, client, tx),
         KeyCode::Char('q') => {
             app.menu_index = 0;
@@ -517,6 +533,7 @@ fn handle_detail_key(
         KeyCode::Char('2') => switch_tab(app, Tab::Positions, client, tx),
         KeyCode::Char('3') => switch_tab(app, Tab::Balance, client, tx),
         KeyCode::Char('4') => switch_tab(app, Tab::Analytics, client, tx),
+        KeyCode::Char('5') => switch_tab(app, Tab::Viewer, client, tx),
         _ => {}
     }
 }
@@ -701,6 +718,7 @@ pub fn handle_positions_key(
         KeyCode::Char('2') => {} // already here
         KeyCode::Char('3') => switch_tab(app, Tab::Balance, client, tx),
         KeyCode::Char('4') => switch_tab(app, Tab::Analytics, client, tx),
+        KeyCode::Char('5') => switch_tab(app, Tab::Viewer, client, tx),
         KeyCode::Tab => {
             app.positions_focus_orders = !app.positions_focus_orders;
         }
@@ -992,6 +1010,149 @@ fn open_order_from_position(
     tasks::spawn_fetch_fee_rate(Arc::clone(client), tx.clone(), token_id);
 }
 
+// ── Viewer key handler ───────────────────────────────────────────────────────
+
+fn handle_viewer_key(
+    app: &mut App,
+    key: KeyEvent,
+    client: Arc<PolyClient>,
+    tx: &UnboundedSender<AppEvent>,
+) {
+    if app.viewer_address_editing {
+        match key.code {
+            KeyCode::Esc => {
+                app.viewer_address_editing = false;
+                // Restore previous address if one exists
+                if let Some(addr) = &app.viewer_address {
+                    app.viewer_address_input = addr.clone();
+                }
+            }
+            KeyCode::Enter => {
+                let addr = app.viewer_address_input.trim().to_string();
+                if addr.starts_with("0x") && addr.len() == 42 {
+                    app.viewer_address_editing = false;
+                    app.viewer_address = Some(addr.clone());
+                    app.viewer_positions.clear();
+                    app.viewer_list_state = ratatui::widgets::ListState::default();
+                    app.loading = true;
+                    tasks::spawn_load_viewer_positions(Arc::clone(&client), tx.clone(), addr);
+                } else {
+                    app.set_error_flash("Invalid address — must be 0x followed by 40 hex chars");
+                }
+            }
+            KeyCode::Backspace => {
+                app.viewer_address_input.pop();
+            }
+            KeyCode::Char(c) => {
+                app.viewer_address_input.push(c);
+            }
+            _ => {}
+        }
+        return;
+    }
+
+    match key.code {
+        KeyCode::Char('1') => switch_tab(app, Tab::Markets, client, tx),
+        KeyCode::Char('2') => switch_tab(app, Tab::Positions, client, tx),
+        KeyCode::Char('3') => switch_tab(app, Tab::Balance, client, tx),
+        KeyCode::Char('4') => switch_tab(app, Tab::Analytics, client, tx),
+        KeyCode::Char('5') => {} // already here
+        KeyCode::Tab => switch_tab(app, Tab::Markets, client, tx),
+        KeyCode::Char('q') => {
+            app.menu_index = 0;
+            app.screen_stack.push(Screen::QuitConfirm);
+        }
+        KeyCode::Char('?') => {
+            app.screen_stack.push(Screen::Help);
+        }
+        KeyCode::Char('/') => {
+            app.viewer_address_editing = true;
+            app.viewer_address_input.clear();
+        }
+        KeyCode::Char('r') => {
+            if let Some(addr) = app.viewer_address.clone() {
+                app.viewer_positions.clear();
+                app.loading = true;
+                tasks::spawn_load_viewer_positions(Arc::clone(&client), tx.clone(), addr);
+            }
+        }
+        KeyCode::Down | KeyCode::Char('j') => {
+            let len = app.viewer_positions.len();
+            if len > 0 {
+                let i = app.viewer_list_state.selected().unwrap_or(0);
+                app.viewer_list_state.select(Some((i + 1).min(len - 1)));
+            }
+        }
+        KeyCode::Up | KeyCode::Char('k') => {
+            let i = app.viewer_list_state.selected().unwrap_or(0);
+            app.viewer_list_state.select(Some(i.saturating_sub(1)));
+        }
+        KeyCode::Enter => {
+            // Open market detail for the selected position
+            if let Some(idx) = app.viewer_list_state.selected() {
+                if let Some(pos) = app.viewer_positions.get(idx) {
+                    let condition_id = pos.market_id.clone();
+                    let token_id = pos.token_id.clone();
+                    app.selected_market = None;
+                    app.order_books.clear();
+                    app.order_book_updated_at = None;
+                    app.loading = true;
+                    app.detail_outcome_index = 0;
+                    app.description_expanded = false;
+                    app.screen_stack.push(Screen::MarketDetail);
+
+                    let market = app
+                        .markets
+                        .iter()
+                        .find(|m| m.condition_id == condition_id)
+                        .cloned();
+
+                    if let Some(market) = market {
+                        let outcome_names: Vec<String> =
+                            market.outcomes.iter().map(|o| o.name.clone()).collect();
+                        let interval = app.sparkline_interval;
+                        tasks::spawn_load_price_history(
+                            Arc::clone(&client),
+                            tx.clone(),
+                            market.condition_id.clone(),
+                            outcome_names,
+                            interval,
+                        );
+                        tasks::spawn_load_detail(Arc::clone(&client), tx.clone(), market.clone());
+                        stop_ws(app);
+                        let token_pairs: Vec<(String, String)> = market
+                            .outcomes
+                            .iter()
+                            .filter(|o| !o.token_id.is_empty())
+                            .map(|o| (o.name.clone(), o.token_id.clone()))
+                            .collect();
+                        if !token_pairs.is_empty() {
+                            let (cancel_tx, cancel_rx) = watch::channel(false);
+                            app.ws_cancel = Some(cancel_tx);
+                            tasks::spawn_ws_order_book(
+                                Arc::clone(&client),
+                                tx.clone(),
+                                token_pairs,
+                                cancel_rx,
+                            );
+                        }
+                    } else {
+                        let market_question = pos.market_question.clone();
+                        tasks::spawn_load_detail_by_id(
+                            Arc::clone(&client),
+                            tx.clone(),
+                            condition_id,
+                            token_id,
+                            market_question,
+                        );
+                    }
+                }
+            }
+        }
+        _ => {}
+    }
+}
+
 // ── Balance key handler ──────────────────────────────────────────────────────
 
 pub fn handle_balance_key(
@@ -1005,6 +1166,7 @@ pub fn handle_balance_key(
         KeyCode::Char('2') => switch_tab(app, Tab::Positions, client, tx),
         KeyCode::Char('3') => {} // already here
         KeyCode::Char('4') => switch_tab(app, Tab::Analytics, client, tx),
+        KeyCode::Char('5') => switch_tab(app, Tab::Viewer, client, tx),
         KeyCode::Tab => switch_tab(app, Tab::Analytics, client, tx),
         KeyCode::Char('r') => {
             app.loading = true;
@@ -1035,7 +1197,8 @@ fn handle_analytics_key(
         KeyCode::Char('2') => switch_tab(app, Tab::Positions, client, tx),
         KeyCode::Char('3') => switch_tab(app, Tab::Balance, client, tx),
         KeyCode::Char('4') => {} // already here
-        KeyCode::Tab => switch_tab(app, Tab::Markets, client, tx),
+        KeyCode::Char('5') => switch_tab(app, Tab::Viewer, client, tx),
+        KeyCode::Tab => switch_tab(app, Tab::Viewer, client, tx),
         KeyCode::Char('r') => {
             if !app.analytics_loading {
                 app.analytics_loading = true;

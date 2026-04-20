@@ -1136,6 +1136,115 @@ impl PolyClient {
         Ok(positions)
     }
 
+    /// List positions for an arbitrary address (public endpoint, no auth required).
+    pub async fn get_positions_for_address(&self, address: &str) -> Result<Vec<Position>> {
+        let url = format!(
+            "{}/positions?user={}&sizeThreshold=0.1&limit=500",
+            self.data_url, address
+        );
+        let resp = self
+            .throttled_send(|| self.http.get(&url))
+            .await
+            .map_err(net_err)?;
+        if !resp.status().is_success() {
+            return Err(api_err(resp).await);
+        }
+
+        #[derive(Deserialize)]
+        struct RawPosition {
+            #[serde(rename = "asset", default)]
+            asset: String,
+            #[serde(rename = "conditionId", default)]
+            condition_id: String,
+            #[serde(rename = "outcome", default)]
+            outcome: Option<String>,
+            #[serde(rename = "title", default)]
+            title: Option<String>,
+            #[serde(rename = "size", default)]
+            size: Option<serde_json::Value>,
+            #[serde(rename = "avgPrice", default)]
+            avg_price: Option<serde_json::Value>,
+            #[serde(rename = "curPrice", default)]
+            cur_price: Option<serde_json::Value>,
+            #[serde(rename = "realizedPnl", default)]
+            realized_pnl: Option<serde_json::Value>,
+            #[serde(rename = "cashPnl", default)]
+            cash_pnl: Option<serde_json::Value>,
+        }
+
+        let raw: Vec<RawPosition> = resp.json().await?;
+        let mut positions: Vec<Position> = raw
+            .into_iter()
+            .map(|p| Position {
+                market_id: p.condition_id,
+                market_question: p.title.unwrap_or_default(),
+                outcome: p.outcome.unwrap_or_default(),
+                token_id: p.asset,
+                size: parse_value_f64(&p.size).unwrap_or(0.0),
+                avg_price: parse_value_f64(&p.avg_price).unwrap_or(0.0),
+                current_price: parse_value_f64(&p.cur_price).unwrap_or(0.0),
+                realized_pnl: parse_value_f64(&p.realized_pnl).unwrap_or(0.0),
+                unrealized_pnl: parse_value_f64(&p.cash_pnl).unwrap_or(0.0),
+                end_date: None,
+                neg_risk: false,
+                market_closed: false,
+                redeemable: false,
+            })
+            .collect();
+
+        // Enrich with Gamma API data (end_date, neg_risk, closed).
+        use futures_util::future::join_all;
+        use std::collections::{HashMap, HashSet};
+
+        let unique_ids: Vec<String> = positions
+            .iter()
+            .map(|p| p.market_id.clone())
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .collect();
+
+        let futs: Vec<_> = unique_ids
+            .iter()
+            .map(|cid| {
+                let url = format!("{}/markets/{}", self.gamma_url, cid);
+                let http = self.http.clone();
+                let sem = self.api_semaphore.clone();
+                let cid = cid.clone();
+                async move {
+                    let result: Option<(Option<String>, bool, bool)> = async {
+                        let _permit = sem.acquire().await.expect("semaphore closed");
+                        let r = send_with_retry(|| http.get(&url)).await.ok()?;
+                        if !r.status().is_success() {
+                            return None;
+                        }
+                        let gm: GammaMarket = r.json().await.ok()?;
+                        Some((gm.end_date, gm.neg_risk, gm.closed))
+                    }
+                    .await;
+                    let (end_date, neg_risk, closed) = result.unwrap_or((None, false, false));
+                    (cid, end_date, neg_risk, closed)
+                }
+            })
+            .collect();
+
+        let market_map: HashMap<String, (Option<String>, bool, bool)> = join_all(futs)
+            .await
+            .into_iter()
+            .map(|(cid, end_date, neg_risk, closed)| (cid, (end_date, neg_risk, closed)))
+            .collect();
+
+        for p in &mut positions {
+            if let Some((end_date, neg_risk, closed)) = market_map.get(&p.market_id) {
+                p.end_date = end_date.clone();
+                p.neg_risk = *neg_risk;
+                p.market_closed = *closed;
+                p.redeemable = *closed && p.current_price > 0.95 && !*neg_risk;
+            }
+        }
+
+        Ok(positions)
+    }
+
     /// After a failed placement attempt, check whether the order actually landed.
     /// Looks in live orders first (GTC), then matched (FOK fills).
     /// Matches on token_id + side + price + size so we don't false-positive on an

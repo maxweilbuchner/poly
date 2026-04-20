@@ -11,12 +11,144 @@ use crate::tui::{is_auth_error, theme, App};
 use crate::types::{Order, OrderStatus, Position, Side};
 
 pub fn render(f: &mut Frame, area: Rect, app: &mut App) {
-    let chunks =
-        Layout::vertical([Constraint::Percentage(50), Constraint::Percentage(50)]).split(area);
+    let chunks = Layout::vertical([
+        Constraint::Length(4),
+        Constraint::Min(0),
+        Constraint::Percentage(25),
+    ])
+    .split(area);
 
-    render_positions(f, chunks[0], app);
-    render_orders(f, chunks[1], app);
+    render_summary(f, chunks[0], app);
+    render_positions(f, chunks[1], app);
+    render_orders(f, chunks[2], app);
 }
+
+// ── Portfolio summary panel ─────────────────────────────────────────────────
+
+fn render_summary(f: &mut Frame, area: Rect, app: &App) {
+    let empty_block = Block::bordered()
+        .title(Span::styled(
+            " Summary ",
+            Style::default()
+                .fg(theme::CYAN)
+                .add_modifier(Modifier::BOLD),
+        ))
+        .border_style(Style::default().fg(theme::BORDER))
+        .style(Style::default().bg(theme::PANEL_BG));
+
+    if app.positions.is_empty() {
+        f.render_widget(
+            Paragraph::new(Span::styled(
+                "  No positions loaded.",
+                Style::default().fg(theme::DIM),
+            ))
+            .block(empty_block),
+            area,
+        );
+        return;
+    }
+
+    let total_unreal: f64 = app.positions.iter().map(|p| p.unrealized_pnl).sum();
+    let total_real: f64 = app.positions.iter().map(|p| p.realized_pnl).sum();
+    let cost_basis: f64 = app.positions.iter().map(|p| p.size * p.avg_price).sum();
+    let portfolio_value: f64 = app.positions.iter().map(|p| p.size * p.current_price).sum();
+    let return_pct = if cost_basis > 0.0 {
+        (portfolio_value - cost_basis) / cost_basis * 100.0
+    } else {
+        0.0
+    };
+    let count = app.positions.len();
+    let total_shares: f64 = app.positions.iter().map(|p| p.size).sum();
+
+    let pnl_color = |v: f64| if v >= 0.0 { theme::GREEN } else { theme::RED };
+    let sign = |v: f64| if v >= 0.0 { "+" } else { "" };
+
+    // Metadata in the title
+    let title = Line::from(vec![
+        Span::styled(
+            " Summary ",
+            Style::default()
+                .fg(theme::CYAN)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::styled(
+            format!(
+                "· {} position{}  · {:.0} shares ",
+                count,
+                if count == 1 { "" } else { "s" },
+                total_shares
+            ),
+            Style::default().fg(theme::DIM),
+        ),
+    ]);
+
+    let block = Block::bordered()
+        .title(title)
+        .border_style(Style::default().fg(theme::BORDER))
+        .style(Style::default().bg(theme::PANEL_BG));
+
+    let inner = block.inner(area);
+    f.render_widget(block, area);
+
+    // Build columns: label on top, value below
+    let mut labels: Vec<(&str, Color)> = Vec::new();
+    let mut values: Vec<(String, Color, bool)> = Vec::new();
+
+    labels.push(("Value", theme::DIM));
+    values.push((format!("${:.2}", portfolio_value), theme::TEXT, true));
+
+    labels.push(("Cost", theme::DIM));
+    values.push((format!("${:.2}", cost_basis), theme::TEXT, false));
+
+    labels.push(("Unrealized", theme::DIM));
+    values.push((
+        format!("{}{:.4}", sign(total_unreal), total_unreal),
+        pnl_color(total_unreal),
+        true,
+    ));
+
+    if total_real != 0.0 {
+        labels.push(("Realized", theme::DIM));
+        values.push((
+            format!("{}{:.4}", sign(total_real), total_real),
+            pnl_color(total_real),
+            true,
+        ));
+    }
+
+    labels.push(("Return", theme::DIM));
+    values.push((
+        format!("{}{:.1}%", sign(return_pct), return_pct),
+        pnl_color(return_pct),
+        true,
+    ));
+
+    let col_w = (inner.width as usize).saturating_sub(2) / labels.len();
+
+    let mut label_spans: Vec<Span<'static>> = vec![Span::raw("  ")];
+    for (lbl, color) in &labels {
+        label_spans.push(Span::styled(
+            pad_right(lbl.to_string(), col_w),
+            Style::default().fg(*color),
+        ));
+    }
+
+    let mut value_spans: Vec<Span<'static>> = vec![Span::raw("  ")];
+    for (val, color, bold) in &values {
+        let mut style = Style::default().fg(*color);
+        if *bold {
+            style = style.add_modifier(Modifier::BOLD);
+        }
+        value_spans.push(Span::styled(pad_right(val.clone(), col_w), style));
+    }
+
+    f.render_widget(
+        Paragraph::new(vec![Line::from(label_spans), Line::from(value_spans)]),
+        inner,
+    );
+}
+
+// ── Positions list ──────────────────────────────────────────────────────────
 
 fn render_positions(f: &mut Frame, area: Rect, app: &mut App) {
     let focused = !app.positions_focus_orders;
@@ -96,93 +228,10 @@ fn render_positions(f: &mut Frame, area: Rect, app: &mut App) {
     f.render_widget(block, area);
 
     let inner_chunks = Layout::vertical([
-        Constraint::Length(2), // summary lines
-        Constraint::Length(1), // spacer
+        Constraint::Length(1), // column header
         Constraint::Min(0),    // list
     ])
     .split(inner);
-
-    // ── Portfolio summary ────────────────────────────────────────────────────
-    let total_unreal: f64 = app.positions.iter().map(|p| p.unrealized_pnl).sum();
-    let total_real: f64 = app.positions.iter().map(|p| p.realized_pnl).sum();
-    let cost_basis: f64 = app.positions.iter().map(|p| p.size * p.avg_price).sum();
-    let portfolio_value: f64 = app.positions.iter().map(|p| p.size * p.current_price).sum();
-    let return_pct = if cost_basis > 0.0 {
-        (portfolio_value - cost_basis) / cost_basis * 100.0
-    } else {
-        0.0
-    };
-    let count = app.positions.len();
-
-    let pnl_color = |v: f64| if v >= 0.0 { theme::GREEN } else { theme::RED };
-    let sign = |v: f64| if v >= 0.0 { "+" } else { "" };
-
-    // Line 1: P&L unrealized · realized · return %
-    let mut line1 = vec![
-        Span::styled("  P&L ", Style::default().fg(theme::DIM)),
-        Span::styled(
-            format!("{}{:.4}", sign(total_unreal), total_unreal),
-            Style::default()
-                .fg(pnl_color(total_unreal))
-                .add_modifier(Modifier::BOLD),
-        ),
-        Span::styled(" unreal", Style::default().fg(theme::VERY_DIM)),
-    ];
-    if total_real != 0.0 {
-        line1.extend([
-            Span::styled("  · ", Style::default().fg(theme::VERY_DIM)),
-            Span::styled(
-                format!("{}{:.4}", sign(total_real), total_real),
-                Style::default()
-                    .fg(pnl_color(total_real))
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::styled(" realized", Style::default().fg(theme::VERY_DIM)),
-        ]);
-    }
-    line1.extend([
-        Span::styled("  · ", Style::default().fg(theme::VERY_DIM)),
-        Span::styled(
-            format!("{}{:.1}%", sign(return_pct), return_pct),
-            Style::default()
-                .fg(pnl_color(return_pct))
-                .add_modifier(Modifier::BOLD),
-        ),
-        Span::styled(" return", Style::default().fg(theme::VERY_DIM)),
-    ]);
-
-    // Line 2: positions · value · cost · shares
-    let line2 = Line::from(vec![
-        Span::styled(
-            format!("  {} position{}", count, if count == 1 { "" } else { "s" }),
-            Style::default().fg(theme::DIM),
-        ),
-        Span::styled("  · ", Style::default().fg(theme::VERY_DIM)),
-        Span::styled("value ", Style::default().fg(theme::DIM)),
-        Span::styled(
-            format!("${:.2}", portfolio_value),
-            Style::default()
-                .fg(theme::TEXT)
-                .add_modifier(Modifier::BOLD),
-        ),
-        Span::styled("  · ", Style::default().fg(theme::VERY_DIM)),
-        Span::styled("cost ", Style::default().fg(theme::DIM)),
-        Span::styled(
-            format!("${:.2}", cost_basis),
-            Style::default().fg(theme::TEXT),
-        ),
-        Span::styled("  · ", Style::default().fg(theme::VERY_DIM)),
-        Span::styled(
-            format!(
-                "{:.2} shares",
-                app.positions.iter().map(|p| p.size).sum::<f64>()
-            ),
-            Style::default().fg(theme::DIM),
-        ),
-    ]);
-
-    let summary = Paragraph::new(vec![Line::from(line1), line2]);
-    f.render_widget(summary, inner_chunks[0]);
 
     let end_dates: Vec<Option<String>> = app
         .positions
@@ -199,7 +248,9 @@ fn render_positions(f: &mut Frame, area: Rect, app: &mut App) {
         })
         .collect();
 
-    let items = build_position_items(&app.positions, area.width as usize, &end_dates);
+    let (header, items) = build_position_items(&app.positions, area.width as usize, &end_dates);
+    f.render_widget(Paragraph::new(header), inner_chunks[0]);
+
     let list = List::new(items)
         .highlight_style(
             Style::default()
@@ -209,14 +260,14 @@ fn render_positions(f: &mut Frame, area: Rect, app: &mut App) {
         )
         .highlight_symbol("▸ ");
 
-    f.render_stateful_widget(list, inner_chunks[2], &mut app.positions_list_state);
+    f.render_stateful_widget(list, inner_chunks[1], &mut app.positions_list_state);
 }
 
 fn build_position_items(
     positions: &[Position],
     area_width: usize,
     end_dates: &[Option<String>],
-) -> Vec<ListItem<'static>> {
+) -> (Line<'static>, Vec<ListItem<'static>>) {
     // ── Pre-pass: compute max expiry label width so we can reserve space on line1 ─
 
     struct PRow {
@@ -273,9 +324,9 @@ fn build_position_items(
                 question: truncate(&p.market_question, q_width),
                 outcome: p.outcome.clone(),
                 size_num: format!("{:.2}", p.size),
-                avg_str: format!("avg {:.4}", p.avg_price),
-                cur_str: format!("cur {:.4}", p.current_price),
-                pnl_str: format!("PnL {}{:.4}", pnl_sign, p.unrealized_pnl),
+                avg_str: format!("{:.4}", p.avg_price),
+                cur_str: format!("{:.4}", p.current_price),
+                pnl_str: format!("{}{:.4}", pnl_sign, p.unrealized_pnl),
                 exp_str,
                 pnl_color: if p.unrealized_pnl >= 0.0 {
                     theme::GREEN
@@ -322,9 +373,41 @@ fn build_position_items(
     let fixed = 2 + 4 * 4 + max_size + 7 + max_avg + max_cur + max_pnl;
     let outcome_width = area_width.saturating_sub(4).saturating_sub(fixed).max(4);
 
+    // ── Column header ─────────────────────────────────────────────────────────
+    // 4 = highlight_symbol(2) + item indent(2)
+    let size_hdr_w = max_size + 7;
+    let header = Line::from(vec![
+        Span::raw("    "),
+        Span::styled(
+            pad_right("Outcome".to_string(), outcome_width),
+            Style::default().fg(theme::DIM),
+        ),
+        Span::raw("    "),
+        Span::styled(
+            pad_right("Shares".to_string(), size_hdr_w),
+            Style::default().fg(theme::DIM),
+        ),
+        Span::raw("    "),
+        Span::styled(
+            pad_right("Avg".to_string(), max_avg),
+            Style::default().fg(theme::DIM),
+        ),
+        Span::raw("    "),
+        Span::styled(
+            pad_right("Cur".to_string(), max_cur),
+            Style::default().fg(theme::DIM),
+        ),
+        Span::raw("    "),
+        Span::styled(
+            pad_right("P&L".to_string(), max_pnl),
+            Style::default().fg(theme::DIM),
+        ),
+    ]);
+
     // ── Pass 2: build ListItems with padded columns ───────────────────────────
 
-    rows.into_iter()
+    let items = rows
+        .into_iter()
         .map(|r| {
             // Line 1: question  ·  [resolution]  ·  exp  [R]
             let mut line1_spans = vec![
@@ -380,7 +463,9 @@ fn build_position_items(
 
             ListItem::new(vec![line1, line2])
         })
-        .collect()
+        .collect();
+
+    (header, items)
 }
 
 /// Parse an end-date string and return a human-readable "exp Xd/Xh/Xm" label plus its colour.

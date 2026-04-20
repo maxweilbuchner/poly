@@ -8,7 +8,7 @@ use ratatui::{
 
 use super::{
     root_menu_items,
-    screens::{analytics, balance, detail, markets, order, positions, setup},
+    screens::{analytics, balance, detail, markets, order, positions, setup, viewer},
     theme,
     widgets::{status_bar, tab_bar},
     App, Screen, Tab,
@@ -49,6 +49,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
             Tab::Positions => positions::render(f, content, app),
             Tab::Balance => balance::render(f, content, app),
             Tab::Analytics => analytics::render(f, content, app),
+            Tab::Viewer => viewer::render(f, content, app),
         },
     }
 
@@ -409,6 +410,19 @@ fn render_help(f: &mut Frame, area: Rect) {
         Span::styled(format!("  {:>12}  ", "r"), k),
         Span::styled("Refresh balance", d),
     ]));
+
+    right.push(Line::from(""));
+    right.push(Line::from(Span::styled("  Viewer", h)));
+    for (key, desc) in [
+        ("/", "Enter address"),
+        ("Enter", "Open market detail"),
+        ("r", "Refresh positions"),
+    ] {
+        right.push(Line::from(vec![
+            Span::styled(format!("  {:>12}  ", key), k),
+            Span::styled(desc, d),
+        ]));
+    }
 
     right.push(Line::from(""));
     right.push(Line::from(Span::styled("  Analytics", h)));

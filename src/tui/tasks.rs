@@ -361,6 +361,23 @@ pub fn spawn_load_net_worth_history(tx: UnboundedSender<AppEvent>, db_path: std:
     });
 }
 
+pub fn spawn_load_viewer_positions(
+    client: Arc<PolyClient>,
+    tx: UnboundedSender<AppEvent>,
+    address: String,
+) {
+    tokio::spawn(async move {
+        match client.get_positions_for_address(&address).await {
+            Ok(p) => {
+                let _ = tx.send(AppEvent::ViewerPositionsLoaded(p));
+            }
+            Err(e) => {
+                let _ = tx.send(AppEvent::Error(e));
+            }
+        }
+    });
+}
+
 pub fn spawn_redeem_position(
     client: Arc<PolyClient>,
     tx: UnboundedSender<AppEvent>,

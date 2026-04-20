@@ -14,6 +14,7 @@ pub fn render(f: &mut Frame, area: Rect, app: &App) {
         (Tab::Positions, "2 Positions"),
         (Tab::Balance, "3 Balance"),
         (Tab::Analytics, "4 Analytics"),
+        (Tab::Viewer, "5 Viewer"),
     ];
 
     let mut spans: Vec<Span> = Vec::new();

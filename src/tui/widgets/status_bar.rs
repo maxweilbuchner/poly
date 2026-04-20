@@ -307,6 +307,20 @@ fn key_hint_spans(app: &App) -> Vec<Span<'static>> {
             );
             push_hint(&mut s, "q", "menu");
         }
+        Tab::Viewer => {
+            if app.viewer_address_editing {
+                push_hint(&mut s, "Enter", "submit");
+                push_hint(&mut s, "Esc", "cancel");
+            } else {
+                push_hint(&mut s, "/", "address");
+                if app.viewer_address.is_some() {
+                    push_hint(&mut s, "↑↓", "navigate");
+                    push_hint(&mut s, "Enter", "open");
+                    push_hint(&mut s, "r", "refresh");
+                }
+                push_hint(&mut s, "q", "menu");
+            }
+        }
     }
 
     s
