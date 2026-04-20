@@ -318,8 +318,12 @@ pub fn spawn_log_net_worth(
         // Fetch balance and positions concurrently.
         let (bal_result, pos_result) = tokio::join!(client.get_balance(), client.get_positions(),);
 
-        let balance = bal_result.unwrap_or(0.0);
-        let positions = pos_result.unwrap_or_default();
+        // If either API call fails (e.g. no internet), skip logging to avoid
+        // recording bogus $0 data points that distort the chart.
+        let (balance, positions) = match (bal_result, pos_result) {
+            (Ok(b), Ok(p)) => (b, p),
+            _ => return,
+        };
         let positions_value: f64 = positions.iter().map(|p| p.size * p.current_price).sum();
         let net_worth = balance + positions_value;
 
