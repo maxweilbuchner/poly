@@ -605,7 +605,7 @@ pub fn insert_net_worth(
 pub fn query_net_worth_history(conn: &Connection) -> rusqlite::Result<Vec<(f64, f64)>> {
     let mut stmt = conn.prepare(
         "SELECT logged_at, net_worth FROM net_worth_log
-         WHERE net_worth > 0
+         WHERE net_worth > 1.0
          ORDER BY logged_at DESC LIMIT 1000",
     )?;
     let mut rows: Vec<(f64, f64)> = stmt
