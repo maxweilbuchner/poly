@@ -38,6 +38,7 @@ use crate::error::AppError;
 
 pub async fn run(client: PolyClient, tui_cfg: TuiConfig) -> client::Result<()> {
     use crossterm::{
+        event::{DisableMouseCapture, EnableMouseCapture},
         execute,
         terminal::{
             disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen, SetTitle,
@@ -50,7 +51,7 @@ pub async fn run(client: PolyClient, tui_cfg: TuiConfig) -> client::Result<()> {
     let original_hook = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |info| {
         let _ = disable_raw_mode();
-        let _ = execute!(io::stdout(), LeaveAlternateScreen);
+        let _ = execute!(io::stdout(), DisableMouseCapture, LeaveAlternateScreen);
 
         // Write crash details to $XDG_DATA_HOME/poly/crash.log so the user
         // has something concrete to attach to a bug report.
@@ -87,7 +88,8 @@ pub async fn run(client: PolyClient, tui_cfg: TuiConfig) -> client::Result<()> {
 
     enable_raw_mode().map_err(AppError::other)?;
     let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, SetTitle("POLY")).map_err(AppError::other)?;
+    execute!(stdout, EnterAlternateScreen, EnableMouseCapture, SetTitle("POLY"))
+        .map_err(AppError::other)?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend).map_err(AppError::other)?;
 
@@ -95,7 +97,8 @@ pub async fn run(client: PolyClient, tui_cfg: TuiConfig) -> client::Result<()> {
 
     // Always restore terminal, even on error.
     disable_raw_mode().map_err(AppError::other)?;
-    execute!(terminal.backend_mut(), LeaveAlternateScreen).map_err(AppError::other)?;
+    execute!(terminal.backend_mut(), DisableMouseCapture, LeaveAlternateScreen)
+        .map_err(AppError::other)?;
     terminal.show_cursor().map_err(AppError::other)?;
 
     if setup_done {
