@@ -105,10 +105,103 @@ Copy `.env.example` to `.env`. Required for trading:
 
 Search and order book commands work without credentials.
 
-## Adding Commands
+## Workflow
+
+- After completing a task, always commit and push to GitLab (`git push origin main`).
+- Run `cargo fmt` before committing to avoid CI failures.
+- CI runs `cargo fmt -- --check`, `cargo clippy --all-targets -- -D warnings -A clippy::uninlined_format_args`, and `cargo test --all-targets`.
+
+## TUI Architecture
+
+The TUI uses a message-passing event loop. No subcommand → launches TUI (`tui::run()`).
+
+**Event flow:** Background tasks → `AppEvent` via `mpsc::UnboundedSender` → `handle_event()` in `events.rs` → state mutation on `App` → re-render.
+
+**Key types in `state.rs`:**
+- `App` — all TUI state (markets, positions, balance, filters, UI state)
+- `Tab` — `Markets | Positions | Balance | Analytics`
+- `Screen` — `MarketList | MarketDetail | OrderEntry | Help | QuitConfirm | Setup | ...`
+- `AppEvent` — all events (data loads, user actions, errors, WebSocket updates)
+
+**Screen stack:** `app.screen_stack: Vec<Screen>` allows pushing modal/detail screens on top. Tab switches clear the stack. `app.current_screen()` returns the topmost.
+
+**Input handling in `keys.rs`:** `handle_key()` dispatches on screen first (modals checked before tabs), returns `bool` (true = quit).
+
+### Adding a TUI Screen/Tab
+
+1. Create `src/tui/screens/my_screen.rs` with `pub fn render(f: &mut Frame, area: Rect, app: &mut App)`
+2. Add `mod my_screen;` in `src/tui/screens/mod.rs`
+3. Add variant to `Screen` enum in `state.rs`
+4. Wire rendering in `ui.rs` (match on screen/tab → call render)
+5. Add key handling in `keys.rs`
+6. If tab: add variant to `Tab` enum, update `Tab::next()`/`Tab::prev()`, update tab bar widget
+
+### Adding a Background Task
+
+1. Add `AppEvent` variant(s) in `state.rs` for the result
+2. Add `spawn_*()` function in `tasks.rs`: takes `Arc<PolyClient>`, `UnboundedSender<AppEvent>`, spawns `tokio::spawn`, sends result as `AppEvent`, errors as `AppEvent::Error()`
+3. Add match arm in `handle_event()` in `events.rs` to apply the result to `App` state
+4. Trigger the spawn from a key handler or the `Tick` event (for periodic tasks)
+
+## Error Handling
+
+`AppError` in `error.rs` has four variants:
+
+| Variant | Use |
+|---------|-----|
+| `Auth(String)` | Missing/invalid credentials — shown persistently in status bar |
+| `Network(String)` | Timeout, DNS, connection errors |
+| `Api { status, message }` | Non-2xx HTTP responses — message parsed from JSON |
+| `Other(Box<dyn Error>)` | Catch-all via `AppError::other(e)` |
+
+Auth errors display actionable hints (e.g., "run `poly setup`"). In the TUI, auth errors persist in the status bar; other errors flash for a few seconds.
+
+## Database (`db.rs`)
+
+SQLite at `$XDG_DATA_HOME/poly/poly.db`. Tables: `snapshots`, `resolutions`, `net_worth_log`.
+
+**Adding a table:**
+1. Add `CREATE TABLE IF NOT EXISTS ...` to the `SCHEMA` constant
+2. Write `insert_*()` using batch transaction pattern: `conn.transaction()` → `prepare_cached()` → loop `execute()` → `commit()`
+3. Write `query_*()` returning `Vec<T>`
+4. Use `INSERT OR IGNORE` for idempotent inserts
+
+## Persistence (`persist.rs`)
+
+JSON files in `$XDG_DATA_HOME/poly/`:
+- `ui_state.json` — sort/filter/category preferences (survives restarts)
+- `snapshot_meta.json` — last snapshot timestamp + count
+- `watchlist.json` — starred condition IDs (versioned format)
+
+Uses versioned save/load: a `"version"` field is injected into the JSON. Unknown newer versions fall back to defaults (forward-compatible).
+
+## Testing
+
+**Unit tests:** In-source `#[cfg(test)] mod tests` blocks. Use `test_app()` helper (in `tui/mod.rs`) for `App` with defaults. Use `test_market(id, question, volume)` builder for test data.
+
+**Integration tests** (`tests/`):
+- `client_tests.rs` — WireMock HTTP mocking with JSON fixtures from `tests/fixtures/`
+- `auth_tests.rs` — HMAC-SHA256 signature golden values
+- `signing_tests.rs` — EIP-712 digest computation
+- `db_tests.rs` — SQLite round-trips with `tempfile`
+- `persist_tests.rs` — JSON serialization + version migration
+- `cli_integration_tests.rs` — command parsing (no network)
+
+**Test client:** `PolyClient::new_test(gamma_url, clob_url, data_url)` accepts custom base URLs for WireMock.
+
+## Adding CLI Commands
 
 1. Add a variant to the `Command` enum in `main.rs`
 2. Add a `cmd_*` async handler function in `main.rs`
 3. Add the match arm in the `match cli.command` block
 4. Add API methods to `PolyClient` in `client.rs` as needed
 5. Add display helpers to `display.rs`
+
+## Conventions
+
+- **Naming:** `spawn_*` for background tasks, `render` for screen drawing, `handle_*` for input/event processing
+- **Screen render signature:** `pub fn render(f: &mut Frame, area: Rect, app: &mut App)`
+- **Filter/sort enums:** implement `.next()` (cycling) and `.label()` (display string)
+- **Theme:** color constants in `tui/theme.rs` — use these, don't hardcode colors
+- **Imports:** `use super::*` for pulling parent module types; `crate::` paths for cross-module
+- **Flash messages:** `(String, Instant, bool)` tuple — (text, shown_at, is_error); expiry checked on Tick
