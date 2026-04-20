@@ -88,8 +88,13 @@ pub async fn run(client: PolyClient, tui_cfg: TuiConfig) -> client::Result<()> {
 
     enable_raw_mode().map_err(AppError::other)?;
     let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture, SetTitle("POLY"))
-        .map_err(AppError::other)?;
+    execute!(
+        stdout,
+        EnterAlternateScreen,
+        EnableMouseCapture,
+        SetTitle("POLY")
+    )
+    .map_err(AppError::other)?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend).map_err(AppError::other)?;
 
@@ -97,8 +102,12 @@ pub async fn run(client: PolyClient, tui_cfg: TuiConfig) -> client::Result<()> {
 
     // Always restore terminal, even on error.
     disable_raw_mode().map_err(AppError::other)?;
-    execute!(terminal.backend_mut(), DisableMouseCapture, LeaveAlternateScreen)
-        .map_err(AppError::other)?;
+    execute!(
+        terminal.backend_mut(),
+        DisableMouseCapture,
+        LeaveAlternateScreen
+    )
+    .map_err(AppError::other)?;
     terminal.show_cursor().map_err(AppError::other)?;
 
     if setup_done {
