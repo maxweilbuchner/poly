@@ -111,6 +111,21 @@ Search and order book commands work without credentials.
 - Run `cargo fmt` before committing to avoid CI failures.
 - CI runs `cargo fmt -- --check`, `cargo clippy --all-targets -- -D warnings -A clippy::uninlined_format_args`, and `cargo test --all-targets`.
 
+## Releasing
+
+When bumping the version for a release:
+
+1. Bump `version` in `Cargo.toml`, run `cargo update -p poly` to sync `Cargo.lock`
+2. Move `[Unreleased]` entries in `CHANGELOG.md` into a dated `[x.y.z]` section, add the compare link at the bottom
+3. Commit, push, then **create and push the git tag**:
+   ```bash
+   git tag vX.Y.Z
+   git push origin vX.Y.Z
+   ```
+4. The tag push triggers the CI release pipeline (build Linux + macOS binaries, create GitLab release)
+
+**Never skip the git tag.** Without it the CI release pipeline does not run and there is no downloadable binary.
+
 ## Keeping Docs in Sync
 
 When adding or changing user-visible features, update these files **in the same commit**:
