@@ -7,6 +7,7 @@ stages:
 variables:
   CARGO_HOME: ${CI_PROJECT_DIR}/.cargo
   RUSTFLAGS: "-D warnings"
+  PKG_REGISTRY: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/poly"
 
 # Cache Cargo registry + build artifacts between jobs and pipelines.
 .rust-cache: &rust-cache
@@ -45,6 +46,9 @@ test:
     - cargo test --all-targets
 
 # ── Build stage ───────────────────────────────────────────────────────────────
+#
+# On tagged commits each build job uploads its binary to the GitLab Generic
+# Package Registry so the release job can link to stable download URLs.
 
 build-linux:
   stage: build
@@ -54,6 +58,12 @@ build-linux:
     - cargo build --release
     - strip target/release/poly
     - ./target/release/poly --version
+    - |
+      if [ -n "$CI_COMMIT_TAG" ]; then
+        curl --fail --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+             --upload-file target/release/poly \
+             "${PKG_REGISTRY}/${CI_COMMIT_TAG}/poly-linux-x86_64"
+      fi
   artifacts:
     paths:
       - target/release/poly
@@ -71,6 +81,12 @@ build-macos-arm:
     - strip target/release/poly
     - mv target/release/poly target/release/poly-macos-aarch64
     - ./target/release/poly-macos-aarch64 --version
+    - |
+      if [ -n "$CI_COMMIT_TAG" ]; then
+        curl --fail --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+             --upload-file target/release/poly-macos-aarch64 \
+             "${PKG_REGISTRY}/${CI_COMMIT_TAG}/poly-macos-aarch64"
+      fi
   artifacts:
     paths:
       - target/release/poly-macos-aarch64
@@ -88,6 +104,12 @@ build-macos-x86:
     - cargo build --release --target x86_64-apple-darwin
     - strip target/x86_64-apple-darwin/release/poly
     - mv target/x86_64-apple-darwin/release/poly target/release/poly-macos-x86_64
+    - |
+      if [ -n "$CI_COMMIT_TAG" ]; then
+        curl --fail --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+             --upload-file target/release/poly-macos-x86_64 \
+             "${PKG_REGISTRY}/${CI_COMMIT_TAG}/poly-macos-x86_64"
+      fi
   artifacts:
     paths:
       - target/release/poly-macos-x86_64
@@ -97,18 +119,21 @@ build-macos-x86:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 # ── Release stage (tagged commits only) ──────────────────────────────────────
+#
+# Asset links point to the Generic Package Registry URLs uploaded by the build
+# jobs above — not to job artifacts (which use ephemeral job IDs).
 
 release:
   stage: release
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   needs:
     - job: build-linux
-      artifacts: true
+      artifacts: false
     - job: build-macos-arm
-      artifacts: true
+      artifacts: false
       optional: true
     - job: build-macos-x86
-      artifacts: true
+      artifacts: false
       optional: true
   script:
     - echo "Creating release for ${CI_COMMIT_TAG}"
@@ -119,10 +144,10 @@ release:
     assets:
       links:
         - name: "poly-linux-x86_64"
-          url: "${CI_PROJECT_URL}/-/jobs/${CI_JOB_ID}/artifacts/raw/target/release/poly"
+          url: "${PKG_REGISTRY}/${CI_COMMIT_TAG}/poly-linux-x86_64"
         - name: "poly-macos-aarch64"
-          url: "${CI_PROJECT_URL}/-/jobs/${CI_JOB_ID}/artifacts/raw/target/release/poly-macos-aarch64"
+          url: "${PKG_REGISTRY}/${CI_COMMIT_TAG}/poly-macos-aarch64"
         - name: "poly-macos-x86_64"
-          url: "${CI_PROJECT_URL}/-/jobs/${CI_JOB_ID}/artifacts/raw/target/release/poly-macos-x86_64"
+          url: "${PKG_REGISTRY}/${CI_COMMIT_TAG}/poly-macos-x86_64"
   rules:
     - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+/
