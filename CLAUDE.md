@@ -111,6 +111,15 @@ Search and order book commands work without credentials.
 - Run `cargo fmt` before committing to avoid CI failures.
 - CI runs `cargo fmt -- --check`, `cargo clippy --all-targets -- -D warnings -A clippy::uninlined_format_args`, and `cargo test --all-targets`.
 
+## Keeping Docs in Sync
+
+When adding or changing user-visible features, update these files **in the same commit**:
+
+- **`README.md`** — tabs table, key bindings section, CLI commands list. If you add a tab, add it to the tabs table AND add a keybindings subsection. If you change a tab's name or purpose, update its description.
+- **`CHANGELOG.md`** — add entries under `[Unreleased]`. Use Added/Changed/Fixed/Removed sections per [Keep a Changelog](https://keepachangelog.com). When bumping the version, move `[Unreleased]` entries into a dated `[x.y.z]` section and add the compare link at the bottom.
+- **`CLAUDE.md`** — update the `Tab` enum line, architecture tree, or conventions if the change affects project structure or patterns.
+- **`Cargo.toml`** — bump version when releasing. Keep `Cargo.lock` in sync (`cargo update -p poly`).
+
 ## TUI Architecture
 
 The TUI uses a message-passing event loop. No subcommand → launches TUI (`tui::run()`).
@@ -119,7 +128,7 @@ The TUI uses a message-passing event loop. No subcommand → launches TUI (`tui:
 
 **Key types in `state.rs`:**
 - `App` — all TUI state (markets, positions, balance, filters, UI state)
-- `Tab` — `Markets | Positions | Balance | Analytics`
+- `Tab` — `Markets | Positions | Balance | Analytics | Viewer`
 - `Screen` — `MarketList | MarketDetail | OrderEntry | Help | QuitConfirm | Setup | ...`
 - `AppEvent` — all events (data loads, user actions, errors, WebSocket updates)
 

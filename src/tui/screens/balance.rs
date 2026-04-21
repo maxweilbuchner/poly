@@ -10,16 +10,16 @@ use ratatui::{
 use crate::tui::{is_auth_error, theme, App};
 
 pub fn render(f: &mut Frame, area: Rect, app: &App) {
-    let chunks = Layout::vertical([Constraint::Length(22), Constraint::Min(0)]).split(area);
+    let chunks = Layout::vertical([Constraint::Length(6), Constraint::Min(0)]).split(area);
 
-    render_balance_panel(f, chunks[0], app);
+    render_summary_panel(f, chunks[0], app);
     render_net_worth_chart(f, chunks[1], app);
 }
 
-fn render_balance_panel(f: &mut Frame, area: Rect, app: &App) {
-    let block = Block::bordered()
+fn render_summary_panel(f: &mut Frame, area: Rect, app: &App) {
+    let empty_block = Block::bordered()
         .title(Span::styled(
-            " Balance ",
+            " Summary ",
             Style::default()
                 .fg(theme::CYAN)
                 .add_modifier(Modifier::BOLD),
@@ -27,26 +27,30 @@ fn render_balance_panel(f: &mut Frame, area: Rect, app: &App) {
         .border_style(Style::default().fg(theme::BORDER))
         .style(Style::default().bg(theme::PANEL_BG));
 
-    let lines = if app.loading && app.balance.is_none() {
-        vec![
-            Line::from(""),
-            Line::from(Span::styled("  Loading…", Style::default().fg(theme::DIM))),
-        ]
-    } else if app.balance.is_none() {
+    if app.loading && app.balance.is_none() {
+        f.render_widget(
+            Paragraph::new(Span::styled("  Loading…", Style::default().fg(theme::DIM)))
+                .block(empty_block),
+            area,
+        );
+        return;
+    }
+
+    if app.balance.is_none() {
         if let Some(err) = &app.last_error {
             if is_auth_error(err) {
                 let err_str = err.to_string();
-                let mut lines = vec![Line::from("")];
+                let mut lines = vec![];
                 for raw in err_str.lines() {
                     let line = raw.trim_start_matches("  ");
                     if line.starts_with("Hint:") {
                         lines.push(Line::from(vec![
-                            Span::styled("  ", Style::default()),
+                            Span::raw("  "),
                             Span::styled(line.to_string(), Style::default().fg(theme::YELLOW)),
                         ]));
                     } else {
                         lines.push(Line::from(vec![
-                            Span::styled("  ", Style::default()),
+                            Span::raw("  "),
                             Span::styled(
                                 line.to_string(),
                                 Style::default()
@@ -56,148 +60,158 @@ fn render_balance_panel(f: &mut Frame, area: Rect, app: &App) {
                         ]));
                     }
                 }
-                lines.push(Line::from(""));
-                lines.push(Line::from(vec![Span::styled(
-                    "  r to retry after adding credentials",
-                    Style::default().fg(theme::VERY_DIM),
-                )]));
-                // render immediately with this lines vec
-                let para = Paragraph::new(lines).block(block);
-                f.render_widget(para, area);
+                f.render_widget(Paragraph::new(lines).block(empty_block), area);
                 return;
             }
         }
-        vec![
-            Line::from(""),
-            Line::from(Span::styled(
+        f.render_widget(
+            Paragraph::new(Span::styled(
                 "  No data. Press r to refresh.",
                 Style::default().fg(theme::DIM),
-            )),
-        ]
-    } else {
-        let bal = app.balance.unwrap_or(0.0);
+            ))
+            .block(empty_block),
+            area,
+        );
+        return;
+    }
 
-        // Max uint256 / 1e6 ≈ 1.15e71 — treat anything above 1e18 as "unlimited".
-        let allowance_str = match app.allowance {
-            Some(a) if a > 1e18 => "Unlimited".to_string(),
-            Some(a) => format!("${:.2}", a),
-            None => "—".to_string(),
-        };
+    let bal = app.balance.unwrap_or(0.0);
 
-        let low_allowance = app.allowance.map(|a| a < 10.0).unwrap_or(false);
-        let allowance_color = if low_allowance {
-            theme::BORDER_WARNING
-        } else {
-            theme::GREEN
-        };
-
-        // ── Portfolio calculations ───────────────────────────────────
-        let positions_value: f64 = app.positions.iter().map(|p| p.size * p.current_price).sum();
-        let total_shares: f64 = app.positions.iter().map(|p| p.size).sum();
-        let net_worth = bal + positions_value;
-        let max_payout = bal + total_shares;
-
-        let label = Style::default().fg(theme::DIM);
-        let val = Style::default()
-            .fg(theme::TEXT)
-            .add_modifier(Modifier::BOLD);
-
-        let mut lines = vec![
-            Line::from(""),
-            // ── Wallet section ───────────────────────────────────────
-            Line::from(vec![
-                Span::styled("   Wallet ", Style::default().fg(theme::CYAN)),
-                Span::styled(
-                    "──────────────────────────────",
-                    Style::default().fg(theme::BORDER),
-                ),
-            ]),
-            Line::from(""),
-            Line::from(vec![
-                Span::styled("   Cash              ", label),
-                Span::styled(format!("${:.2}", bal), val),
-            ]),
-            Line::from(vec![
-                Span::styled("   CTF Allowance     ", label),
-                Span::styled(allowance_str.clone(), Style::default().fg(allowance_color)),
-            ]),
-        ];
-
-        if low_allowance {
-            lines.push(Line::from(vec![Span::styled(
-                "   ⚠ Low — approve more USDC to place orders",
-                Style::default().fg(theme::BORDER_WARNING),
-            )]));
-        }
-
-        // ── Portfolio section ────────────────────────────────────────
-        lines.push(Line::from(""));
-        lines.push(Line::from(vec![
-            Span::styled("   Portfolio ", Style::default().fg(theme::CYAN)),
-            Span::styled(
-                "───────────────────────────",
-                Style::default().fg(theme::BORDER),
-            ),
-        ]));
-        lines.push(Line::from(""));
-        lines.push(Line::from(vec![
-            Span::styled("   Positions         ", label),
-            Span::styled(format!("${:.2}", positions_value), val),
-            Span::styled(
-                format!("  ({} open)", app.positions.len()),
-                Style::default().fg(theme::VERY_DIM),
-            ),
-        ]));
-        lines.push(Line::from(vec![
-            Span::styled("   Shares held       ", label),
-            Span::styled(
-                format!("{:.2}", total_shares),
-                Style::default().fg(theme::TEXT),
-            ),
-        ]));
-
-        // ── Totals section ───────────────────────────────────────────
-        lines.push(Line::from(""));
-        lines.push(Line::from(vec![
-            Span::styled("   Totals ", Style::default().fg(theme::CYAN)),
-            Span::styled(
-                "────────────────────────────",
-                Style::default().fg(theme::BORDER),
-            ),
-        ]));
-        lines.push(Line::from(""));
-        lines.push(Line::from(vec![
-            Span::styled("   Net Worth         ", label),
-            Span::styled(
-                format!("${:.2}", net_worth),
-                Style::default()
-                    .fg(theme::GREEN)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::styled(
-                "  cash + positions at market",
-                Style::default().fg(theme::VERY_DIM),
-            ),
-        ]));
-        lines.push(Line::from(vec![
-            Span::styled("   Max Payout        ", label),
-            Span::styled(
-                format!("${:.2}", max_payout),
-                Style::default()
-                    .fg(theme::BLUE)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::styled(
-                "  if all shares resolve to $1",
-                Style::default().fg(theme::VERY_DIM),
-            ),
-        ]));
-
-        lines
+    let allowance_str = match app.allowance {
+        Some(a) if a > 1e18 => "Unlimited".to_string(),
+        Some(a) => format!("${:.2}", a),
+        None => "—".to_string(),
     };
 
-    let para = Paragraph::new(lines).block(block);
-    f.render_widget(para, area);
+    let low_allowance = app.allowance.map(|a| a < 10.0).unwrap_or(false);
+    let allowance_color = if low_allowance {
+        theme::BORDER_WARNING
+    } else {
+        theme::GREEN
+    };
+
+    let positions_value: f64 = app.positions.iter().map(|p| p.size * p.current_price).sum();
+    let total_shares: f64 = app.positions.iter().map(|p| p.size).sum();
+    let net_worth = bal + positions_value;
+    let max_payout = bal + total_shares;
+
+    let pos_count = app.positions.len();
+
+    // Title with metadata
+    let mut title_spans = vec![Span::styled(
+        " Summary ",
+        Style::default()
+            .fg(theme::CYAN)
+            .add_modifier(Modifier::BOLD),
+    )];
+    if pos_count > 0 {
+        title_spans.push(Span::styled(
+            format!(
+                "· {} position{}  · {:.0} shares ",
+                pos_count,
+                if pos_count == 1 { "" } else { "s" },
+                total_shares
+            ),
+            Style::default().fg(theme::DIM),
+        ));
+    }
+    if low_allowance {
+        title_spans.push(Span::styled(
+            "· ⚠ low allowance ",
+            Style::default().fg(theme::BORDER_WARNING),
+        ));
+    }
+
+    let block = Block::bordered()
+        .title(Line::from(title_spans))
+        .border_style(Style::default().fg(theme::BORDER))
+        .style(Style::default().bg(theme::PANEL_BG));
+
+    let inner = block.inner(area);
+    f.render_widget(block, area);
+
+    // 6 columns: Cash, Allowance, Positions, Shares, Net Worth, Max Payout
+    let labels = [
+        "Cash",
+        "Allowance",
+        "Positions",
+        "Shares",
+        "Net Worth",
+        "Max Payout",
+    ];
+    let value_strs = [
+        format!("${:.2}", bal),
+        allowance_str,
+        format!("${:.2}", positions_value),
+        format!("{:.2}", total_shares),
+        format!("${:.2}", net_worth),
+        format!("${:.2}", max_payout),
+    ];
+    let value_colors = [
+        theme::TEXT,
+        allowance_color,
+        theme::TEXT,
+        theme::TEXT,
+        theme::GREEN,
+        theme::BLUE,
+    ];
+    let value_bold = [true, false, true, false, true, true];
+
+    let col_w = (inner.width as usize).saturating_sub(2) / labels.len();
+
+    let mut label_spans: Vec<Span<'static>> = vec![Span::raw("  ")];
+    for lbl in &labels {
+        label_spans.push(Span::styled(
+            pad_right(lbl.to_string(), col_w),
+            Style::default().fg(theme::DIM),
+        ));
+    }
+
+    let mut val_spans: Vec<Span<'static>> = vec![Span::raw("  ")];
+    for (i, val) in value_strs.iter().enumerate() {
+        let mut style = Style::default().fg(value_colors[i]);
+        if value_bold[i] {
+            style = style.add_modifier(Modifier::BOLD);
+        }
+        val_spans.push(Span::styled(pad_right(val.clone(), col_w), style));
+    }
+
+    // Annotation line under positions value
+    let mut anno_spans: Vec<Span<'static>> = vec![Span::raw("  ")];
+    let annotations = [
+        "",
+        "",
+        &format!("{} open", pos_count) as &str,
+        "",
+        "cash + market",
+        "if all → $1",
+    ];
+    for ann in &annotations {
+        anno_spans.push(Span::styled(
+            pad_right(ann.to_string(), col_w),
+            Style::default().fg(theme::VERY_DIM),
+        ));
+    }
+
+    f.render_widget(
+        Paragraph::new(vec![
+            Line::from(label_spans),
+            Line::from(val_spans),
+            Line::from(anno_spans),
+        ]),
+        inner,
+    );
+}
+
+fn pad_right(s: String, width: usize) -> String {
+    let len = s.chars().count();
+    if len >= width {
+        s
+    } else {
+        let mut out = s;
+        out.extend(std::iter::repeat_n(' ', width - len));
+        out
+    }
 }
 
 // ── Net worth time-series chart ──────────────────────────────────────────────

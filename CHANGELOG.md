@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-04-21
+
+### Added
+- Viewer tab (`5`): browse any Polymarket wallet's portfolio by address — no auth required
+- Positions tab UI overhaul: two-line list items with question title, outcome, shares, price, value, and P&L columns
+
+### Changed
+- Balance tab "Summary" panel redesigned: compact 6-column layout (Cash, Allowance, Positions, Shares, Net Worth, Max Payout) with annotations row, replaces the tall 3-section text layout
+- Summary panel title now shows position count, share count, and low-allowance warning inline
+
 ## [0.3.0] - 2026-04-19
 
 ### Added
@@ -86,7 +96,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - HMAC-SHA256 authentication for CLOB API
 - Colored terminal output
 
-[Unreleased]: https://gitlab.com/maxweilbuchner/poly-v2/-/compare/v0.3.0...HEAD
+[Unreleased]: https://gitlab.com/maxweilbuchner/poly-v2/-/compare/v0.3.2...HEAD
+[0.3.2]: https://gitlab.com/maxweilbuchner/poly-v2/-/compare/v0.3.0...v0.3.2
 [0.3.0]: https://gitlab.com/maxweilbuchner/poly-v2/-/compare/v0.2.0...v0.3.0
 [0.2.0]: https://gitlab.com/maxweilbuchner/poly-v2/-/compare/v0.1.0...v0.2.0
 [0.1.0]: https://gitlab.com/maxweilbuchner/poly-v2/-/releases/tag/v0.1.0

@@ -46,13 +46,14 @@ Running `poly` with no subcommand opens the interactive dashboard.
 |---|---|---|
 | Markets | `1` | Browse, search, filter, and star markets |
 | Positions | `2` | View open positions and orders, close/cancel/redeem |
-| Balance | `3` | USDC balance, portfolio summary, net worth chart |
+| Balance | `3` | Cash, allowance, positions, net worth summary + chart |
 | Analytics | `4` | Prediction calibration curves, resolution stats, calibration matrix |
+| Viewer | `5` | Browse any wallet's portfolio by address |
 
 ### Key Bindings
 
 **Navigation**
-- `1`–`4` switch tabs, `Tab` cycles tabs/panels
+- `1`–`5` switch tabs, `Tab` cycles tabs/panels
 - `↑↓` / `jk` navigate lists, `Enter` opens detail
 - `q` opens the menu, `?` opens help, `Esc` goes back, `Ctrl+C` force quits
 
@@ -83,6 +84,11 @@ Running `poly` with no subcommand opens the interactive dashboard.
 - `t` cycle calibration time window (3h/6h/9h/12h)
 - `w` toggle WLS/OLS regression
 - `c` copy DB path, `o` open data folder
+
+**Viewer**
+- `/` enter address, `Enter` submit, `Esc` cancel
+- `↑↓` / `jk` navigate positions, `Enter` open market detail
+- `r` refresh
 
 ## CLI Commands
 
@@ -158,7 +164,7 @@ cargo build --release
 ./target/release/poly --help
 ```
 
-Requires Rust 1.70+. SQLite is bundled (no system dependency).
+Requires Rust 1.88+. SQLite is bundled (no system dependency).
 
 ## Architecture
 
