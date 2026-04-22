@@ -2,6 +2,28 @@
 
 A CLI and TUI for trading on [Polymarket](https://polymarket.com). Search markets, place orders, manage positions, and track prediction accuracy — all from your terminal.
 
+## Screenshots
+
+```
+╭─ poly ─────────────────────────────────────────────────────────────────────╮
+│ [1] Markets  [2] Positions  [3] Balance  [4] Analytics  [5] Viewer         │
+├────────────────────────────────────────────────────────────────────────────┤
+│   #  Market                                         Vol      End      Prob │
+│ ▸ 1  Will Bitcoin hit $200k in 2026?              $8.4M  Dec 31   ███▒ 58% │
+│   2  US recession in 2026?                        $6.1M  Dec 31   █▒░░ 24% │
+│   3  Will SpaceX reach Mars by 2027?              $4.7M  Dec 31   ▒░░░  9% │
+│   4  Next Fed rate decision — cut 25bps?          $3.9M  Apr 30   ███░ 47% │
+│   5  Oscar Best Picture 2027 — Dune 3?            $2.2M  Mar 15   █▒░░ 18% │
+│ ...                                                                        │
+├────────────────────────────────────────────────────────────────────────────┤
+│ / search   s sort   d/p/v filter   * star   w watchlist   r refresh   ? help│
+│ ws ●  balance $124.53  allowance unlimited                                  │
+╰────────────────────────────────────────────────────────────────────────────╯
+```
+
+*A real GIF of the TUI is on the roadmap — see [`docs/demo.tape`](docs/demo.tape)
+for a [vhs](https://github.com/charmbracelet/vhs) script you can run locally.*
+
 ## Quick Start
 
 ```bash
@@ -68,6 +90,7 @@ Running `poly` with no subcommand opens the interactive dashboard.
 
 **Order Entry**
 - `Tab` next field, `Space` cycle order type (GTC → FOK → IOC → Market)
+- `m` fill max size (cash balance for buy, held shares for sell)
 - `d` toggle dry-run, `Enter` submit, `Esc` cancel
 
 **Positions**
@@ -121,6 +144,7 @@ poly export orders
 
 # Utilities
 poly setup                                 # interactive credential wizard
+poly doctor                                # diagnose config, credentials, on-chain state
 poly derive-keys                           # derive CLOB API keys from private key
 poly watch <token-id> --interval 2         # live order book
 poly migrate                               # import legacy CSV data to SQLite
@@ -193,6 +217,16 @@ src/
 │   └── widgets/      Reusable components (order book, status bar, tab bar)
 └── lib.rs
 ```
+
+## Security
+
+`poly` stores your private key and CLOB API credentials in a local TOML file
+(chmod 600) and signs orders on-device. See [SECURITY.md](SECURITY.md) for
+the threat model, what's logged, best practices, and how to report a
+vulnerability privately.
+
+Run `poly doctor` after setup to verify config permissions, credential
+validity, and on-chain allowance before placing real orders.
 
 ## License
 

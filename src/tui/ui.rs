@@ -353,6 +353,7 @@ fn render_help(f: &mut Frame, area: Rect) {
     for (key, desc) in [
         ("Tab", "Next field"),
         ("Space", "Cycle order type"),
+        ("m", "Fill max size (balance/held)"),
         ("d", "Toggle dry-run"),
         ("r", "Refresh market price"),
         ("Enter", "Submit"),

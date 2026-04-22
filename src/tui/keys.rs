@@ -559,6 +559,9 @@ fn handle_order_key(
         KeyCode::Char('d') => {
             app.order_form.dry_run = !app.order_form.dry_run;
         }
+        KeyCode::Char('m') => {
+            fill_max_size(app);
+        }
         KeyCode::Char('r') if app.order_form.market_order => {
             // Refresh market price
             app.order_form.market_price = None;
@@ -703,6 +706,67 @@ fn submit_order(app: &mut App, client: Arc<PolyClient>, tx: &UnboundedSender<App
             neg_risk: app.order_form.neg_risk,
         },
     );
+}
+
+/// Fill the size field with the maximum placeable order size.
+/// Buy: cash balance ÷ (price × fee factor), floored to 2 decimals with a small margin.
+/// Sell: the held-shares cap (max_size) set when opening from a position.
+fn fill_max_size(app: &mut App) {
+    let max_shares: Option<f64> = match app.order_form.side {
+        Some(Side::Sell) => match app.order_form.max_size {
+            Some(m) => Some((m * 100.0).floor() / 100.0),
+            None => {
+                app.set_flash("Max size unknown for this sell");
+                return;
+            }
+        },
+        Some(Side::Buy) => {
+            let balance = match app.balance {
+                Some(b) if b > 0.0 => b,
+                _ => {
+                    app.set_flash("Balance not loaded");
+                    return;
+                }
+            };
+            let price = if app.order_form.market_order {
+                match app.order_form.market_price {
+                    Some(p) => p,
+                    None => {
+                        app.set_flash("Market price still loading");
+                        return;
+                    }
+                }
+            } else {
+                match app.order_form.price_input.parse::<f64>() {
+                    Ok(p) if (0.01..=0.99).contains(&p) => p,
+                    _ => {
+                        app.set_flash("Enter a valid price first");
+                        return;
+                    }
+                }
+            };
+            let rate = app.order_form.fee_rate_bps.unwrap_or(0) as f64 / 10_000.0;
+            let effective_price = price * (1.0 + rate * (1.0 - price));
+            // Leave ~0.1% headroom for fee rounding on the exchange side.
+            Some((balance / effective_price * 0.999 * 100.0).floor() / 100.0)
+        }
+        None => {
+            app.set_flash("No side selected");
+            return;
+        }
+    };
+
+    match max_shares {
+        Some(size) if size >= 5.0 => {
+            app.order_form.size_input = format!("{:.2}", size);
+        }
+        Some(_) => {
+            app.set_flash("Max size below 5-share minimum");
+        }
+        None => {
+            app.set_flash("Max size unavailable");
+        }
+    }
 }
 
 // ── Positions key handler ─────────────────────────────────────────────────────

@@ -284,6 +284,14 @@ enum Command {
         /// Shell to generate completions for
         shell: clap_complete::Shell,
     },
+
+    /// Diagnose configuration — check credentials, connectivity, and on-chain state
+    ///
+    /// Runs a series of checks: config file presence/permissions, wallet key,
+    /// CLOB API credentials, API auth probe, RPC connectivity, USDC balance,
+    /// and CTF allowance. Exits non-zero if any critical check fails.
+    #[command(display_order = 26)]
+    Doctor,
 }
 
 #[tokio::main]
@@ -400,6 +408,7 @@ async fn main() {
         Command::Export { what, output } => cmd_export(&client, &what, output.as_deref()).await,
         Command::DeriveKeys => cmd_derive_keys(&client).await,
         Command::Migrate => cmd_migrate().await,
+        Command::Doctor => cmd_doctor(&client).await,
         Command::Setup | Command::Completions { .. } => unreachable!(),
     };
 
@@ -1010,6 +1019,166 @@ async fn cmd_migrate() -> client::Result<()> {
     }
 
     Ok(())
+}
+
+async fn cmd_doctor(client: &PolyClient) -> client::Result<()> {
+    use colored::Colorize;
+
+    let mut failures = 0u32;
+
+    fn pass(label: &str, detail: &str) {
+        println!(
+            "  {}  {:<18} {}",
+            "✓".green().bold(),
+            label,
+            detail.dimmed()
+        );
+    }
+    fn fail(failures: &mut u32, label: &str, detail: &str) {
+        *failures += 1;
+        println!("  {}  {:<18} {}", "✗".red().bold(), label, detail.red());
+    }
+    fn warn(label: &str, detail: &str) {
+        println!(
+            "  {}  {:<18} {}",
+            "!".yellow().bold(),
+            label,
+            detail.yellow()
+        );
+    }
+    fn skip(label: &str, detail: &str) {
+        println!(
+            "  {}  {:<18} {}",
+            "○".dimmed(),
+            label.dimmed(),
+            detail.dimmed()
+        );
+    }
+
+    println!("\n  {}\n", "poly doctor".bold());
+
+    // ── Config file ──────────────────────────────────────────────────────────
+    match config_path() {
+        Some(path) => {
+            let path_str = path.display().to_string();
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                match std::fs::metadata(&path) {
+                    Ok(meta) => {
+                        let mode = meta.permissions().mode() & 0o777;
+                        if mode & 0o077 != 0 {
+                            warn(
+                                "Config file",
+                                &format!(
+                                    "{} (mode {:o} — run: chmod 600 {})",
+                                    path_str, mode, path_str
+                                ),
+                            );
+                        } else {
+                            pass("Config file", &format!("{} (mode {:o})", path_str, mode));
+                        }
+                    }
+                    Err(_) => pass("Config file", &path_str),
+                }
+            }
+            #[cfg(not(unix))]
+            pass("Config file", &path_str);
+        }
+        None => {
+            if std::env::var("POLY_PRIVATE_KEY").is_ok() || std::env::var("POLY_MARKET_KEY").is_ok()
+            {
+                pass("Config file", "none (using environment variables)");
+            } else {
+                warn("Config file", "not found — run `poly setup`");
+            }
+        }
+    }
+
+    // ── Wallet / private key ─────────────────────────────────────────────────
+    let wallet_addr = client.wallet_address_str();
+    if wallet_addr == "<no wallet>" {
+        fail(
+            &mut failures,
+            "Private key",
+            "missing — set POLY_PRIVATE_KEY or run `poly setup`",
+        );
+    } else {
+        pass("Private key", &format!("loaded (wallet {})", wallet_addr));
+    }
+
+    // ── CLOB API credentials ─────────────────────────────────────────────────
+    if client.has_credentials() {
+        pass("API credentials", "key, secret, passphrase present");
+    } else if wallet_addr != "<no wallet>" {
+        fail(
+            &mut failures,
+            "API credentials",
+            "missing — run `poly derive-keys` to generate them",
+        );
+    } else {
+        fail(&mut failures, "API credentials", "missing");
+    }
+
+    // ── CLOB API auth probe ──────────────────────────────────────────────────
+    if client.has_credentials() {
+        match client.check_credentials().await {
+            None => pass("CLOB API", "credentials accepted"),
+            Some(msg) => fail(&mut failures, "CLOB API", &msg),
+        }
+    } else {
+        skip("CLOB API", "skipped (no credentials)");
+    }
+
+    // ── USDC balance (requires RPC + wallet) ─────────────────────────────────
+    match client.get_balance().await {
+        Ok(balance) => pass("USDC balance", &format!("${:.4}", balance)),
+        Err(AppError::Auth(msg)) => skip("USDC balance", &format!("skipped — {}", msg)),
+        Err(e) => fail(&mut failures, "USDC balance", &format!("{}", e)),
+    }
+
+    // ── CTF allowance ────────────────────────────────────────────────────────
+    match client.get_allowance().await {
+        Ok(allowance) => {
+            if allowance < 1.0 {
+                warn(
+                    "CTF allowance",
+                    &format!(
+                        "${:.4} — too low to trade (approve USDC on CTF Exchange)",
+                        allowance
+                    ),
+                );
+            } else if allowance >= 1e15 {
+                pass("CTF allowance", "unlimited");
+            } else {
+                pass("CTF allowance", &format!("${:.4}", allowance));
+            }
+        }
+        Err(AppError::Auth(_)) => skip("CTF allowance", "skipped (no RPC)"),
+        Err(e) => fail(&mut failures, "CTF allowance", &format!("{}", e)),
+    }
+
+    // ── Data directory ───────────────────────────────────────────────────────
+    let db_path = persist::db_path();
+    let data_dir = db_path.parent().unwrap_or(&db_path).to_path_buf();
+    if data_dir.exists() {
+        pass("Data directory", &data_dir.display().to_string());
+    } else {
+        skip("Data directory", "will be created on first TUI run");
+    }
+
+    println!();
+    if failures == 0 {
+        println!("  {}  All checks passed.\n", "✓".green().bold());
+        Ok(())
+    } else {
+        println!(
+            "  {}  {} check(s) failed. See messages above.\n",
+            "✗".red().bold(),
+            failures
+        );
+        Err("poly doctor: one or more checks failed".into())
+    }
 }
 
 // ── Config file ───────────────────────────────────────────────────────────────

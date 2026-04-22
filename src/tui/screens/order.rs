@@ -260,7 +260,7 @@ fn render_form(f: &mut Frame, area: Rect, app: &App) {
 
     // Footer hint
     let footer = Paragraph::new(Span::styled(
-        "  Tab/Shift+Tab move fields   Enter submit   Esc cancel",
+        "  Tab/Shift+Tab fields   m max size   Enter submit   Esc cancel",
         Style::default().fg(theme::VERY_DIM),
     ));
     f.render_widget(footer, rows[12]);

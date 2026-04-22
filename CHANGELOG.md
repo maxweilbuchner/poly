@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-04-22
+
+### Added
+- `poly doctor` command — runs a configuration health check (config file + permissions, wallet key, CLOB credentials, API auth probe, USDC balance, CTF allowance) and exits non-zero if anything is broken
+- Order entry `m` key fills the size field with the maximum placeable size (cash balance / effective price for buys, held shares for sells)
+- `SECURITY.md` documenting threat model, what's stored/logged, best practices, and private vulnerability reporting
+- ASCII screenshot in `README.md` and a `docs/demo.tape` [vhs](https://github.com/charmbracelet/vhs) script for recording real demo GIFs
+
 ## [0.3.2] - 2026-04-21
 
 ### Added
@@ -96,7 +104,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - HMAC-SHA256 authentication for CLOB API
 - Colored terminal output
 
-[Unreleased]: https://gitlab.com/maxweilbuchner/poly-v2/-/compare/v0.3.2...HEAD
+[Unreleased]: https://gitlab.com/maxweilbuchner/poly-v2/-/compare/v0.3.3...HEAD
+[0.3.3]: https://gitlab.com/maxweilbuchner/poly-v2/-/compare/v0.3.2...v0.3.3
 [0.3.2]: https://gitlab.com/maxweilbuchner/poly-v2/-/compare/v0.3.0...v0.3.2
 [0.3.0]: https://gitlab.com/maxweilbuchner/poly-v2/-/compare/v0.2.0...v0.3.0
 [0.2.0]: https://gitlab.com/maxweilbuchner/poly-v2/-/compare/v0.1.0...v0.2.0
