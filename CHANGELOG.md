@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Crate renamed to `poly-cli` for crates.io publication (the binary remains `poly`). Install with `cargo install poly-cli`.
+
 ## [0.3.3] - 2026-04-22
 
 ### Added

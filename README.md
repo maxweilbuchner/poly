@@ -15,7 +15,10 @@ For a live recording, `docs/demo.tape` is a
 ## Quick Start
 
 ```bash
-# Install from source (requires Rust toolchain)
+# Install from crates.io (requires Rust toolchain)
+cargo install poly-cli
+
+# Or install the latest from git
 cargo install --git https://gitlab.com/maxweilbuchner/poly-v2.git
 
 # Or clone and build locally
