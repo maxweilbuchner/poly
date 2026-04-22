@@ -4,25 +4,13 @@ A CLI and TUI for trading on [Polymarket](https://polymarket.com). Search market
 
 ## Screenshots
 
-```
-╭─ poly ─────────────────────────────────────────────────────────────────────╮
-│ [1] Markets  [2] Positions  [3] Balance  [4] Analytics  [5] Viewer         │
-├────────────────────────────────────────────────────────────────────────────┤
-│   #  Market                                         Vol      End      Prob │
-│ ▸ 1  Will Bitcoin hit $200k in 2026?              $8.4M  Dec 31   ███▒ 58% │
-│   2  US recession in 2026?                        $6.1M  Dec 31   █▒░░ 24% │
-│   3  Will SpaceX reach Mars by 2027?              $4.7M  Dec 31   ▒░░░  9% │
-│   4  Next Fed rate decision — cut 25bps?          $3.9M  Apr 30   ███░ 47% │
-│   5  Oscar Best Picture 2027 — Dune 3?            $2.2M  Mar 15   █▒░░ 18% │
-│ ...                                                                        │
-├────────────────────────────────────────────────────────────────────────────┤
-│ / search   s sort   d/p/v filter   * star   w watchlist   r refresh   ? help│
-│ ws ●  balance $124.53  allowance unlimited                                  │
-╰────────────────────────────────────────────────────────────────────────────╯
-```
+![poly TUI — Markets tab](docs/screenshot.png)
 
-*A real GIF of the TUI is on the roadmap — see [`docs/demo.tape`](docs/demo.tape)
-for a [vhs](https://github.com/charmbracelet/vhs) script you can run locally.*
+*Static mock of the Markets tab. Re-generate with
+`python3 docs/gen_screenshot.py | freeze ...` (see the script header).
+For a live recording, `docs/demo.tape` is a
+[vhs](https://github.com/charmbracelet/vhs) script you can run locally:
+`vhs docs/demo.tape` → `docs/demo.gif`.*
 
 ## Quick Start
 
