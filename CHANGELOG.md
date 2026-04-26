@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-04-26
+
 ### Added
 - Integration tests for the WebSocket order-book and user channels (5 tests): protocol framing, event emission, HTTP fallback on connect failure, disconnect handling. Tests run against a local in-process WS server.
 - End-to-end tests for the `poly setup` wizard core logic (20 tests): input validators (private key, Ethereum address, URL), config-file write/read round-trip, Unix file permissions (0600), `[tui]` section preservation, env-var precedence in `has_config`.
@@ -114,7 +116,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - HMAC-SHA256 authentication for CLOB API
 - Colored terminal output
 
-[Unreleased]: https://gitlab.com/maxweilbuchner/poly-v2/-/compare/v0.3.3...HEAD
+[Unreleased]: https://gitlab.com/maxweilbuchner/poly-v2/-/compare/v0.4.0...HEAD
+[0.4.0]: https://gitlab.com/maxweilbuchner/poly-v2/-/compare/v0.3.3...v0.4.0
 [0.3.3]: https://gitlab.com/maxweilbuchner/poly-v2/-/compare/v0.3.2...v0.3.3
 [0.3.2]: https://gitlab.com/maxweilbuchner/poly-v2/-/compare/v0.3.0...v0.3.2
 [0.3.0]: https://gitlab.com/maxweilbuchner/poly-v2/-/compare/v0.2.0...v0.3.0
