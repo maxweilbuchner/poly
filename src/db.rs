@@ -60,6 +60,11 @@ CREATE TABLE IF NOT EXISTS net_worth_log (
     positions REAL NOT NULL,
     net_worth REAL NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS market_peak_vol (
+    condition_id TEXT NOT NULL PRIMARY KEY,
+    volume       REAL NOT NULL DEFAULT 0
+);
 ";
 
 // ── Open / initialise ─────────────────────────────────────────────────────────
@@ -86,6 +91,21 @@ pub fn open(path: &Path) -> rusqlite::Result<Connection> {
         "ALTER TABLE resolutions ADD COLUMN calibration_hours INTEGER",
         [],
     );
+
+    // Backfill market_peak_vol from snapshots once. After this, insert_snapshots
+    // keeps it incrementally up-to-date via UPSERT, so the full GROUP BY scan
+    // never has to run again.
+    let peak_count: i64 = conn
+        .query_row("SELECT COUNT(*) FROM market_peak_vol", [], |r| r.get(0))
+        .unwrap_or(0);
+    if peak_count == 0 {
+        let _ = conn.execute(
+            "INSERT INTO market_peak_vol (condition_id, volume)
+             SELECT condition_id, MAX(volume) FROM snapshots GROUP BY condition_id",
+            [],
+        );
+    }
+
     Ok(conn)
 }
 
@@ -132,6 +152,10 @@ pub fn insert_snapshots(conn: &mut Connection, rows: &[SnapshotRow]) -> rusqlite
               end_date,volume,liquidity,outcome,price)
              VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11)",
         )?;
+        let mut stmt_peak = tx.prepare_cached(
+            "INSERT INTO market_peak_vol (condition_id, volume) VALUES (?1, ?2)
+             ON CONFLICT(condition_id) DO UPDATE SET volume = MAX(volume, excluded.volume)",
+        )?;
         for r in rows {
             stmt.execute(params![
                 r.snapshot_at,
@@ -146,6 +170,7 @@ pub fn insert_snapshots(conn: &mut Connection, rows: &[SnapshotRow]) -> rusqlite
                 r.outcome,
                 r.price
             ])?;
+            stmt_peak.execute(params![r.condition_id, r.volume])?;
         }
     }
     tx.commit()
@@ -454,11 +479,6 @@ pub fn query_calibration_raw(
 ) -> rusqlite::Result<Vec<CalibrationRow>> {
     let modifier = format!("-{} hours", hours_before);
     let sql = "
-        WITH peak_vol AS (
-            SELECT condition_id, MAX(volume) AS volume
-            FROM snapshots
-            GROUP BY condition_id
-        )
         SELECT r.question, r.slug,
                COALESCE(v.volume, 0) AS peak_vol,
                COALESCE(
@@ -472,7 +492,7 @@ pub fn query_calibration_raw(
                ) AS yes_price,
                LOWER(r.resolution) AS res
         FROM resolutions r
-        LEFT JOIN peak_vol v ON r.condition_id = v.condition_id
+        LEFT JOIN market_peak_vol v ON r.condition_id = v.condition_id
         WHERE LOWER(r.resolution) IN ('yes','no')
     ";
     let mut stmt = conn.prepare(sql)?;
@@ -509,12 +529,7 @@ pub fn query_calibration_raw(
 /// Tiers with no data have `count == 0`.
 pub fn query_edge_vs_volume(conn: &Connection) -> rusqlite::Result<Vec<(String, f64, usize)>> {
     let sql = "
-        WITH peak_vol AS (
-            SELECT condition_id, MAX(volume) AS volume
-            FROM snapshots
-            GROUP BY condition_id
-        ),
-        calibrated AS (
+        WITH calibrated AS (
             SELECT
                 ABS(r.calibration_price - CASE WHEN LOWER(r.resolution) = 'yes' THEN 1.0 ELSE 0.0 END) AS abs_err,
                 CASE
@@ -525,7 +540,7 @@ pub fn query_edge_vs_volume(conn: &Connection) -> rusqlite::Result<Vec<(String, 
                     ELSE 4
                 END AS tier
             FROM resolutions r
-            LEFT JOIN peak_vol v ON r.condition_id = v.condition_id
+            LEFT JOIN market_peak_vol v ON r.condition_id = v.condition_id
             WHERE r.calibration_price IS NOT NULL
               AND LOWER(r.resolution) IN ('yes', 'no')
         )

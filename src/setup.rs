@@ -140,43 +140,54 @@ fn prompt_yes_no(msg: &str, default_yes: bool) -> io::Result<bool> {
     })
 }
 
+/// Validate (and normalize) a wallet private key.
+/// Accepts `0x` + 64 hex chars, or bare 64 hex chars (auto-prefixed).
+/// Returns the normalized `0x...` form on success or an error message.
+pub fn validate_private_key(input: &str) -> std::result::Result<String, String> {
+    let key = input.trim();
+    if key.is_empty() {
+        return Err("Private key cannot be empty.".into());
+    }
+
+    if key.len() == 64 && key.chars().all(|c| c.is_ascii_hexdigit()) {
+        return Ok(format!("0x{}", key));
+    }
+
+    if !key.starts_with("0x") {
+        return Err("Private key must start with 0x.".into());
+    }
+
+    let hex_part = &key[2..];
+    if hex_part.len() != 64 {
+        return Err(format!(
+            "Expected 64 hex characters after 0x, got {}.",
+            hex_part.len()
+        ));
+    }
+
+    if !hex_part.chars().all(|c| c.is_ascii_hexdigit()) {
+        return Err("Key contains non-hex characters.".into());
+    }
+
+    Ok(key.to_string())
+}
+
 /// Repeatedly prompt for a private key until a valid one is entered.
 fn read_private_key_loop() -> io::Result<String> {
     loop {
         let key = rpassword::prompt_password("  Private key (input hidden): ")?;
-        let key = key.trim().to_string();
-
-        if key.is_empty() {
-            println!("  Private key cannot be empty. Please try again.");
-            continue;
+        match validate_private_key(&key) {
+            Ok(normalized) => {
+                if !key.trim().starts_with("0x") {
+                    println!("  (added 0x prefix)");
+                }
+                return Ok(normalized);
+            }
+            Err(msg) => {
+                println!("  {} Please try again.", msg);
+                continue;
+            }
         }
-
-        // Accept raw 64-char hex and auto-add 0x prefix
-        if key.len() == 64 && key.chars().all(|c| c.is_ascii_hexdigit()) {
-            println!("  (added 0x prefix)");
-            return Ok(format!("0x{}", key));
-        }
-
-        if !key.starts_with("0x") {
-            println!("  Private key must start with 0x. Please try again.");
-            continue;
-        }
-
-        let hex_part = &key[2..];
-        if hex_part.len() != 64 {
-            println!(
-                "  Expected 64 hex characters after 0x, got {}. Please try again.",
-                hex_part.len()
-            );
-            continue;
-        }
-
-        if !hex_part.chars().all(|c| c.is_ascii_hexdigit()) {
-            println!("  Key contains non-hex characters. Please try again.");
-            continue;
-        }
-
-        return Ok(key);
     }
 }
 
@@ -210,6 +221,31 @@ fn read_clob_keys_loop() -> io::Result<(String, String, String)> {
     }
 }
 
+/// Validate an HTTP/HTTPS URL.
+pub fn validate_url(input: &str) -> std::result::Result<String, String> {
+    let trimmed = input.trim();
+    if trimmed.is_empty() {
+        return Err("URL cannot be empty.".into());
+    }
+    if !trimmed.starts_with("http://") && !trimmed.starts_with("https://") {
+        return Err("URL must start with http:// or https://.".into());
+    }
+    Ok(trimmed.to_string())
+}
+
+/// Validate an Ethereum address (0x + 40 hex chars).
+pub fn validate_eth_address(input: &str) -> std::result::Result<String, String> {
+    let trimmed = input.trim();
+    if !trimmed.starts_with("0x") || trimmed.len() != 42 {
+        return Err("Address must be 0x followed by 40 hex characters.".into());
+    }
+    let hex_part = &trimmed[2..];
+    if !hex_part.chars().all(|c| c.is_ascii_hexdigit()) {
+        return Err("Address contains non-hex characters.".into());
+    }
+    Ok(trimmed.to_string())
+}
+
 /// Prompt for an optional URL. Validates format if provided.
 fn read_optional_url(msg: &str) -> io::Result<Option<String>> {
     loop {
@@ -217,11 +253,13 @@ fn read_optional_url(msg: &str) -> io::Result<Option<String>> {
         if input.is_empty() {
             return Ok(None);
         }
-        if !input.starts_with("http://") && !input.starts_with("https://") {
-            println!("  URL must start with http:// or https://. Please try again.");
-            continue;
+        match validate_url(&input) {
+            Ok(u) => return Ok(Some(u)),
+            Err(m) => {
+                println!("  {} Please try again.", m);
+                continue;
+            }
         }
-        return Ok(Some(input));
     }
 }
 
@@ -232,16 +270,13 @@ fn read_optional_address(msg: &str) -> io::Result<Option<String>> {
         if input.is_empty() {
             return Ok(None);
         }
-        if !input.starts_with("0x") || input.len() != 42 {
-            println!("  Address must be 0x followed by 40 hex characters. Please try again.");
-            continue;
+        match validate_eth_address(&input) {
+            Ok(a) => return Ok(Some(a)),
+            Err(m) => {
+                println!("  {} Please try again.", m);
+                continue;
+            }
         }
-        let hex_part = &input[2..];
-        if !hex_part.chars().all(|c| c.is_ascii_hexdigit()) {
-            println!("  Address contains non-hex characters. Please try again.");
-            continue;
-        }
-        return Ok(Some(input));
     }
 }
 
@@ -267,17 +302,21 @@ fn truncate(s: &str, max: usize) -> String {
 
 // ── Existing config ──────────────────────────────────────────────────────────
 
-struct ExistingConfig {
-    private_key: Option<String>,
-    api_key: Option<String>,
-    api_secret: Option<String>,
-    api_passphrase: Option<String>,
-    rpc_url: Option<String>,
-    funder_address: Option<String>,
-    tui_section: String,
+/// In-memory snapshot of the auth-relevant fields of a poly config file.
+/// Returned by [`load_existing`].
+pub struct ExistingConfig {
+    pub private_key: Option<String>,
+    pub api_key: Option<String>,
+    pub api_secret: Option<String>,
+    pub api_passphrase: Option<String>,
+    pub rpc_url: Option<String>,
+    pub funder_address: Option<String>,
+    pub tui_section: String,
 }
 
-fn load_existing(path: &PathBuf) -> ExistingConfig {
+/// Read an existing poly config file (TOML) and extract the auth section.
+/// Missing files yield an all-`None` `ExistingConfig` (rather than an error).
+pub fn load_existing(path: &PathBuf) -> ExistingConfig {
     let text = match std::fs::read_to_string(path) {
         Ok(t) => t,
         Err(_) => {
@@ -367,8 +406,10 @@ fn config_write_path() -> PathBuf {
 
 // ── Config writing ───────────────────────────────────────────────────────────
 
+/// Write a poly config file, creating parent directories as needed.
+/// On Unix the file is chmod'd to 0o600 and the parent directory to 0o700.
 #[allow(clippy::too_many_arguments)]
-fn write_config(
+pub fn write_config(
     path: &PathBuf,
     private_key: &str,
     api_key: &str,

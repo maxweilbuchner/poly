@@ -21,7 +21,7 @@ mod ui;
 mod events;
 mod keys;
 mod state;
-pub(crate) mod tasks;
+pub mod tasks;
 
 // Re-export public API so external `use crate::tui::*` paths keep working.
 pub use keys::{is_auth_error, root_menu_items};

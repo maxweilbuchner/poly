@@ -7,8 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Integration tests for the WebSocket order-book and user channels (5 tests): protocol framing, event emission, HTTP fallback on connect failure, disconnect handling. Tests run against a local in-process WS server.
+- End-to-end tests for the `poly setup` wizard core logic (20 tests): input validators (private key, Ethereum address, URL), config-file write/read round-trip, Unix file permissions (0600), `[tui]` section preservation, env-var precedence in `has_config`.
+- `setup::validate_private_key`, `setup::validate_eth_address`, `setup::validate_url` — pure validators extracted from the wizard's input loops.
+- `tasks::spawn_ws_order_book_at_url` and `tasks::spawn_ws_user_channel_at_url` — URL-parameterised variants of the WS spawners (the existing public functions still work; new variants exist for tests and future flexibility).
+
 ### Changed
 - Crate renamed to `poly-cli` for crates.io publication (the binary remains `poly`). Install with `cargo install poly-cli`.
+- Analytics tab loads markedly faster: preliminary stats render from cached DB state before any network round-trips, the six SQLite queries in `compute_analytics_stats` now run in parallel, and a new `market_peak_vol` table makes peak-volume lookups O(1) per row instead of O(snapshots).
 
 ## [0.3.3] - 2026-04-22
 

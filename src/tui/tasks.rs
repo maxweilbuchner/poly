@@ -443,12 +443,18 @@ pub fn spawn_compute_analytics(
     calibration_hours: u64,
 ) {
     tokio::spawn(async move {
+        // Render whatever's already in the DB immediately so the tab stops
+        // showing "Computing analytics…" before the network fetch finishes.
+        let stats = compute_analytics_stats(db_path.clone(), calibration_hours).await;
+        let _ = tx.send(AppEvent::AnalyticsComputed(Box::new(stats)));
+
         // ── Calibration price fetch ───────────────────────────────────────────
-        // Fetch CLOB price-history for up to 200 resolved markets that don't yet
-        // have a calibration price stored at the requested horizon.
+        // Fetch CLOB price-history for resolved markets that don't yet have a
+        // calibration price stored at the requested horizon. After the fetch
+        // completes (and only if any new prices arrived), recompute and resend.
         const CAL_BATCH: usize = 5_000;
         const CAL_CONCURRENCY: usize = 32;
-        if let Ok(unpriced) = {
+        let unpriced: Vec<(String, String, String)> = {
             let db = db_path.clone();
             let h = calibration_hours;
             tokio::task::spawn_blocking(move || {
@@ -457,63 +463,80 @@ pub fn spawn_compute_analytics(
             })
             .await
             .unwrap_or(Ok(vec![]))
-        } {
-            use futures_util::future::join_all;
-            let total_unpriced = unpriced.len();
-            let mut fetch_done = 0usize;
-            if total_unpriced > 0 {
-                let _ = tx.send(AppEvent::CalibrationFetchProgress(0, total_unpriced));
-            }
-            for chunk in unpriced.chunks(CAL_CONCURRENCY) {
-                let futs: Vec<_> = chunk
-                    .iter()
-                    .map(|(cid, token_id, end_date)| {
-                        let c = Arc::clone(&client);
-                        let cid = cid.clone();
-                        let token_id = token_id.clone();
-                        let end_date = end_date.clone();
-                        let hours = calibration_hours;
-                        async move {
-                            // Parse end_date to Unix timestamp.
-                            let end_ts = end_date
-                                .parse::<chrono::DateTime<chrono::Utc>>()
-                                .map(|dt| dt.timestamp())
-                                .unwrap_or(0);
-                            if end_ts == 0 {
-                                return None;
-                            }
-                            let price = c
-                                .get_calibration_price(&token_id, end_ts, hours)
-                                .await
-                                .ok()
-                                .flatten()?;
-                            Some((cid, price))
-                        }
-                    })
-                    .collect();
+            .unwrap_or_default()
+        };
 
-                let results = join_all(futs).await;
-                fetch_done += chunk.len();
-                let _ = tx.send(AppEvent::CalibrationFetchProgress(
-                    fetch_done,
-                    total_unpriced,
-                ));
-
-                let db = db_path.clone();
-                let h = calibration_hours;
-                let _: Result<rusqlite::Result<()>, _> = tokio::task::spawn_blocking(move || {
-                    let conn = crate::db::open(&db)?;
-                    for (cid, price) in results.into_iter().flatten() {
-                        let _ = crate::db::update_calibration_price(&conn, &cid, price, h);
-                    }
-                    rusqlite::Result::Ok(())
-                })
-                .await;
-            }
+        if unpriced.is_empty() {
+            return;
         }
 
-        let stats = compute_analytics_stats(db_path, calibration_hours).await;
-        let _ = tx.send(AppEvent::AnalyticsComputed(Box::new(stats)));
+        use futures_util::future::join_all;
+        let total_unpriced = unpriced.len();
+        let mut fetch_done = 0usize;
+        let mut new_prices_total = 0usize;
+        let _ = tx.send(AppEvent::CalibrationFetchProgress(0, total_unpriced));
+
+        for chunk in unpriced.chunks(CAL_CONCURRENCY) {
+            let futs: Vec<_> = chunk
+                .iter()
+                .map(|(cid, token_id, end_date)| {
+                    let c = Arc::clone(&client);
+                    let cid = cid.clone();
+                    let token_id = token_id.clone();
+                    let end_date = end_date.clone();
+                    let hours = calibration_hours;
+                    async move {
+                        // Parse end_date to Unix timestamp.
+                        let end_ts = end_date
+                            .parse::<chrono::DateTime<chrono::Utc>>()
+                            .map(|dt| dt.timestamp())
+                            .unwrap_or(0);
+                        if end_ts == 0 {
+                            return None;
+                        }
+                        let price = c
+                            .get_calibration_price(&token_id, end_ts, hours)
+                            .await
+                            .ok()
+                            .flatten()?;
+                        Some((cid, price))
+                    }
+                })
+                .collect();
+
+            let results = join_all(futs).await;
+            fetch_done += chunk.len();
+            let _ = tx.send(AppEvent::CalibrationFetchProgress(
+                fetch_done,
+                total_unpriced,
+            ));
+
+            let db = db_path.clone();
+            let h = calibration_hours;
+            let written: usize = tokio::task::spawn_blocking(move || -> usize {
+                let Ok(conn) = crate::db::open(&db) else {
+                    return 0;
+                };
+                let mut written = 0usize;
+                for (cid, price) in results.into_iter().flatten() {
+                    if crate::db::update_calibration_price(&conn, &cid, price, h).is_ok() {
+                        written += 1;
+                    }
+                }
+                written
+            })
+            .await
+            .unwrap_or(0);
+            new_prices_total += written;
+        }
+
+        if new_prices_total > 0 {
+            let stats = compute_analytics_stats(db_path, calibration_hours).await;
+            let _ = tx.send(AppEvent::AnalyticsComputed(Box::new(stats)));
+        } else {
+            // Still need to clear the calibration-fetch spinner.
+            let _ = tx.send(AppEvent::CalibrationFetchProgress(0, 0));
+        }
     });
 }
 
@@ -521,49 +544,73 @@ async fn compute_analytics_stats(
     db_path: std::path::PathBuf,
     calibration_hours: u64,
 ) -> AnalyticsStats {
-    tokio::task::spawn_blocking(move || {
-        let conn = match crate::db::open(&db_path) {
-            Ok(c) => c,
-            Err(_) => return AnalyticsStats::default(),
-        };
+    // Each query runs on its own connection in a separate blocking task. SQLite
+    // in WAL mode supports concurrent readers, so the slowest query (typically
+    // query_calibration_raw) no longer serializes behind the others.
+    let blocking = |f: Box<dyn FnOnce(&rusqlite::Connection) + Send>| {
+        let p = db_path.clone();
+        tokio::task::spawn_blocking(move || {
+            if let Ok(conn) = crate::db::open(&p) {
+                f(&conn);
+            }
+        })
+    };
 
-        let mut stats = AnalyticsStats::default();
+    use std::sync::Mutex;
+    let stats = Arc::new(Mutex::new(AnalyticsStats::default()));
 
-        // Charts A, B: per-market data from the latest snapshot run.
-        if let Ok(markets) = crate::db::query_latest_snapshot(&conn) {
-            stats.total_markets = markets.len();
+    // Charts A, B: per-market data from the latest snapshot run.
+    let s1 = Arc::clone(&stats);
+    let t1 = blocking(Box::new(move |conn| {
+        if let Ok(markets) = crate::db::query_latest_snapshot(conn) {
+            let mut s = s1.lock().unwrap();
+            s.total_markets = markets.len();
             for (_, volume, _liquidity, yes_price) in &markets {
-                stats.total_volume += volume;
+                s.total_volume += volume;
                 if let Some(&price) = yes_price.as_ref() {
                     if (0.01..=0.99).contains(&price) {
                         let b20 = ((price * 20.0) as usize).min(19);
-                        stats.prob_buckets[b20] += 1;
+                        s.prob_buckets[b20] += 1;
                     }
                 }
             }
         }
+    }));
 
-        // Chart C: resolution bias.
-        if let Ok((yes, no, other)) = crate::db::query_resolution_counts(&conn) {
-            stats.res_yes = yes;
-            stats.res_no = no;
-            stats.res_other = other;
+    // Chart B: resolution bias.
+    let s2 = Arc::clone(&stats);
+    let t2 = blocking(Box::new(move |conn| {
+        if let Ok((yes, no, other)) = crate::db::query_resolution_counts(conn) {
+            let mut s = s2.lock().unwrap();
+            s.res_yes = yes;
+            s.res_no = no;
+            s.res_other = other;
         }
+    }));
 
-        // Chart C: calibration curve.
-        if let Ok(cal) = crate::db::query_calibration(&conn, calibration_hours) {
-            stats.calibration = cal;
+    // Chart C: calibration curve.
+    let s3 = Arc::clone(&stats);
+    let t3 = blocking(Box::new(move |conn| {
+        if let Ok(cal) = crate::db::query_calibration(conn, calibration_hours) {
+            s3.lock().unwrap().calibration = cal;
         }
+    }));
 
-        // Chart D: price accuracy vs market volume.
-        if let Ok(evv) = crate::db::query_edge_vs_volume(&conn) {
-            stats.edge_vs_vol = evv;
+    // Chart D: price accuracy vs market volume.
+    let s4 = Arc::clone(&stats);
+    let t4 = blocking(Box::new(move |conn| {
+        if let Ok(evv) = crate::db::query_edge_vs_volume(conn) {
+            s4.lock().unwrap().edge_vs_vol = evv;
         }
+    }));
 
-        // Chart D: calibration fit per (category × volume tier).
-        if let Ok(rows) = crate::db::query_calibration_raw(&conn, calibration_hours) {
-            for (q, s, vol, yes_price, res) in rows {
-                let cat_idx = match market_category_from_parts(&q, &s) {
+    // Chart D: calibration fit per (category × volume tier).
+    let s5 = Arc::clone(&stats);
+    let t5 = blocking(Box::new(move |conn| {
+        if let Ok(rows) = crate::db::query_calibration_raw(conn, calibration_hours) {
+            let mut s = s5.lock().unwrap();
+            for (q, slug, vol, yes_price, res) in rows {
+                let cat_idx = match market_category_from_parts(&q, &slug) {
                     Some("Politics") => 0,
                     Some("Sports") => 1,
                     Some("Crypto") => 2,
@@ -583,7 +630,7 @@ async fn compute_analytics_stats(
                     4
                 };
                 let b = ((yes_price * 10.0) as usize).min(9);
-                let cell = &mut stats.calibration_matrix[cat_idx][tier];
+                let cell = &mut s.calibration_matrix[cat_idx][tier];
                 cell.buckets[b].1 += 1;
                 if res == "yes" {
                     cell.buckets[b].0 += 1;
@@ -591,17 +638,24 @@ async fn compute_analytics_stats(
                 cell.n += 1;
             }
         }
+    }));
 
-        // Keep high-confidence accuracy for potential future use.
-        if let Ok((correct, wrong)) = crate::db::query_high_confidence_accuracy(&conn) {
-            stats.hc_correct = correct;
-            stats.hc_wrong = wrong;
+    // High-confidence accuracy.
+    let s6 = Arc::clone(&stats);
+    let t6 = blocking(Box::new(move |conn| {
+        if let Ok((correct, wrong)) = crate::db::query_high_confidence_accuracy(conn) {
+            let mut s = s6.lock().unwrap();
+            s.hc_correct = correct;
+            s.hc_wrong = wrong;
         }
+    }));
 
-        stats
-    })
-    .await
-    .unwrap_or_default()
+    let _ = tokio::join!(t1, t2, t3, t4, t5, t6);
+
+    Arc::try_unwrap(stats)
+        .ok()
+        .and_then(|m| m.into_inner().ok())
+        .unwrap_or_default()
 }
 
 pub fn spawn_snapshot_markets(
@@ -874,14 +928,30 @@ pub fn spawn_ws_order_book(
     client: Arc<PolyClient>,
     tx: UnboundedSender<AppEvent>,
     token_ids: Vec<(String, String)>, // Vec<(outcome_name, token_id)>
+    cancel: watch::Receiver<bool>,
+) {
+    spawn_ws_order_book_at_url(
+        client,
+        tx,
+        token_ids,
+        cancel,
+        "wss://ws-subscriptions-clob.polymarket.com/ws/market".to_string(),
+    );
+}
+
+/// Same as [`spawn_ws_order_book`] but accepts a custom WebSocket URL.
+/// Exposed for integration tests so they can drive a local mock server.
+pub fn spawn_ws_order_book_at_url(
+    client: Arc<PolyClient>,
+    tx: UnboundedSender<AppEvent>,
+    token_ids: Vec<(String, String)>,
     mut cancel: watch::Receiver<bool>,
+    ws_url: String,
 ) {
     tokio::spawn(async move {
         use futures_util::{SinkExt, StreamExt};
         use serde::Deserialize;
         use tokio_tungstenite::{connect_async, tungstenite::Message};
-
-        const WS_URL: &str = "wss://ws-subscriptions-clob.polymarket.com/ws/market";
 
         #[derive(Deserialize)]
         struct WsBookEntry {
@@ -920,7 +990,7 @@ pub fn spawn_ws_order_book(
         // Uses a labeled block so any exit (initial failure or mid-session drop) falls through
         // to the HTTP polling fallback below.
         'ws: {
-            let ws_stream = match connect_async(WS_URL).await {
+            let ws_stream = match connect_async(ws_url.as_str()).await {
                 Ok((stream, _)) => stream,
                 Err(_) => break 'ws, // initial connect failed → go straight to HTTP fallback
             };
@@ -1037,14 +1107,28 @@ pub fn spawn_ws_order_book(
 pub fn spawn_ws_user_channel(
     auth: crate::auth::ClobAuth,
     tx: UnboundedSender<AppEvent>,
+    cancel: watch::Receiver<bool>,
+) {
+    spawn_ws_user_channel_at_url(
+        auth,
+        tx,
+        cancel,
+        "wss://ws-subscriptions-clob.polymarket.com/ws/user".to_string(),
+    );
+}
+
+/// Same as [`spawn_ws_user_channel`] but accepts a custom WebSocket URL.
+/// Exposed for integration tests so they can drive a local mock server.
+pub fn spawn_ws_user_channel_at_url(
+    auth: crate::auth::ClobAuth,
+    tx: UnboundedSender<AppEvent>,
     mut cancel: watch::Receiver<bool>,
+    ws_url: String,
 ) {
     tokio::spawn(async move {
         use futures_util::{SinkExt, StreamExt};
         use serde::Deserialize;
         use tokio_tungstenite::{connect_async, tungstenite::Message};
-
-        const WS_URL: &str = "wss://ws-subscriptions-clob.polymarket.com/ws/user";
 
         #[derive(Deserialize)]
         struct WsUserEvent {
@@ -1055,7 +1139,7 @@ pub fn spawn_ws_user_channel(
         }
 
         'ws: {
-            let ws_stream = match connect_async(WS_URL).await {
+            let ws_stream = match connect_async(ws_url.as_str()).await {
                 Ok((stream, _)) => stream,
                 Err(e) => {
                     tracing::warn!("user WS connect failed: {}", e);
