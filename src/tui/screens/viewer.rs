@@ -51,6 +51,11 @@ fn render_empty_prompt(f: &mut Frame, area: Rect) {
         Span::styled("/", Style::default().fg(theme::CYAN)),
         Span::styled(" to enter an address", Style::default().fg(theme::DIM)),
     ]));
+    lines.push(Line::from(""));
+    lines.push(Line::from(vec![Span::styled(
+        "Example: 0x123... or vitalik.eth",
+        Style::default().fg(theme::VERY_DIM),
+    )]));
 
     f.render_widget(
         Paragraph::new(lines).alignment(ratatui::layout::Alignment::Center),

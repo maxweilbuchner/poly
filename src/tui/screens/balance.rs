@@ -211,17 +211,22 @@ fn render_net_worth_chart(f: &mut Frame, area: Rect, app: &App) {
         .border_style(Style::default().fg(theme::BORDER))
         .style(Style::default().bg(theme::PANEL_BG));
 
-    if app.net_worth_history.len() < 3 {
-        let msg = if app.net_worth_history.is_empty() {
+    let data: Vec<(f64, f64)> = app
+        .net_worth_history
+        .iter()
+        .filter(|&&(_, y)| y > 0.0)
+        .copied()
+        .collect();
+
+    if data.len() < 3 {
+        let msg = if data.is_empty() {
             "Collecting data… first log in ~30s".to_string()
         } else {
-            format!(
-                "Collecting data… {}/3 points (logs every 10m)",
-                app.net_worth_history.len()
-            )
+            format!("Collecting data… {}/3 points (logs every 10m)", data.len())
         };
         let inner = block.inner(area);
         f.render_widget(block, area);
+
         f.render_widget(
             Paragraph::new(Line::from(vec![
                 Span::raw("  "),
@@ -231,8 +236,6 @@ fn render_net_worth_chart(f: &mut Frame, area: Rect, app: &App) {
         );
         return;
     }
-
-    let data = &app.net_worth_history;
 
     // Compute axis bounds.
     let x_min = data.first().map(|d| d.0).unwrap_or(0.0);
@@ -249,7 +252,7 @@ fn render_net_worth_chart(f: &mut Frame, area: Rect, app: &App) {
     let y_labels = make_value_labels(y_lo, y_hi);
 
     let datasets = vec![Dataset::default()
-        .data(data)
+        .data(&data)
         .graph_type(GraphType::Line)
         .marker(symbols::Marker::Braille)
         .style(Style::default().fg(theme::GREEN))];

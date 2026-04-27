@@ -7,7 +7,7 @@ use ratatui::{
 };
 
 use crate::tui::{market_category, theme, App};
-use crate::types::{Market, MarketStatus};
+use crate::types::Market;
 
 pub fn render(f: &mut Frame, area: Rect, app: &mut App) {
     let (list_area, search_area) = if app.search_mode || !app.search_query.is_empty() {
@@ -117,8 +117,8 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
                 theme::DIM
             }),
         ),
-    ])
-    .alignment(ratatui::layout::Alignment::Right);
+    ]);
+    // .alignment(ratatui::layout::Alignment::Right);
 
     let block = Block::bordered()
         .title(Span::styled(
@@ -127,9 +127,22 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
                 .fg(theme::CYAN)
                 .add_modifier(Modifier::BOLD),
         ))
-        .title(filters)
         .border_style(Style::default().fg(theme::BORDER))
         .style(Style::default().bg(theme::PANEL_BG));
+
+    let inner_area = block.inner(area);
+    f.render_widget(block, area);
+
+    let content_chunks = ratatui::layout::Layout::vertical([
+        ratatui::layout::Constraint::Length(1),
+        ratatui::layout::Constraint::Min(0),
+    ])
+    .split(inner_area);
+
+    f.render_widget(
+        ratatui::widgets::Paragraph::new(filters).alignment(ratatui::layout::Alignment::Right),
+        content_chunks[0],
+    );
 
     if filtered.is_empty() {
         let msg = if app.loading {
@@ -143,10 +156,10 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
         } else {
             "No markets found. Press r to refresh."
         };
-        let para = Paragraph::new(Span::styled(msg, Style::default().fg(theme::DIM)))
-            .block(block)
-            .style(Style::default().bg(theme::PANEL_BG));
-        f.render_widget(para, area);
+        let para =
+            ratatui::widgets::Paragraph::new(Span::styled(msg, Style::default().fg(theme::DIM)))
+                .style(Style::default().bg(theme::PANEL_BG));
+        f.render_widget(para, content_chunks[1]);
         return;
     }
 
@@ -162,16 +175,15 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
         .collect();
 
     let list = List::new(items)
-        .block(block)
         .highlight_style(
             Style::default()
-                .bg(Color::Rgb(32, 38, 72))
-                .fg(Color::Rgb(255, 255, 255))
+                .bg(ratatui::style::Color::Rgb(32, 38, 72))
+                .fg(ratatui::style::Color::Rgb(255, 255, 255))
                 .add_modifier(Modifier::BOLD),
         )
         .highlight_symbol("▸ ");
 
-    f.render_stateful_widget(list, area, &mut app.market_list_state);
+    f.render_stateful_widget(list, content_chunks[1], &mut app.market_list_state);
 }
 
 fn build_item(
@@ -201,12 +213,6 @@ fn build_item(
     let end_info = format_end(m.end_date.as_deref());
     let cat = market_category(m);
 
-    let (status_color, status_dot) = match m.status {
-        MarketStatus::Active => (theme::GREEN, "●"),
-        MarketStatus::Closed => (theme::RED, "●"),
-        MarketStatus::Unknown => (theme::VERY_DIM, "○"),
-    };
-
     let mut spans: Vec<Span> = vec![
         Span::raw("  "),
         Span::styled(vol, Style::default().fg(theme::YELLOW)),
@@ -235,8 +241,6 @@ fn build_item(
             spans.push(Span::styled(badge, Style::default().fg(badge_color)));
         }
     }
-    spans.push(Span::styled("  ", Style::default()));
-    spans.push(Span::styled(status_dot, Style::default().fg(status_color)));
 
     let line2 = Line::from(spans);
 

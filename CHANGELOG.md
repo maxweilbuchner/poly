@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Removed ambiguous colored status dots from market lists.
+- Moved market filters into a dedicated sub-header row for improved scannability.
+
+### Fixed
+- Balance chart now ignores $0 data points to prevent misleading massive drops in net worth.
+- Added an example address hint to the Viewer tab empty state.
+
 ## [0.4.2] - 2026-04-27
 
 ### Changed
