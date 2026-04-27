@@ -250,6 +250,9 @@ pub struct AnalyticsStats {
     pub calibration: [(usize, usize); 10],
     /// D — calibration per (category × volume tier). See CALIB_CATEGORIES / CALIB_VOL_TIERS.
     pub calibration_matrix: [[CalibCell; 5]; 6],
+    /// E — most-accurate recurring series at the current calibration horizon:
+    /// `(group_slug, total_markets, correct_predictions)`, ordered by accuracy DESC.
+    pub recurring_accuracy: Vec<(String, usize, usize)>,
 }
 
 // ── App state ─────────────────────────────────────────────────────────────────
@@ -909,6 +912,10 @@ pub enum AppEvent {
 
     /// Calibration price fetch progress: (fetched_so_far, total_pending).
     CalibrationFetchProgress(usize, usize),
+
+    /// Group-slug backfill (for the Most Accurate Recurring Series panel) finished.
+    /// Argument is the number of resolution rows that received a non-empty group_slug.
+    GroupSlugBackfillComplete(usize),
 
     /// Startup credential probe result.
     /// `None` = credentials absent or valid; `Some(msg)` = present but rejected by API.

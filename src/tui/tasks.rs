@@ -650,7 +650,16 @@ async fn compute_analytics_stats(
         }
     }));
 
-    let _ = tokio::join!(t1, t2, t3, t4, t5, t6);
+    // Most-accurate recurring series at the current calibration horizon.
+    // Constants: at least 5 resolved markets per series, top 10 series shown.
+    let s7 = Arc::clone(&stats);
+    let t7 = blocking(Box::new(move |conn| {
+        if let Ok(rows) = crate::db::query_recurring_accuracy(conn, calibration_hours, 5, 10) {
+            s7.lock().unwrap().recurring_accuracy = rows;
+        }
+    }));
+
+    let _ = tokio::join!(t1, t2, t3, t4, t5, t6, t7);
 
     Arc::try_unwrap(stats)
         .ok()
@@ -812,6 +821,7 @@ pub fn spawn_snapshot_markets(
                                 resolution: r.resolution.clone(),
                                 last_trade_price: r.last_trade_price,
                                 clob_token_id: r.clob_token_id.clone(),
+                                group_slug: r.group_slug.clone(),
                             });
                             seen_in_run.insert(r.condition_id.clone());
                             new_this_page += 1;
@@ -827,6 +837,7 @@ pub fn spawn_snapshot_markets(
                                 resolution: r.resolution.clone(),
                                 last_trade_price: r.last_trade_price,
                                 clob_token_id: r.clob_token_id.clone(),
+                                group_slug: r.group_slug.clone(),
                             });
                             backfill_this_page += 1;
                         }
@@ -900,6 +911,7 @@ pub fn spawn_snapshot_markets(
                     resolution: mr.resolution.clone(),
                     last_trade_price: mr.last_trade_price,
                     clob_token_id: mr.clob_token_id.clone(),
+                    group_slug: mr.group_slug.clone(),
                 });
             }
         }
@@ -1321,5 +1333,104 @@ pub fn spawn_cancel_all(client: Arc<PolyClient>, tx: UnboundedSender<AppEvent>) 
                 let _ = tx.send(AppEvent::Error(e));
             }
         }
+    });
+}
+
+/// Backfills `group_slug` on existing `resolutions` rows that pre-date the column.
+///
+/// One-shot task spawned at TUI startup. Reads up to `BACKFILL_CAP` resolutions
+/// with empty `group_slug`, fetches each one from Gamma in parallel chunks
+/// (re-using the client's request throttle), and writes any non-empty group_slug
+/// values back. Idempotent: a second run picks up rows the first run didn't fill.
+///
+/// Sends `GroupSlugBackfillComplete(filled_count)` on completion (even if zero).
+pub fn spawn_backfill_group_slugs(
+    client: Arc<PolyClient>,
+    tx: UnboundedSender<AppEvent>,
+    db_path: std::path::PathBuf,
+) {
+    tokio::spawn(async move {
+        use futures_util::future::join_all;
+        const BACKFILL_CAP: usize = 1_000;
+        const CONCURRENCY: usize = 16;
+
+        // Pull pending condition_ids off the DB on a blocking thread.
+        let db_p = db_path.clone();
+        let pending: Vec<String> = match tokio::task::spawn_blocking(move || {
+            let conn = crate::db::open(&db_p)?;
+            let mut stmt = conn.prepare(
+                "SELECT condition_id FROM resolutions
+                 WHERE group_slug = ''
+                 ORDER BY end_date DESC
+                 LIMIT ?1",
+            )?;
+            let ids: Vec<String> = stmt
+                .query_map(rusqlite::params![BACKFILL_CAP as i64], |r| {
+                    r.get::<_, String>(0)
+                })?
+                .filter_map(|r| r.ok())
+                .collect();
+            Ok::<_, rusqlite::Error>(ids)
+        })
+        .await
+        {
+            Ok(Ok(v)) => v,
+            _ => {
+                let _ = tx.send(AppEvent::GroupSlugBackfillComplete(0));
+                return;
+            }
+        };
+
+        if pending.is_empty() {
+            let _ = tx.send(AppEvent::GroupSlugBackfillComplete(0));
+            return;
+        }
+
+        // Fan out Gamma lookups in chunks. The client's internal semaphore
+        // throttles total concurrent in-flight requests.
+        let mut updates: Vec<(String, String)> = Vec::new();
+        for chunk in pending.chunks(CONCURRENCY) {
+            let futs: Vec<_> = chunk
+                .iter()
+                .map(|cid| {
+                    let c = Arc::clone(&client);
+                    let cid = cid.clone();
+                    async move {
+                        let res = c.get_market_resolution(&cid).await;
+                        (cid, res)
+                    }
+                })
+                .collect();
+
+            for (cid, res) in join_all(futs).await {
+                if let Ok(Some(mr)) = res {
+                    if !mr.group_slug.is_empty() {
+                        updates.push((cid, mr.group_slug));
+                    }
+                }
+            }
+        }
+
+        let filled = updates.len();
+        if filled > 0 {
+            let db_p = db_path.clone();
+            let _ = tokio::task::spawn_blocking(move || -> rusqlite::Result<()> {
+                let mut conn = crate::db::open(&db_p)?;
+                let tx = conn.transaction()?;
+                {
+                    let mut stmt = tx.prepare_cached(
+                        "UPDATE resolutions SET group_slug = ?1
+                         WHERE condition_id = ?2 AND group_slug = ''",
+                    )?;
+                    for (cid, slug) in &updates {
+                        let _ = stmt.execute(rusqlite::params![slug, cid]);
+                    }
+                }
+                tx.commit()
+            })
+            .await;
+        }
+
+        let _ = tx.send(AppEvent::GroupSlugBackfillComplete(filled));
     });
 }

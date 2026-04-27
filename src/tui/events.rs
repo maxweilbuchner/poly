@@ -330,6 +330,20 @@ pub(super) fn handle_event(
             app.calibration_fetch_total = total;
         }
 
+        AppEvent::GroupSlugBackfillComplete(filled) => {
+            // Only re-run analytics if we actually wrote new group_slug values —
+            // a 0-filled completion means we have nothing new to surface.
+            if filled > 0 && !app.analytics_loading {
+                app.analytics_loading = true;
+                tasks::spawn_compute_analytics(
+                    app.db_path.clone(),
+                    tx.clone(),
+                    Arc::clone(&client),
+                    app.calibration_hours,
+                );
+            }
+        }
+
         AppEvent::ResolutionsUpdated(new_count, new_ids) => {
             app.resolutions_new_last_run = new_count;
             for id in new_ids {

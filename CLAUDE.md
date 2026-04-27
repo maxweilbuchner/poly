@@ -107,8 +107,16 @@ Search and order book commands work without credentials.
 
 ## Workflow
 
-- After completing a task, always commit and push to GitLab (`git push origin main`).
-- Run `cargo fmt` before committing to avoid CI failures.
+- After completing a task, always commit and push to GitLab (`git push origin main`) **autonomously** — do not ask the user to confirm. They have pre-authorised this for every task in this repo.
+- Write the commit message yourself (no "draft this for approval" round-trip). Best practices to follow:
+  - **Subject line**: imperative mood, ≤72 chars, lowercase Conventional-Commit prefix (`feat:`, `fix:`, `refactor:`, `docs:`, `chore:`, `test:`, `perf:`). Match the prefix to the change — only `feat:` for user-visible new behavior.
+  - **Body** (when non-trivial): blank line after subject, then 1–3 short sentences focused on *why*, not *what*. Skip the body entirely for one-line cosmetic changes.
+  - **Match repo style**: scan recent `git log --oneline` and mirror tone/format.
+  - **No `Co-Authored-By: Claude` trailer** in this repo.
+  - **Stage explicitly** (`git add <paths>`) — never `git add -A` / `git add .`. Don't stage files you didn't touch in this task.
+- Run `cargo fmt` before committing to avoid CI failures. Run the full CI gate locally (`cargo fmt -- --check && cargo clippy --all-targets -- -D warnings -A clippy::uninlined_format_args && cargo test --all-targets`) when the change is non-trivial.
+- Push immediately after the commit succeeds (`git push origin main`). Don't batch multiple unrelated tasks into one commit — one logical change per commit.
+- If a pre-commit hook fails, fix the underlying issue and create a **new** commit. Never `--amend` or `--no-verify` without an explicit user request.
 - CI runs `cargo fmt -- --check`, `cargo clippy --all-targets -- -D warnings -A clippy::uninlined_format_args`, and `cargo test --all-targets`.
 
 ## Releasing

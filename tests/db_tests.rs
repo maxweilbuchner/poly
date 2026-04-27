@@ -36,6 +36,7 @@ fn resolution(cid: &str, res: &str) -> ResolutionRow {
         resolution: res.to_string(),
         last_trade_price: None,
         clob_token_id: None,
+        group_slug: String::new(),
     }
 }
 
@@ -177,6 +178,7 @@ fn insert_resolutions_backfills_nullable_columns() {
         resolution: "Yes".to_string(),
         last_trade_price: Some(0.95),
         clob_token_id: Some("tok123".to_string()),
+        group_slug: String::new(),
     }];
     db::insert_resolutions(&mut conn, &rows2).unwrap();
 
@@ -354,6 +356,7 @@ fn update_and_query_calibration_price() {
         resolution: "Yes".to_string(),
         last_trade_price: None,
         clob_token_id: Some("tok999".to_string()),
+        group_slug: String::new(),
     }];
     db::insert_resolutions(&mut conn, &rows).unwrap();
 
@@ -390,6 +393,7 @@ fn calibration_buckets_with_stored_prices() {
             resolution: "Yes".to_string(),
             last_trade_price: None,
             clob_token_id: Some("t1".to_string()),
+            group_slug: String::new(),
         },
         ResolutionRow {
             condition_id: "0xc2".to_string(),
@@ -399,6 +403,7 @@ fn calibration_buckets_with_stored_prices() {
             resolution: "No".to_string(),
             last_trade_price: None,
             clob_token_id: Some("t2".to_string()),
+            group_slug: String::new(),
         },
     ];
     db::insert_resolutions(&mut conn, &rows).unwrap();
@@ -437,6 +442,7 @@ fn edge_vs_volume_tiers() {
         resolution: "Yes".to_string(),
         last_trade_price: None,
         clob_token_id: Some("t1".to_string()),
+        group_slug: String::new(),
     }];
     db::insert_resolutions(&mut conn, &rows).unwrap();
     db::update_calibration_price(&conn, "0xvol", 0.70, 3).unwrap();
@@ -586,4 +592,149 @@ fn migrate_handles_quoted_csv_fields() {
         )
         .unwrap();
     assert_eq!(q, "Will it rain, tomorrow?");
+}
+
+// ── query_recurring_accuracy ────────────────────────────────────────────────
+
+/// Helper that produces a resolution row already tagged with a `group_slug`.
+fn resolution_in_group(cid: &str, res: &str, group_slug: &str) -> ResolutionRow {
+    ResolutionRow {
+        condition_id: cid.to_string(),
+        question: format!("Q {}", cid),
+        slug: format!("slug-{}", cid),
+        end_date: "2025-06-01T12:00:00Z".to_string(),
+        resolution: res.to_string(),
+        last_trade_price: None,
+        clob_token_id: Some(format!("tok-{}", cid)),
+        group_slug: group_slug.to_string(),
+    }
+}
+
+#[test]
+fn recurring_accuracy_orders_groups_by_correctness_then_size() {
+    let (mut conn, _) = temp_db();
+
+    // Group A: 5/5 correct (perfect series)
+    //   - 3 markets resolved YES with calibration price > 0.5
+    //   - 2 markets resolved NO  with calibration price < 0.5
+    // Group B: 4/5 correct (one wrong call)
+    // Group C: only 4 markets total → filtered out by min_markets=5
+    let rows = vec![
+        // Group A
+        resolution_in_group("0xa1", "Yes", "group-a"),
+        resolution_in_group("0xa2", "Yes", "group-a"),
+        resolution_in_group("0xa3", "Yes", "group-a"),
+        resolution_in_group("0xa4", "No", "group-a"),
+        resolution_in_group("0xa5", "No", "group-a"),
+        // Group B
+        resolution_in_group("0xb1", "Yes", "group-b"),
+        resolution_in_group("0xb2", "Yes", "group-b"),
+        resolution_in_group("0xb3", "No", "group-b"),
+        resolution_in_group("0xb4", "No", "group-b"),
+        resolution_in_group("0xb5", "Yes", "group-b"), // wrong call below
+        // Group C — should be filtered out
+        resolution_in_group("0xc1", "Yes", "group-c"),
+        resolution_in_group("0xc2", "Yes", "group-c"),
+        resolution_in_group("0xc3", "No", "group-c"),
+        resolution_in_group("0xc4", "No", "group-c"),
+    ];
+    db::insert_resolutions(&mut conn, &rows).unwrap();
+
+    // Group A: all five predictions correct.
+    db::update_calibration_price(&conn, "0xa1", 0.85, 3).unwrap();
+    db::update_calibration_price(&conn, "0xa2", 0.72, 3).unwrap();
+    db::update_calibration_price(&conn, "0xa3", 0.55, 3).unwrap();
+    db::update_calibration_price(&conn, "0xa4", 0.20, 3).unwrap();
+    db::update_calibration_price(&conn, "0xa5", 0.30, 3).unwrap();
+
+    // Group B: four correct, one wrong (0xb5: predicted NO at 0.20 but resolved YES).
+    db::update_calibration_price(&conn, "0xb1", 0.85, 3).unwrap();
+    db::update_calibration_price(&conn, "0xb2", 0.65, 3).unwrap();
+    db::update_calibration_price(&conn, "0xb3", 0.20, 3).unwrap();
+    db::update_calibration_price(&conn, "0xb4", 0.30, 3).unwrap();
+    db::update_calibration_price(&conn, "0xb5", 0.20, 3).unwrap(); // wrong
+
+    // Group C: doesn't matter, won't appear (only 4 markets).
+    db::update_calibration_price(&conn, "0xc1", 0.90, 3).unwrap();
+    db::update_calibration_price(&conn, "0xc2", 0.90, 3).unwrap();
+    db::update_calibration_price(&conn, "0xc3", 0.10, 3).unwrap();
+    db::update_calibration_price(&conn, "0xc4", 0.10, 3).unwrap();
+
+    let result = db::query_recurring_accuracy(&conn, 3, 5, 10).unwrap();
+
+    assert_eq!(result.len(), 2, "group-c filtered by min_markets=5");
+    assert_eq!(result[0], ("group-a".to_string(), 5, 5));
+    assert_eq!(result[1], ("group-b".to_string(), 5, 4));
+}
+
+#[test]
+fn recurring_accuracy_excludes_empty_group_slug() {
+    let (mut conn, _) = temp_db();
+
+    // Five resolved markets with empty group_slug → never returned.
+    let mut rows: Vec<ResolutionRow> = (0..5)
+        .map(|i| resolution(&format!("0xn{}", i), "Yes"))
+        .collect();
+    // Plus five in a real group, all correct.
+    rows.extend((0..5).map(|i| resolution_in_group(&format!("0xg{}", i), "Yes", "real-group")));
+    db::insert_resolutions(&mut conn, &rows).unwrap();
+
+    for i in 0..5 {
+        db::update_calibration_price(&conn, &format!("0xn{}", i), 0.80, 3).unwrap();
+        db::update_calibration_price(&conn, &format!("0xg{}", i), 0.80, 3).unwrap();
+    }
+
+    let result = db::query_recurring_accuracy(&conn, 3, 5, 10).unwrap();
+    assert_eq!(result.len(), 1);
+    assert_eq!(result[0], ("real-group".to_string(), 5, 5));
+}
+
+#[test]
+fn recurring_accuracy_uses_snapshot_fallback_when_no_calibration_price() {
+    let (mut conn, _) = temp_db();
+
+    // Five markets, all in same group, end_date in 2025-06-01, with snapshots
+    // taken 4 hours before close (i.e. -4h ≤ -3h, so they qualify as a 3h-fallback).
+    let cids: Vec<String> = (0..5).map(|i| format!("0xs{}", i)).collect();
+    let rows: Vec<_> = cids
+        .iter()
+        .enumerate()
+        .map(|(i, cid)| {
+            let mut r =
+                resolution_in_group(cid, if i % 2 == 0 { "Yes" } else { "No" }, "snapshot-group");
+            // Resolutions from the helper carry no calibration_price — fallback path will hit.
+            r.clob_token_id = None;
+            r
+        })
+        .collect();
+    db::insert_resolutions(&mut conn, &rows).unwrap();
+
+    // Snapshot 4h before close (end_date = 2025-06-01T12:00:00Z → snapshot at 08:00).
+    // Even-indexed markets resolve YES with yes_price 0.80 (correct).
+    // Odd-indexed  markets resolve NO  with yes_price 0.20 (correct).
+    let snaps: Vec<_> = cids
+        .iter()
+        .enumerate()
+        .map(|(i, cid)| {
+            let price = if i % 2 == 0 { 0.80 } else { 0.20 };
+            SnapshotRow {
+                snapshot_at: "2025-06-01T08:00:00Z".to_string(),
+                condition_id: cid.clone(),
+                question: format!("Q {}", cid),
+                slug: format!("slug-{}", cid),
+                category: "test".to_string(),
+                status: "Closed".to_string(),
+                end_date: "2025-06-01T12:00:00Z".to_string(),
+                volume: 10000.0,
+                liquidity: 5000.0,
+                outcome: "Yes".to_string(),
+                price,
+            }
+        })
+        .collect();
+    db::insert_snapshots(&mut conn, &snaps).unwrap();
+
+    let result = db::query_recurring_accuracy(&conn, 3, 5, 10).unwrap();
+    assert_eq!(result.len(), 1);
+    assert_eq!(result[0], ("snapshot-group".to_string(), 5, 5));
 }

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Analytics tab gains a "Most Accurate Recurring Series" panel: ranks Polymarket recurring series (by `group_slug`) by directional prediction accuracy at the configured calibration horizon (3 / 6 / 9 / 12 h, cycled with `t`). Series need ≥5 resolved binary markets to qualify; the top 10 are shown.
+- One-shot `group_slug` backfill on TUI startup re-fetches the series identifier from Gamma for resolutions stored before the column existed (idempotent, capped at 1000 rows per run).
+- `db::query_recurring_accuracy` plus 3 integration tests covering ordering by accuracy, the empty-group_slug filter, and the snapshot-fallback path.
+
+### Changed
+- Analytics layout switches from 2×2 to a 3-row grid (40 / 40 / 20%) to make room for the new panel; the existing four panels keep their positions.
+- `resolutions` table grows a `group_slug TEXT NOT NULL DEFAULT ''` column; `MarketResolution` and `ResolutionRow` carry it through. Migration is automatic on next launch.
+
 ## [0.4.0] - 2026-04-26
 
 ### Added

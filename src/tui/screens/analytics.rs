@@ -64,21 +64,27 @@ pub fn render(f: &mut Frame, area: Rect, app: &App) {
     }
 
     // ── Chart grid ────────────────────────────────────────────────────────────
-    // Row 0 (50%): [A: Prob Distribution] | [B: Resolution Bias]
-    // Row 1 (50%): [C: Calibration      ] | [D: Volume by Cat  ]
-    let chart_rows = Layout::vertical([Constraint::Percentage(50), Constraint::Percentage(50)])
-        .split(charts_area);
+    // Row 0 (40%): [A: Prob Distribution] | [B: Resolution Bias]
+    // Row 1 (40%): [C: Calibration      ] | [D: Volume by Cat  ]
+    // Row 2 (20%): [E: Most Accurate Recurring Series — full width]
+    let chart_rows = Layout::vertical([
+        Constraint::Percentage(40),
+        Constraint::Percentage(40),
+        Constraint::Percentage(20),
+    ])
+    .split(charts_area);
 
     let top_cols = Layout::horizontal([Constraint::Percentage(50), Constraint::Percentage(50)])
         .split(chart_rows[0]);
 
-    let bot_cols = Layout::horizontal([Constraint::Percentage(50), Constraint::Percentage(50)])
+    let mid_cols = Layout::horizontal([Constraint::Percentage(50), Constraint::Percentage(50)])
         .split(chart_rows[1]);
 
     render_prob_distribution(f, top_cols[0], app, false);
     render_resolution_bias(f, top_cols[1], app, false);
-    render_high_confidence(f, bot_cols[0], app, false);
-    render_calibration_matrix(f, bot_cols[1], app, false);
+    render_high_confidence(f, mid_cols[0], app, false);
+    render_calibration_matrix(f, mid_cols[1], app, false);
+    render_recurring_accuracy(f, chart_rows[2], app, false);
 }
 
 // ── Collapsed 1-line status strip ────────────────────────────────────────────
@@ -1139,4 +1145,100 @@ fn render_high_confidence(f: &mut Frame, area: Rect, app: &App, focused: bool) {
         );
 
     f.render_widget(chart, area);
+}
+
+// ── E: Most-accurate recurring series ────────────────────────────────────────
+
+fn render_recurring_accuracy(f: &mut Frame, area: Rect, app: &App, focused: bool) {
+    let title = format!(
+        " E: Most Accurate Recurring Series (−{}h before close, ≥5 markets) ",
+        app.calibration_hours
+    );
+
+    let Some(stats) = &app.analytics_stats else {
+        f.render_widget(
+            empty_state("loading…").block(make_block(&title, focused)),
+            area,
+        );
+        return;
+    };
+
+    if stats.recurring_accuracy.is_empty() {
+        f.render_widget(
+            empty_state("No qualifying series yet — need ≥5 resolved markets per group_slug.")
+                .block(make_block(&title, focused)),
+            area,
+        );
+        return;
+    }
+
+    // Available rows after the bordered block (top + bottom border = 2 lines).
+    let visible_rows = area.height.saturating_sub(2) as usize;
+    let max_rank_width = stats.recurring_accuracy.len().to_string().len();
+    let max_slug_width = stats
+        .recurring_accuracy
+        .iter()
+        .map(|(slug, _, _)| slug.chars().count())
+        .max()
+        .unwrap_or(0)
+        .min(48);
+
+    let lines: Vec<Line> = stats
+        .recurring_accuracy
+        .iter()
+        .take(visible_rows)
+        .enumerate()
+        .map(|(i, (slug, total, correct))| {
+            let pct = if *total > 0 {
+                (*correct as f64) / (*total as f64) * 100.0
+            } else {
+                0.0
+            };
+            let color = if pct >= 80.0 {
+                theme::GREEN
+            } else if pct >= 60.0 {
+                theme::YELLOW
+            } else {
+                theme::RED
+            };
+            // Truncate overlong slugs with an ellipsis.
+            let display_slug: String = if slug.chars().count() > max_slug_width {
+                let mut s: String = slug
+                    .chars()
+                    .take(max_slug_width.saturating_sub(1))
+                    .collect();
+                s.push('…');
+                s
+            } else {
+                slug.clone()
+            };
+            Line::from(vec![
+                Span::raw("  "),
+                Span::styled(
+                    format!("{:>width$}.", i + 1, width = max_rank_width),
+                    Style::default().fg(theme::DIM),
+                ),
+                Span::raw(" "),
+                Span::styled(
+                    format!("{:<width$}", display_slug, width = max_slug_width),
+                    Style::default().fg(theme::CYAN),
+                ),
+                Span::raw("  "),
+                Span::styled(
+                    format!("{:>5.1}%", pct),
+                    Style::default().fg(color).add_modifier(Modifier::BOLD),
+                ),
+                Span::raw("  "),
+                Span::styled(
+                    format!("({}/{})", correct, total),
+                    Style::default().fg(theme::DIM),
+                ),
+            ])
+        })
+        .collect();
+
+    f.render_widget(
+        Paragraph::new(lines).block(make_block(&title, focused)),
+        area,
+    );
 }

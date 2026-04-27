@@ -60,7 +60,7 @@ Running `poly` with no subcommand opens the interactive dashboard.
 | Markets | `1` | Browse, search, filter, and star markets |
 | Positions | `2` | View open positions and orders, close/cancel/redeem |
 | Balance | `3` | Cash, allowance, positions, net worth summary + chart |
-| Analytics | `4` | Prediction calibration curves, resolution stats, calibration matrix |
+| Analytics | `4` | Calibration curves, resolution stats, calibration matrix, most-accurate recurring series |
 | Viewer | `5` | Browse any wallet's portfolio by address |
 
 ### Key Bindings

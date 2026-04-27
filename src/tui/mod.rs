@@ -234,6 +234,10 @@ async fn run_app(
     // if previous sessions logged data.
     tasks::spawn_load_net_worth_history(tx.clone(), app.db_path.clone());
 
+    // One-shot backfill of resolutions.group_slug for rows written before that
+    // column existed. Powers the "Most Accurate Recurring Series" panel.
+    tasks::spawn_backfill_group_slugs(Arc::clone(&client), tx.clone(), app.db_path.clone());
+
     loop {
         if let Err(e) = terminal.draw(|f| ui::render(f, &mut app)) {
             return (Err(AppError::other(e)), app.setup_complete);

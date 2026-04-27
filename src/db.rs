@@ -51,7 +51,8 @@ CREATE TABLE IF NOT EXISTS resolutions (
     last_trade_price  REAL,
     clob_token_id     TEXT,
     calibration_price REAL,
-    calibration_hours INTEGER
+    calibration_hours INTEGER,
+    group_slug        TEXT NOT NULL DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS net_worth_log (
@@ -89,6 +90,10 @@ pub fn open(path: &Path) -> rusqlite::Result<Connection> {
     );
     let _ = conn.execute(
         "ALTER TABLE resolutions ADD COLUMN calibration_hours INTEGER",
+        [],
+    );
+    let _ = conn.execute(
+        "ALTER TABLE resolutions ADD COLUMN group_slug TEXT NOT NULL DEFAULT ''",
         [],
     );
 
@@ -135,6 +140,8 @@ pub struct ResolutionRow {
     pub last_trade_price: Option<f64>,
     /// CLOB Yes-token ID; used to fetch `prices-history` for calibration.
     pub clob_token_id: Option<String>,
+    /// Polymarket recurring-series identifier; empty for one-off markets.
+    pub group_slug: String,
 }
 
 // ── Writes ─────────────────────────────────────────────────────────────────────
@@ -190,15 +197,18 @@ pub fn insert_resolutions(
     {
         let mut stmt_insert = tx.prepare_cached(
             "INSERT OR IGNORE INTO resolutions
-             (condition_id,question,slug,end_date,resolution,last_trade_price,clob_token_id)
-             VALUES (?1,?2,?3,?4,?5,?6,?7)",
+             (condition_id,question,slug,end_date,resolution,last_trade_price,clob_token_id,group_slug)
+             VALUES (?1,?2,?3,?4,?5,?6,?7,?8)",
         )?;
-        // Backfill nullable columns on rows that pre-date these fields.
+        // Backfill nullable / defaulted columns on rows that pre-date these fields.
+        // group_slug uses NULLIF so an empty incoming value never overwrites a previously
+        // populated one, but a populated incoming value fills in old rows.
         let mut stmt_backfill = tx.prepare_cached(
             "UPDATE resolutions SET
                last_trade_price = COALESCE(last_trade_price, ?1),
-               clob_token_id    = COALESCE(clob_token_id,    ?2)
-             WHERE condition_id = ?3",
+               clob_token_id    = COALESCE(clob_token_id,    ?2),
+               group_slug       = CASE WHEN group_slug = '' THEN COALESCE(NULLIF(?3, ''), '') ELSE group_slug END
+             WHERE condition_id = ?4",
         )?;
         for r in rows {
             new_count += stmt_insert.execute(params![
@@ -208,12 +218,15 @@ pub fn insert_resolutions(
                 r.end_date,
                 r.resolution,
                 r.last_trade_price,
-                r.clob_token_id
+                r.clob_token_id,
+                r.group_slug
             ])?;
-            if r.last_trade_price.is_some() || r.clob_token_id.is_some() {
+            if r.last_trade_price.is_some() || r.clob_token_id.is_some() || !r.group_slug.is_empty()
+            {
                 let _ = stmt_backfill.execute(params![
                     r.last_trade_price,
                     r.clob_token_id,
+                    r.group_slug,
                     r.condition_id
                 ]);
             }
@@ -464,6 +477,77 @@ pub fn query_calibration(
     Ok(buckets)
 }
 
+/// Per-series directional accuracy at the requested horizon.
+///
+/// For each `group_slug` (recurring market series like "nfl-week-12-winners"),
+/// counts how many of its resolved binary markets had the correct directional
+/// prediction `hours_before` hours before close: predicted YES iff `yes_price >= 0.5`.
+///
+/// Price priority matches `query_calibration`:
+///   1. stored `calibration_price` (when `calibration_hours` matches)
+///   2. fallback: latest snapshot at least `hours_before` hours before `end_date`.
+///
+/// Series with fewer than `min_markets` qualifying rows are filtered out.
+/// Returns up to `limit` rows as `(group_slug, total, correct)`, ordered by
+/// accuracy descending then sample size descending.
+pub fn query_recurring_accuracy(
+    conn: &Connection,
+    hours_before: u64,
+    min_markets: usize,
+    limit: usize,
+) -> rusqlite::Result<Vec<(String, usize, usize)>> {
+    let modifier = format!("-{} hours", hours_before);
+    let sql = "
+        WITH candidates AS (
+            SELECT r.group_slug,
+                   COALESCE(
+                       CASE WHEN r.calibration_hours = ?1 THEN r.calibration_price END,
+                       (SELECT s.price FROM snapshots s
+                        WHERE s.condition_id = r.condition_id
+                          AND s.outcome = 'Yes'
+                          AND s.end_date != ''
+                          AND datetime(s.snapshot_at) <= datetime(s.end_date, ?2)
+                        ORDER BY s.snapshot_at DESC LIMIT 1)
+                   ) AS yes_price,
+                   LOWER(r.resolution) AS res
+            FROM resolutions r
+            WHERE r.group_slug != ''
+              AND LOWER(r.resolution) IN ('yes','no')
+        )
+        SELECT group_slug,
+               COUNT(*) AS total,
+               SUM(CASE
+                     WHEN (yes_price >= 0.5 AND res = 'yes')
+                       OR (yes_price <  0.5 AND res = 'no')
+                     THEN 1 ELSE 0
+                   END) AS correct
+        FROM candidates
+        WHERE yes_price BETWEEN 0.01 AND 0.99
+        GROUP BY group_slug
+        HAVING total >= ?3
+        ORDER BY (CAST(correct AS REAL) / total) DESC,
+                 total DESC
+        LIMIT ?4
+    ";
+    let mut stmt = conn.prepare(sql)?;
+    let rows = stmt.query_map(
+        params![
+            hours_before as i64,
+            modifier,
+            min_markets as i64,
+            limit as i64
+        ],
+        |r| {
+            Ok((
+                r.get::<_, String>(0)?,
+                r.get::<_, i64>(1)? as usize,
+                r.get::<_, i64>(2)? as usize,
+            ))
+        },
+    )?;
+    Ok(rows.filter_map(|r| r.ok()).collect())
+}
+
 /// Raw rows for the per-category × per-volume calibration matrix (Chart D).
 ///
 /// One row per resolved binary market with a usable YES-price at the requested
@@ -688,6 +772,7 @@ pub fn migrate_from_csvs(
                         resolution: f[4].clone(),
                         last_trade_price: None,
                         clob_token_id: None,
+                        group_slug: String::new(),
                     })
                 })
                 .collect();

@@ -290,6 +290,9 @@ struct GammaClosedMarket {
     /// The first element is the Yes token used for price history lookups.
     #[serde(rename = "clobTokenIds", default)]
     clob_token_ids: Option<String>,
+    /// Polymarket recurring-series slug. Empty for one-off markets.
+    #[serde(rename = "groupSlug", default)]
+    group_slug: String,
 }
 
 /// A confirmed market resolution as returned by the Gamma API.
@@ -305,6 +308,8 @@ pub struct MarketResolution {
     pub last_trade_price: Option<f64>,
     /// CLOB Yes-token ID (first element of `clobTokenIds`).
     pub clob_token_id: Option<String>,
+    /// Polymarket recurring-series slug. Empty for one-off markets.
+    pub group_slug: String,
 }
 
 // ── Raw CLOB order book types ─────────────────────────────────────────────────
@@ -612,6 +617,7 @@ impl PolyClient {
                     resolution,
                     last_trade_price: m.last_trade_price,
                     clob_token_id,
+                    group_slug: m.group_slug,
                 })
             })
             .collect();
@@ -655,6 +661,7 @@ impl PolyClient {
             resolution,
             last_trade_price: m.last_trade_price,
             clob_token_id,
+            group_slug: m.group_slug,
         }))
     }
 
