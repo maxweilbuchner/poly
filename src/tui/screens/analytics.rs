@@ -766,7 +766,16 @@ fn render_resolution_bias(f: &mut Frame, area: Rect, app: &App, focused: bool) {
     } else {
         " ".to_string()
     };
-    let b_title = format!(" B: Resolution Bias{}", snap_suffix);
+    let total_count = app
+        .analytics_stats
+        .as_ref()
+        .map(|s| s.res_yes + s.res_no + s.res_other)
+        .unwrap_or(0);
+    let b_title = if total_count > 0 {
+        format!(" B: Resolution Bias (n={}){}", total_count, snap_suffix)
+    } else {
+        format!(" B: Resolution Bias{}", snap_suffix)
+    };
 
     let Some(stats) = &app.analytics_stats else {
         f.render_widget(
@@ -820,14 +829,6 @@ fn render_resolution_bias(f: &mut Frame, area: Rect, app: &App, focused: bool) {
     let (oth_f, oth_e) = make_bar(oth_pct);
 
     let content: Vec<Line<'static>> = vec![
-        Line::from(vec![
-            Span::styled("  Total   ", Style::default().fg(theme::DIM)),
-            Span::styled(
-                format!("{} resolved markets", total as usize),
-                Style::default().fg(theme::TEXT),
-            ),
-        ]),
-        Line::from(""),
         // YES — row 1: label + bar + stats
         Line::from(vec![
             Span::styled(
