@@ -162,7 +162,7 @@ fn render_summary_panel(f: &mut Frame, area: Rect, app: &App) {
         "Net Worth",
         "Max Payout",
         "Return",
-        "Ann. Return",
+        "Return (annualised)",
     ];
     let value_strs = [
         format!("${:.2}", bal),
