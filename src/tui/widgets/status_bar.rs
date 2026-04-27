@@ -36,11 +36,19 @@ pub fn render(f: &mut Frame, area: Rect, app: &mut App) {
         return;
     }
 
-    // Build spinner label (if any). Width is fixed per variant so the layout is stable.
+    // Build spinner label (if any). Tab-specific labels tell users what's actually
+    // being fetched instead of a generic "fetching…" that lingers without context.
     let spinner_label: Option<String> = if app.loading {
-        Some(format!(" {} loading…  ", spin))
+        let what = match app.active_tab {
+            Tab::Markets => "markets",
+            Tab::Positions => "positions",
+            Tab::Balance => "balance",
+            Tab::Analytics => "analytics",
+            Tab::Viewer => "portfolio",
+        };
+        Some(format!(" {} loading {}…  ", spin, what))
     } else if app.markets_loading_more {
-        Some(format!(" {} fetching…  ", spin))
+        Some(format!(" {} more markets…  ", spin))
     } else {
         None
     };

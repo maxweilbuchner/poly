@@ -272,36 +272,28 @@ fn build_position_items(
         avg_str: String,
         cur_str: String,
         pnl_str: String,
-        exp_str: String,
         pnl_color: Color,
         cur_color: Color,
-        exp_color: Color,
         redeemable: bool,
-        /// "won" / "lost" when the market has resolved, empty otherwise.
-        resolution: &'static str,
-        res_color: Color,
+        /// Single unified status: "won"/"lost"/"pending"/"exp Xd"/...
+        status: String,
+        status_color: Color,
     }
 
-    let max_exp: usize = positions
+    let status_width: usize = positions
         .iter()
         .zip(end_dates.iter())
-        .map(|(_, ed)| match ed.as_deref() {
-            Some(s) => format_expiry(s).0.len(),
-            None => "expired".len(),
-        })
+        .map(|(p, ed)| compute_status(p, ed.as_deref()).0.len())
         .max()
         .unwrap_or(7);
-
-    // Reserve space for the resolution column: "open"/"won"/"lost" (4) + "  · " (4) = 8.
-    let res_col_width = if positions.is_empty() { 0 } else { 8 };
 
     // Reserve space for the [R] badge if any position is redeemable.
     let has_redeemable = positions.iter().any(|p| p.redeemable);
     let badge_width = if has_redeemable { 5 } else { 0 };
 
-    // borders(2) + highlight(2) + indent(2) + separator(4) + exp + optional res col + optional badge
+    // borders(2) + highlight(2) + indent(2) + separator(4) + status + optional badge
     let q_width = area_width
-        .saturating_sub(6 + 4 + max_exp + res_col_width + badge_width)
+        .saturating_sub(6 + 4 + status_width + badge_width)
         .max(20);
 
     // ── Pass 1: format every field, measure column widths ─────────────────────
@@ -311,10 +303,7 @@ fn build_position_items(
         .zip(end_dates.iter())
         .map(|(p, ed)| {
             let pnl_sign = if p.unrealized_pnl >= 0.0 { "+" } else { "" };
-            let (exp_str, exp_color) = match ed.as_deref() {
-                Some(s) => format_expiry(s),
-                None => ("expired".to_string(), theme::RED),
-            };
+            let (status, status_color) = compute_status(p, ed.as_deref());
             PRow {
                 question: truncate(&p.market_question, q_width),
                 outcome: p.outcome.clone(),
@@ -322,7 +311,6 @@ fn build_position_items(
                 avg_str: format!("{:.4}", p.avg_price),
                 cur_str: format!("{:.4}", p.current_price),
                 pnl_str: format!("{}{:.4}", pnl_sign, p.unrealized_pnl),
-                exp_str,
                 pnl_color: if p.unrealized_pnl >= 0.0 {
                     theme::GREEN
                 } else {
@@ -335,24 +323,9 @@ fn build_position_items(
                 } else {
                     theme::TEXT
                 },
-                exp_color,
                 redeemable: p.redeemable,
-                resolution: if p.market_closed {
-                    if p.current_price > 0.95 {
-                        "won"
-                    } else {
-                        "lost"
-                    }
-                } else {
-                    "open"
-                },
-                res_color: if p.market_closed && p.current_price > 0.95 {
-                    theme::GREEN
-                } else if p.market_closed {
-                    theme::VERY_DIM
-                } else {
-                    theme::DIM
-                },
+                status,
+                status_color,
             }
         })
         .collect();
@@ -379,22 +352,22 @@ fn build_position_items(
         ),
         Span::raw("    "),
         Span::styled(
-            pad_right("Shares".to_string(), size_hdr_w),
+            pad_left("Shares".to_string(), size_hdr_w),
             Style::default().fg(theme::DIM),
         ),
         Span::raw("    "),
         Span::styled(
-            pad_right("Avg".to_string(), max_avg),
+            pad_left("Avg".to_string(), max_avg),
             Style::default().fg(theme::DIM),
         ),
         Span::raw("    "),
         Span::styled(
-            pad_right("Cur".to_string(), max_cur),
+            pad_left("Cur".to_string(), max_cur),
             Style::default().fg(theme::DIM),
         ),
         Span::raw("    "),
         Span::styled(
-            pad_right("P&L".to_string(), max_pnl),
+            pad_left("P&L".to_string(), max_pnl),
             Style::default().fg(theme::DIM),
         ),
     ]);
@@ -404,7 +377,7 @@ fn build_position_items(
     let items = rows
         .into_iter()
         .map(|r| {
-            // Line 1: question  ·  [resolution]  ·  exp  [R]
+            // Line 1: question  ·  status  [R]
             let mut line1_spans = vec![
                 Span::raw("  "),
                 Span::styled(
@@ -414,13 +387,11 @@ fn build_position_items(
             ];
             line1_spans.push(Span::styled("  · ", Style::default().fg(theme::VERY_DIM)));
             line1_spans.push(Span::styled(
-                r.resolution,
+                r.status,
                 Style::default()
-                    .fg(r.res_color)
+                    .fg(r.status_color)
                     .add_modifier(Modifier::BOLD),
             ));
-            line1_spans.push(Span::styled("  · ", Style::default().fg(theme::VERY_DIM)));
-            line1_spans.push(Span::styled(r.exp_str, Style::default().fg(r.exp_color)));
             if r.redeemable {
                 line1_spans.push(Span::styled(
                     "  [R]",
@@ -434,9 +405,9 @@ fn build_position_items(
             // Line 2: outcome · shares · avg · cur · PnL
             let outcome_cell = pad_right(truncate(&r.outcome, outcome_width), outcome_width);
             let size_cell = format!("{:>width$} shares", r.size_num, width = max_size);
-            let avg_cell = pad_right(r.avg_str, max_avg);
-            let cur_cell = pad_right(r.cur_str, max_cur);
-            let pnl_cell = pad_right(r.pnl_str, max_pnl);
+            let avg_cell = pad_left(r.avg_str, max_avg);
+            let cur_cell = pad_left(r.cur_str, max_cur);
+            let pnl_cell = pad_left(r.pnl_str, max_pnl);
 
             let line2 = Line::from(vec![
                 Span::raw("  "),
@@ -461,6 +432,30 @@ fn build_position_items(
         .collect();
 
     (header, items)
+}
+
+/// Unified status for a position: "won"/"lost" once resolved, "pending" once past
+/// close but unresolved, otherwise the time-to-expiry label ("exp 3h" etc.).
+fn compute_status(p: &Position, end: Option<&str>) -> (String, Color) {
+    if p.market_closed {
+        return if p.current_price > 0.95 {
+            ("won".to_string(), theme::GREEN)
+        } else {
+            ("lost".to_string(), theme::RED)
+        };
+    }
+    match end {
+        Some(s) => {
+            let (label, color) = format_expiry(s);
+            // Past end_date but market not yet flagged closed → pending resolution.
+            if label == "expired" {
+                ("pending".to_string(), theme::YELLOW)
+            } else {
+                (label, color)
+            }
+        }
+        None => ("pending".to_string(), theme::YELLOW),
+    }
 }
 
 /// Parse an end-date string and return a human-readable "exp Xd/Xh/Xm" label plus its colour.
@@ -701,7 +696,7 @@ fn build_order_items(orders: &[Order], area_width: usize) -> Vec<ListItem<'stati
         .collect()
 }
 
-/// Left-pad `s` with spaces to exactly `width` chars. If `s` is already wider, return as-is.
+/// Right-pad `s` with spaces (so `s` sits on the left).
 fn pad_right(s: String, width: usize) -> String {
     let len = s.chars().count();
     if len >= width {
@@ -710,6 +705,17 @@ fn pad_right(s: String, width: usize) -> String {
         let mut out = s;
         out.extend(std::iter::repeat_n(' ', width - len));
         out
+    }
+}
+
+/// Left-pad `s` with spaces (so `s` sits on the right — for right-aligned numerics).
+fn pad_left(s: String, width: usize) -> String {
+    let len = s.chars().count();
+    if len >= width {
+        s
+    } else {
+        let pad: String = std::iter::repeat_n(' ', width - len).collect();
+        pad + &s
     }
 }
 

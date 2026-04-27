@@ -10,10 +10,52 @@ use crate::tui::{theme, App};
 use crate::types::Position;
 
 pub fn render(f: &mut Frame, area: Rect, app: &mut App) {
+    // When no address is set and the input isn't open, show a single centered
+    // prompt instead of two stacked empty panels.
+    if app.viewer_address.is_none() && !app.viewer_address_editing {
+        render_empty_prompt(f, area);
+        return;
+    }
+
     let chunks = Layout::vertical([Constraint::Length(3), Constraint::Min(0)]).split(area);
 
     render_address_bar(f, chunks[0], app);
     render_viewer_positions(f, chunks[1], app);
+}
+
+fn render_empty_prompt(f: &mut Frame, area: Rect) {
+    let block = Block::bordered()
+        .title(Span::styled(
+            " Viewer ",
+            Style::default()
+                .fg(theme::CYAN)
+                .add_modifier(Modifier::BOLD),
+        ))
+        .border_style(Style::default().fg(theme::BORDER))
+        .style(Style::default().bg(theme::PANEL_BG));
+    let inner = block.inner(area);
+    f.render_widget(block, area);
+
+    // Centered prompt — pad the top so the message sits roughly mid-panel.
+    let top_pad = (inner.height as usize / 2).saturating_sub(1);
+    let mut lines: Vec<Line<'static>> = (0..top_pad).map(|_| Line::from("")).collect();
+    lines.push(Line::from(vec![Span::styled(
+        "View any Polymarket wallet's portfolio",
+        Style::default()
+            .fg(theme::TEXT)
+            .add_modifier(Modifier::BOLD),
+    )]));
+    lines.push(Line::from(""));
+    lines.push(Line::from(vec![
+        Span::styled("Press ", Style::default().fg(theme::DIM)),
+        Span::styled("/", Style::default().fg(theme::CYAN)),
+        Span::styled(" to enter an address", Style::default().fg(theme::DIM)),
+    ]));
+
+    f.render_widget(
+        Paragraph::new(lines).alignment(ratatui::layout::Alignment::Center),
+        inner,
+    );
 }
 
 // ── Address input bar ────────────────────────────────────────────────────────
