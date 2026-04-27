@@ -63,24 +63,12 @@ fn render_summary(f: &mut Frame, area: Rect, app: &App) {
     let pnl_color = |v: f64| if v >= 0.0 { theme::GREEN } else { theme::RED };
     let sign = |v: f64| if v >= 0.0 { "+" } else { "" };
 
-    // Metadata in the title
-    let title = Line::from(vec![
-        Span::styled(
-            " Summary ",
-            Style::default()
-                .fg(theme::CYAN)
-                .add_modifier(Modifier::BOLD),
-        ),
-        Span::styled(
-            format!(
-                "· {} position{}  · {:.0} shares ",
-                count,
-                if count == 1 { "" } else { "s" },
-                total_shares
-            ),
-            Style::default().fg(theme::DIM),
-        ),
-    ]);
+    let title = Span::styled(
+        " Summary ",
+        Style::default()
+            .fg(theme::CYAN)
+            .add_modifier(Modifier::BOLD),
+    );
 
     let block = Block::bordered()
         .title(title)
@@ -93,6 +81,13 @@ fn render_summary(f: &mut Frame, area: Rect, app: &App) {
     // Build columns: label on top, value below
     let mut labels: Vec<(&str, Color)> = Vec::new();
     let mut values: Vec<(String, Color, bool)> = Vec::new();
+
+    labels.push(("Shares", theme::DIM));
+    values.push((
+        format!("{:.0} ({})", total_shares, count),
+        theme::TEXT,
+        true,
+    ));
 
     labels.push(("Value", theme::DIM));
     values.push((format!("${:.2}", portfolio_value), theme::TEXT, true));
