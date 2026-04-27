@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEvent, MouseEventKind, MouseButton};
 use tokio::sync::mpsc::UnboundedSender;
 use tokio::sync::watch;
 
@@ -1554,6 +1554,62 @@ fn handle_help_key(app: &mut App, key: KeyEvent) -> bool {
     match key.code {
         KeyCode::Esc | KeyCode::Char('?') | KeyCode::Char('q') => {
             app.screen_stack.pop();
+        }
+        _ => {}
+    }
+    false
+}
+
+// ── Mouse handler ─────────────────────────────────────────────────────────────
+
+pub(super) fn handle_mouse(
+    app: &mut App,
+    mouse: MouseEvent,
+    client: Arc<PolyClient>,
+    tx: &UnboundedSender<AppEvent>,
+) -> bool {
+    match mouse.kind {
+        MouseEventKind::ScrollUp => {
+            return handle_key(
+                app,
+                KeyEvent::new(KeyCode::Up, KeyModifiers::empty()),
+                Arc::clone(&client),
+                tx,
+            );
+        }
+        MouseEventKind::ScrollDown => {
+            return handle_key(
+                app,
+                KeyEvent::new(KeyCode::Down, KeyModifiers::empty()),
+                Arc::clone(&client),
+                tx,
+            );
+        }
+        MouseEventKind::Up(MouseButton::Left) | MouseEventKind::Down(MouseButton::Left) => {
+            if mouse.row == 0 && matches!(mouse.kind, MouseEventKind::Up(MouseButton::Left)) {
+                // Tab bar clicked:
+                // " 1 Markets │ 2 Positions │ 3 Balance │ 4 Analytics │ 5 Viewer "
+                //  012345678901234567890123456789012345678901234567890123456789012
+                let c = mouse.column;
+                let new_tab = if c >= 1 && c <= 11 {
+                    Some(Tab::Markets)
+                } else if c >= 13 && c <= 25 {
+                    Some(Tab::Positions)
+                } else if c >= 27 && c <= 37 {
+                    Some(Tab::Balance)
+                } else if c >= 39 && c <= 51 {
+                    Some(Tab::Analytics)
+                } else if c >= 53 && c <= 62 {
+                    Some(Tab::Viewer)
+                } else {
+                    None
+                };
+
+                if let Some(t) = new_tab {
+                    switch_tab(app, t, client, tx);
+                    return false;
+                }
+            }
         }
         _ => {}
     }

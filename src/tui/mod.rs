@@ -133,9 +133,19 @@ async fn run_app(
     tokio::spawn(async move {
         loop {
             if crossterm::event::poll(Duration::from_millis(50)).unwrap_or(false) {
-                if let Ok(crossterm::event::Event::Key(k)) = crossterm::event::read() {
-                    if tx_input.send(AppEvent::Key(k)).is_err() {
-                        break;
+                if let Ok(evt) = crossterm::event::read() {
+                    match evt {
+                        crossterm::event::Event::Key(k) => {
+                            if tx_input.send(AppEvent::Key(k)).is_err() {
+                                break;
+                            }
+                        }
+                        crossterm::event::Event::Mouse(m) => {
+                            if tx_input.send(AppEvent::Mouse(m)).is_err() {
+                                break;
+                            }
+                        }
+                        _ => {}
                     }
                 }
             } else if tx_input.send(AppEvent::Tick).is_err() {

@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::time::Instant;
 
-use crossterm::event::KeyEvent;
+use crossterm::event::{KeyEvent, MouseEvent};
 
 use crate::types::{Market, Order, OrderBook, OrderType, OutcomeSeries, Position, Side};
 
@@ -882,6 +882,7 @@ pub(crate) fn market_category_from_parts(question: &str, slug: &str) -> Option<&
 
 pub enum AppEvent {
     Key(KeyEvent),
+    Mouse(MouseEvent),
     Tick,
     MarketsLoaded(Vec<Market>, bool),   // (markets, is_final_page)
     MarketsAppended(Vec<Market>, bool), // (markets, is_final_page)

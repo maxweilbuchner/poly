@@ -93,6 +93,10 @@ pub(super) fn handle_event(
             return super::keys::handle_key(app, key, client, tx);
         }
 
+        AppEvent::Mouse(mouse) => {
+            return super::keys::handle_mouse(app, mouse, client, tx);
+        }
+
         AppEvent::MarketsLoaded(markets, is_final) => {
             app.market_id_set = markets.iter().map(|m| m.condition_id.clone()).collect();
             app.markets = markets;
