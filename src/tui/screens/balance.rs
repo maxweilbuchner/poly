@@ -97,6 +97,30 @@ fn render_summary_panel(f: &mut Frame, area: Rect, app: &App) {
 
     let pos_count = app.positions.len();
 
+    // Return vs first net-worth log entry; annualized over the elapsed window.
+    let (return_str, return_color, ann_str, ann_color) = match app.net_worth_history.first() {
+        Some(&(t0, nw0)) if nw0 > 0.0 && app.net_worth_history.len() >= 2 => {
+            let t1 = app.net_worth_history.last().map(|&(t, _)| t).unwrap_or(t0);
+            let r = (net_worth - nw0) / nw0;
+            let elapsed = (t1 - t0).max(1.0);
+            let years = elapsed / (365.25 * 86400.0);
+            let ann = if years > 0.0 && (1.0 + r) > 0.0 {
+                (1.0 + r).powf(1.0 / years) - 1.0
+            } else {
+                0.0
+            };
+            let color = |v: f64| if v >= 0.0 { theme::GREEN } else { theme::RED };
+            let sign = |v: f64| if v >= 0.0 { "+" } else { "" };
+            (
+                format!("{}{:.2}%", sign(r), r * 100.0),
+                color(r),
+                format!("{}{:.1}%", sign(ann), ann * 100.0),
+                color(ann),
+            )
+        }
+        _ => ("—".to_string(), theme::DIM, "—".to_string(), theme::DIM),
+    };
+
     // Title with metadata
     let mut title_spans = vec![Span::styled(
         " Summary ",
@@ -130,7 +154,6 @@ fn render_summary_panel(f: &mut Frame, area: Rect, app: &App) {
     let inner = block.inner(area);
     f.render_widget(block, area);
 
-    // 6 columns: Cash, Allowance, Positions, Shares, Net Worth, Max Payout
     let labels = [
         "Cash",
         "Allowance",
@@ -138,6 +161,8 @@ fn render_summary_panel(f: &mut Frame, area: Rect, app: &App) {
         "Shares",
         "Net Worth",
         "Max Payout",
+        "Return",
+        "Ann. Return",
     ];
     let value_strs = [
         format!("${:.2}", bal),
@@ -146,6 +171,8 @@ fn render_summary_panel(f: &mut Frame, area: Rect, app: &App) {
         format!("{:.2}", total_shares),
         format!("${:.2}", net_worth),
         format!("${:.2}", max_payout),
+        return_str,
+        ann_str,
     ];
     let value_colors = [
         theme::TEXT,
@@ -154,8 +181,10 @@ fn render_summary_panel(f: &mut Frame, area: Rect, app: &App) {
         theme::TEXT,
         theme::GREEN,
         theme::BLUE,
+        return_color,
+        ann_color,
     ];
-    let value_bold = [true, false, true, false, true, true];
+    let value_bold = [true, false, true, false, true, true, true, true];
 
     let col_w = (inner.width as usize).saturating_sub(2) / labels.len();
 
