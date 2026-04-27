@@ -680,7 +680,7 @@ fn render_calibration_matrix(f: &mut Frame, area: Rect, app: &App, focused: bool
     let cell_w: usize = {
         // Need: 2 (left pad) + label_w + 1 + 6 cells × cell_w
         let avail = inner_w.saturating_sub(2 + label_w + 1);
-        (avail / 6).clamp(6, 10)
+        (avail / 6).clamp(6, 20)
     };
 
     // Header row: blank label cell + tier labels + "All".
