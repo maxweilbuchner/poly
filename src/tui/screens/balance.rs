@@ -136,7 +136,6 @@ fn render_summary_panel(f: &mut Frame, area: Rect, app: &App) {
         "Net Worth",
         "Cash",
         "Positions",
-        "Shares",
         "Max Payout",
         "Return",
         "Return (annualised)",
@@ -145,7 +144,6 @@ fn render_summary_panel(f: &mut Frame, area: Rect, app: &App) {
         format!("${:.2}", net_worth),
         format!("${:.2}", bal),
         format!("${:.2} ({})", positions_value, pos_count),
-        format!("{:.2}", total_shares),
         format!("${:.2}", max_payout),
         return_str,
         ann_str,
@@ -154,12 +152,11 @@ fn render_summary_panel(f: &mut Frame, area: Rect, app: &App) {
         theme::GREEN,
         theme::TEXT,
         theme::TEXT,
-        theme::TEXT,
         theme::BLUE,
         return_color,
         ann_color,
     ];
-    let value_bold = [true, true, true, false, true, true, true];
+    let value_bold = [true, true, true, true, true, true];
 
     let col_w = (inner.width as usize).saturating_sub(2) / labels.len();
 
