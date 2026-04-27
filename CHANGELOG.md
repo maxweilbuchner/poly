@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-04-27
+
 ### Added
 - Analytics tab gains a "Most Accurate Recurring Series" panel: ranks Polymarket recurring series (by `group_slug`) by directional prediction accuracy at the configured calibration horizon (3 / 6 / 9 / 12 h, cycled with `t`). Series need ≥5 resolved binary markets to qualify; the top 10 are shown.
 - One-shot `group_slug` backfill on TUI startup re-fetches the series identifier from Gamma for resolutions stored before the column existed (idempotent, capped at 1000 rows per run).
@@ -125,7 +127,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - HMAC-SHA256 authentication for CLOB API
 - Colored terminal output
 
-[Unreleased]: https://gitlab.com/maxweilbuchner/poly-v2/-/compare/v0.4.0...HEAD
+[Unreleased]: https://gitlab.com/maxweilbuchner/poly-v2/-/compare/v0.4.1...HEAD
+[0.4.1]: https://gitlab.com/maxweilbuchner/poly-v2/-/compare/v0.4.0...v0.4.1
 [0.4.0]: https://gitlab.com/maxweilbuchner/poly-v2/-/compare/v0.3.3...v0.4.0
 [0.3.3]: https://gitlab.com/maxweilbuchner/poly-v2/-/compare/v0.3.2...v0.3.3
 [0.3.2]: https://gitlab.com/maxweilbuchner/poly-v2/-/compare/v0.3.0...v0.3.2
