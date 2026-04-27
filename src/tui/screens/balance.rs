@@ -142,7 +142,7 @@ fn render_summary_panel(f: &mut Frame, area: Rect, app: &App) {
     let value_strs = [
         format!("${:.2}", bal),
         allowance_str,
-        format!("${:.2}", positions_value),
+        format!("${:.2} ({})", positions_value, pos_count),
         format!("{:.2}", total_shares),
         format!("${:.2}", net_worth),
         format!("${:.2}", max_payout),
@@ -176,21 +176,12 @@ fn render_summary_panel(f: &mut Frame, area: Rect, app: &App) {
         val_spans.push(Span::styled(pad_right(val.clone(), col_w), style));
     }
 
-    // Annotation line under positions value
-    let mut anno_spans: Vec<Span<'static>> = vec![Span::raw("  ")];
-    let annotations = ["", "", &format!("{} open", pos_count) as &str, "", "", ""];
-    for ann in &annotations {
-        anno_spans.push(Span::styled(
-            pad_right(ann.to_string(), col_w),
-            Style::default().fg(theme::VERY_DIM),
-        ));
-    }
-
     f.render_widget(
         Paragraph::new(vec![
+            Line::from(""),
             Line::from(label_spans),
             Line::from(val_spans),
-            Line::from(anno_spans),
+            Line::from(""),
         ]),
         inner,
     );
