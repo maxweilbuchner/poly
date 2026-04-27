@@ -178,14 +178,7 @@ fn render_summary_panel(f: &mut Frame, area: Rect, app: &App) {
 
     // Annotation line under positions value
     let mut anno_spans: Vec<Span<'static>> = vec![Span::raw("  ")];
-    let annotations = [
-        "",
-        "",
-        &format!("{} open", pos_count) as &str,
-        "",
-        "cash + market",
-        "if all → $1",
-    ];
+    let annotations = ["", "", &format!("{} open", pos_count) as &str, "", "", ""];
     for ann in &annotations {
         anno_spans.push(Span::styled(
             pad_right(ann.to_string(), col_w),
