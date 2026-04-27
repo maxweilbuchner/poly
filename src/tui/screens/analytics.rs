@@ -372,12 +372,12 @@ fn render_prob_distribution(f: &mut Frame, area: Rect, app: &App, focused: bool)
     };
     let title = if total > 0 {
         format!(
-            " A: Yes Probability Distribution  ({} markets, median ~{}%){}",
+            " A: Yes Probability Distribution (n={}, median ~{}%){}",
             total, median_pct_label, snap_suffix
         )
     } else {
         format!(
-            " A: Yes Probability Distribution  ({} markets){}",
+            " A: Yes Probability Distribution (n={}){}",
             total, snap_suffix
         )
     };
