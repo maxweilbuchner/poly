@@ -10,7 +10,7 @@ use ratatui::{
 use crate::tui::{is_auth_error, theme, App};
 
 pub fn render(f: &mut Frame, area: Rect, app: &App) {
-    let chunks = Layout::vertical([Constraint::Length(6), Constraint::Min(0)]).split(area);
+    let chunks = Layout::vertical([Constraint::Length(4), Constraint::Min(0)]).split(area);
 
     render_summary_panel(f, chunks[0], app);
     render_net_worth_chart(f, chunks[1], app);
@@ -177,12 +177,7 @@ fn render_summary_panel(f: &mut Frame, area: Rect, app: &App) {
     }
 
     f.render_widget(
-        Paragraph::new(vec![
-            Line::from(""),
-            Line::from(label_spans),
-            Line::from(val_spans),
-            Line::from(""),
-        ]),
+        Paragraph::new(vec![Line::from(label_spans), Line::from(val_spans)]),
         inner,
     );
 }
