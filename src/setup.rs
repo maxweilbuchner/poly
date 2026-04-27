@@ -149,27 +149,30 @@ pub fn validate_private_key(input: &str) -> std::result::Result<String, String> 
         return Err("Private key cannot be empty.".into());
     }
 
-    if key.len() == 64 && key.chars().all(|c| c.is_ascii_hexdigit()) {
-        return Ok(format!("0x{}", key));
-    }
+    let normalized = if key.len() == 64 && key.chars().all(|c| c.is_ascii_hexdigit()) {
+        format!("0x{}", key)
+    } else {
+        if !key.starts_with("0x") {
+            return Err("Private key must start with 0x.".into());
+        }
+        let hex_part = &key[2..];
+        if hex_part.len() != 64 {
+            return Err(format!(
+                "Expected 64 hex characters after 0x, got {}.",
+                hex_part.len()
+            ));
+        }
+        if !hex_part.chars().all(|c| c.is_ascii_hexdigit()) {
+            return Err("Key contains non-hex characters.".into());
+        }
+        key.to_string()
+    };
 
-    if !key.starts_with("0x") {
-        return Err("Private key must start with 0x.".into());
-    }
+    use std::str::FromStr;
+    ethers::signers::LocalWallet::from_str(&normalized)
+        .map_err(|_| "Not a valid secp256k1 private key (out of curve range).".to_string())?;
 
-    let hex_part = &key[2..];
-    if hex_part.len() != 64 {
-        return Err(format!(
-            "Expected 64 hex characters after 0x, got {}.",
-            hex_part.len()
-        ));
-    }
-
-    if !hex_part.chars().all(|c| c.is_ascii_hexdigit()) {
-        return Err("Key contains non-hex characters.".into());
-    }
-
-    Ok(key.to_string())
+    Ok(normalized)
 }
 
 /// Repeatedly prompt for a private key until a valid one is entered.

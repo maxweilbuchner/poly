@@ -51,6 +51,21 @@ fn private_key_rejects_non_hex() {
     assert!(validate_private_key(&bad).is_err());
 }
 
+#[test]
+fn private_key_rejects_zero_scalar() {
+    // All-zero is hex-valid but not a valid secp256k1 scalar.
+    let zero = format!("0x{}", "0".repeat(64));
+    assert!(validate_private_key(&zero).is_err());
+}
+
+#[test]
+fn private_key_rejects_above_curve_order() {
+    // secp256k1 order n = FFFF...FFFEBAAEDCE6AF48A03BBFD25E8CD0364141
+    // 0xFFFF...FFFF (max 256-bit value) is above n and must be rejected.
+    let too_big = format!("0x{}", "f".repeat(64));
+    assert!(validate_private_key(&too_big).is_err());
+}
+
 // ── validate_eth_address ─────────────────────────────────────────────────────
 
 #[test]

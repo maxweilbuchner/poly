@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- `setup::validate_private_key` now verifies the key is a valid secp256k1 scalar (rejects all-zeros and values ≥ curve order), not just 64 hex chars. Closes #111.
+
 ## [0.4.1] - 2026-04-27
 
 ### Added
