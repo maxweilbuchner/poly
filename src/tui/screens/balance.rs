@@ -128,17 +128,6 @@ fn render_summary_panel(f: &mut Frame, area: Rect, app: &App) {
             .fg(theme::CYAN)
             .add_modifier(Modifier::BOLD),
     )];
-    if pos_count > 0 {
-        title_spans.push(Span::styled(
-            format!(
-                "· {} position{}  · {:.0} shares ",
-                pos_count,
-                if pos_count == 1 { "" } else { "s" },
-                total_shares
-            ),
-            Style::default().fg(theme::DIM),
-        ));
-    }
     if low_allowance {
         title_spans.push(Span::styled(
             "· ⚠ low allowance ",
