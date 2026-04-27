@@ -1,0 +1,3402 @@
+[
+  {
+    "condition_id": "0x32b09f6390252b37d674501527e709016d55581b2c1e544bd4b8167f5f732f4c",
+    "question": "Will Jesus Christ return before GTA VI?",
+    "description": "This market will resolve to \"Yes\" if The Second Coming of Jesus Christ occurs before Grand Theft Auto VI is officially released in the US. Otherwise, this market will resolve to \"No\".\n\nIf neither occurs by July 31, 2026, 11:59 PM ET, this market will resolve to 50-50.\n\nFor the purposes of this market, \"release\" refers to the game becoming publicly available for purchase or download in the US. Early access, beta versions, other forms of pre-release availability, or leaks will not count as an official release. If the release is only for certain consoles (e.g. Xbox Series X/S) it will count.\n\nThe resolution source for the release of GTA VI is official information from Rockstar Games or its parent company, Take-Two Interactive.\n\nThe resolution source for the return of Jesus will be a consensus of credible sources.",
+    "slug": "will-jesus-christ-return-before-gta-vi-665",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-31T12:00:00Z",
+    "volume": 11137808.833760956,
+    "liquidity": 800323.7153,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "90435811253665578014957380826505992530054077692143838383981805324273750424057",
+        "price": 0.485,
+        "bid": 0.485,
+        "ask": 0.485,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "92388629082681805622801622703528982922543286352927708208755887536971583436902",
+        "price": 0.515,
+        "bid": 0.515,
+        "ask": 0.515,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": false
+  },
+  {
+    "condition_id": "0x7b49b9bacb5f435bc10f3b100ff59e2fdd346f7f92a9001881bc9825a0af0f11",
+    "question": "Will China invades Taiwan before GTA VI?",
+    "description": "This market will resolve to \"Yes\" if China commences a military offensive intended to establish control over any portion of the Republic of China (Taiwan) before Grand Theft Auto VI is officially released in the US. Otherwise, this market will resolve to \"No\".\n\nIf neither occurs by July 31, 2026, 11:59 PM ET, this market will resolve to 50-50.\n\nFor the purposes of this market, \"release\" refers to the game becoming publicly available for purchase or download in the US. Early access, beta versions, other forms of pre-release availability, or leaks will not count as an official release. If the release is only for certain consoles (e.g. Xbox Series X/S) it will count.\n\nThe resolution source for the release of GTA VI is official information from Rockstar Games or its parent company, Take-Two Interactive.\n\nAn announcement of Trump's resignation/removal, or a scheduled departure from office due to the outcome of an election will not alone qualify.\n\nTerritory under the administration of the Republic of China including any inhabited islands will qualify, however uninhabited islands will not qualify.\n\nThe resolution source for China invading Taiwan will be will be official confirmation by China, Taiwan, the United Nations, or any permanent member of the UN Security Council, however a consensus of credible reporting will also be use\n",
+    "slug": "will-china-invades-taiwan-before-gta-vi-716",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-31T12:00:00Z",
+    "volume": 1801337.0446860618,
+    "liquidity": 93729.5604,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "21695138873211375451055566770107682325494206727818897067665810321709249824909",
+        "price": 0.515,
+        "bid": 0.515,
+        "ask": 0.515,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "17516427576383382756368467656206258206490015951115433065318503962238754362428",
+        "price": 0.485,
+        "bid": 0.485,
+        "ask": 0.485,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": false
+  },
+  {
+    "condition_id": "0xbb57ccf5853a85487bc3d83d04d669310d28c6c810758953b9d9b91d1aee89d2",
+    "question": "Will bitcoin hit $1m before GTA VI?",
+    "description": "This market will resolve to \"Yes\" if any Binance 1 minute candle for Bitcoin (BTCUSDT) has a final \"High\" price of $1,000,000 or higher before Grand Theft Auto VI is officially released in the US. Otherwise, this market will resolve to \"No\".\n\nIf neither occurs by July 31, 2026, 11:59 PM ET, this market will resolve to 50-50.\n\nFor the purposes of this market, \"release\" refers to the game becoming publicly available for purchase or download in the US. Early access, beta versions, other forms of pre-release availability, or leaks will not count as an official release. If the release is only for certain consoles (e.g. Xbox Series X/S) it will count.\n\nThe resolution source for the release of GTA VI is official information from Rockstar Games or its parent company, Take-Two Interactive.\n\nThe resolution source for Bitcoin is Binance, specifically the BTCUSDT \"High\" prices available at https://www.binance.com/en/trade/BTC_USDT, with the chart settings on \"1m\" for one-minute candles selected on the top bar.\n\nPlease note that the outcome of this market depends solely on the price data from the Binance BTCUSDT trading pair. Prices from other exchanges, different trading pairs, or spot markets will not be considered for the resolution of this market.",
+    "slug": "will-bitcoin-hit-1m-before-gta-vi-872",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-31T12:00:00Z",
+    "volume": 4051984.0576325515,
+    "liquidity": 473559.26384,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "105267568073659068217311993901927962476298440625043565106676088842803600775810",
+        "price": 0.495,
+        "bid": 0.495,
+        "ask": 0.495,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "91863162118308663069733924043159186005106558783397508844234610341221325526200",
+        "price": 0.505,
+        "bid": 0.505,
+        "ask": 0.505,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": false
+  },
+  {
+    "condition_id": "0xf398b0e5016eeaee9b0885ed84012b6dc91269ac10d3b59d60722859c2e30b2f",
+    "question": "Will Harvey Weinstein be sentenced to no prison time?",
+    "description": "This market will resolve according to the prison sentence, if any, imposed on Harvey Weinstein as part of his ongoing New York retrial (People of the State of New York v. Harvey Weinstein) by July 31, 2026, 11:59 PM ET.\n\nThis market will resolve immediately based on the first sentence rendered in this case, regardless of any appeals. If Weinstein is found not guilty, there is a mistrial, or if the first sentencing does not include any jail or prison time, this market will resolve to \"No Prison Time.\"\n\nIf no sentencing takes place by July 31, 2026, 11:59 PM ET, this market will also resolve to \"No Prison Time.\"\n\nIf the sentence falls exactly between two brackets, then this market will resolve to the higher range bracket.\n\nFor the purposes of this market, it does not matter whether the sentence is concurrent or consecutive to any existing sentence Weinstein is already serving. The market will resolve based on the total prison sentence imposed in this case.\n\nThe primary resolution source for this market will be official information from the New York court system or other involved U.S. government sources; however, a consensus of credible reporting may also be used.",
+    "slug": "will-harvey-weinstein-be-sentenced-to-no-prison-time",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2025-12-31T12:00:00Z",
+    "volume": 323843.68451000145,
+    "liquidity": 1371.86513,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "24327803960645909378149041810697343640752122608192367041827900158592826352552",
+        "price": 0.396,
+        "bid": 0.396,
+        "ask": 0.396,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "86488478623677188352872801318507143761188967461168408688159600382919967378486",
+        "price": 0.604,
+        "bid": 0.604,
+        "ask": 0.604,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0xe2b48e3b44de9658ee9c8b37354301763e33c0b502fd966839d644b4c0a9dea8",
+    "question": "Will Harvey Weinstein be sentenced to less than 5 years in prison?",
+    "description": "This market will resolve according to the prison sentence, if any, imposed on Harvey Weinstein as part of his ongoing New York retrial (People of the State of New York v. Harvey Weinstein) by July 31, 2026, 11:59 PM ET.\n\nThis market will resolve immediately based on the first sentence rendered in this case, regardless of any appeals. If Weinstein is found not guilty, there is a mistrial, or if the first sentencing does not include any jail or prison time, this market will resolve to \"No Prison Time.\"\n\nIf no sentencing takes place by July 31, 2026, 11:59 PM ET, this market will also resolve to \"No Prison Time.\"\n\nIf the sentence falls exactly between two brackets, then this market will resolve to the higher range bracket.\n\nFor the purposes of this market, it does not matter whether the sentence is concurrent or consecutive to any existing sentence Weinstein is already serving. The market will resolve based on the total prison sentence imposed in this case.\n\nThe primary resolution source for this market will be official information from the New York court system or other involved U.S. government sources; however, a consensus of credible reporting may also be used.",
+    "slug": "will-harvey-weinstein-be-sentenced-to-less-than-5-years-in-prison",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2025-12-31T12:00:00Z",
+    "volume": 108974.6045580003,
+    "liquidity": 1569.25113,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "77166477669007661974218999697956080000161736671391584414287437514245884953047",
+        "price": 0.0645,
+        "bid": 0.0645,
+        "ask": 0.0645,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "47055352475798285920984907840917431698812931301054546103955312973973172985230",
+        "price": 0.9355,
+        "bid": 0.9355,
+        "ask": 0.9355,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x3209617364a0d598435806b59d0d056b606022dc9028c466ad7912df94fc170c",
+    "question": "Will Harvey Weinstein be sentenced to between 5 and 10 years in prison?",
+    "description": "This market will resolve according to the prison sentence, if any, imposed on Harvey Weinstein as part of his ongoing New York retrial (People of the State of New York v. Harvey Weinstein) by July 31, 2026, 11:59 PM ET.\n\nThis market will resolve immediately based on the first sentence rendered in this case, regardless of any appeals. If Weinstein is found not guilty, there is a mistrial, or if the first sentencing does not include any jail or prison time, this market will resolve to \"No Prison Time.\"\n\nIf no sentencing takes place by July 31, 2026, 11:59 PM ET, this market will also resolve to \"No Prison Time.\"\n\nIf the sentence falls exactly between two brackets, then this market will resolve to the higher range bracket.\n\nFor the purposes of this market, it does not matter whether the sentence is concurrent or consecutive to any existing sentence Weinstein is already serving. The market will resolve based on the total prison sentence imposed in this case.\n\nThe primary resolution source for this market will be official information from the New York court system or other involved U.S. government sources; however, a consensus of credible reporting may also be used.",
+    "slug": "will-harvey-weinstein-be-sentenced-to-between-5-and-10-years-in-prison",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2025-12-31T12:00:00Z",
+    "volume": 62691.521834000414,
+    "liquidity": 3149.81659,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "8585617872562550075367684165842985213222082790621129799520234539666057750015",
+        "price": 0.0355,
+        "bid": 0.0355,
+        "ask": 0.0355,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "103705222348348023632358209307161171933864556870678885035120650593331360918837",
+        "price": 0.9645,
+        "bid": 0.9645,
+        "ask": 0.9645,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x3d495a3e05eaffe438bb1c2ab97ed57a79b0a6ab18a2ca6fa5b448e20ce70082",
+    "question": "Will Harvey Weinstein be sentenced to between 10 and 20 years in prison?",
+    "description": "This market will resolve according to the prison sentence, if any, imposed on Harvey Weinstein as part of his ongoing New York retrial (People of the State of New York v. Harvey Weinstein) by July 31, 2026, 11:59 PM ET.\n\nThis market will resolve immediately based on the first sentence rendered in this case, regardless of any appeals. If Weinstein is found not guilty, there is a mistrial, or if the first sentencing does not include any jail or prison time, this market will resolve to \"No Prison Time.\"\n\nIf no sentencing takes place by July 31, 2026, 11:59 PM ET, this market will also resolve to \"No Prison Time.\"\n\nIf the sentence falls exactly between two brackets, then this market will resolve to the higher range bracket.\n\nFor the purposes of this market, it does not matter whether the sentence is concurrent or consecutive to any existing sentence Weinstein is already serving. The market will resolve based on the total prison sentence imposed in this case.\n\nThe primary resolution source for this market will be official information from the New York court system or other involved U.S. government sources; however, a consensus of credible reporting may also be used.",
+    "slug": "will-harvey-weinstein-be-sentenced-to-between-10-and-20-years-in-prison",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2025-12-31T12:00:00Z",
+    "volume": 143222.1604379995,
+    "liquidity": 1033.53968,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "15540133404064485946536607974212890170021691204987131841181394872998839987451",
+        "price": 0.1575,
+        "bid": 0.1575,
+        "ask": 0.1575,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "63603874958591978684257718702104189214159397118281244112857573557732401361881",
+        "price": 0.8425,
+        "bid": 0.8425,
+        "ask": 0.8425,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0xdee5db5410b362783a1405b66b9aa08a7d050ae1f99e8da85b9d1ae7962dad3b",
+    "question": "Will Harvey Weinstein be sentenced to between 20 and 30 years in prison?",
+    "description": "This market will resolve according to the prison sentence, if any, imposed on Harvey Weinstein as part of his ongoing New York retrial (People of the State of New York v. Harvey Weinstein) by July 31, 2026, 11:59 PM ET.\n\nThis market will resolve immediately based on the first sentence rendered in this case, regardless of any appeals. If Weinstein is found not guilty, there is a mistrial, or if the first sentencing does not include any jail or prison time, this market will resolve to \"No Prison Time.\"\n\nIf no sentencing takes place by July 31, 2026, 11:59 PM ET, this market will also resolve to \"No Prison Time.\"\n\nIf the sentence falls exactly between two brackets, then this market will resolve to the higher range bracket.\n\nFor the purposes of this market, it does not matter whether the sentence is concurrent or consecutive to any existing sentence Weinstein is already serving. The market will resolve based on the total prison sentence imposed in this case.\n\nThe primary resolution source for this market will be official information from the New York court system or other involved U.S. government sources; however, a consensus of credible reporting may also be used.",
+    "slug": "will-harvey-weinstein-be-sentenced-to-between-20-and-30-years-in-prison",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2025-12-31T12:00:00Z",
+    "volume": 182767.0059439999,
+    "liquidity": 1503.99747,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "40689385937970031985272152180777653235879119412231903065658922913468759560353",
+        "price": 0.2615,
+        "bid": 0.2615,
+        "ask": 0.2615,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "109223657334725476924710634471321315385389367621714474291402615707818729630121",
+        "price": 0.7385,
+        "bid": 0.7385,
+        "ask": 0.7385,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x2499928ffbe6022444543dcd940075259cecb5e41e346284b578cb64e1404d32",
+    "question": "Will Harvey Weinstein be sentenced to more than 30 years in prison?",
+    "description": "This market will resolve according to the prison sentence, if any, imposed on Harvey Weinstein as part of his ongoing New York retrial (People of the State of New York v. Harvey Weinstein) by July 31, 2026, 11:59 PM ET.\n\nThis market will resolve immediately based on the first sentence rendered in this case, regardless of any appeals. If Weinstein is found not guilty, there is a mistrial, or if the first sentencing does not include any jail or prison time, this market will resolve to \"No Prison Time.\"\n\nIf no sentencing takes place by July 31, 2026, 11:59 PM ET, this market will also resolve to \"No Prison Time.\"\n\nIf the sentence falls exactly between two brackets, then this market will resolve to the higher range bracket.\n\nFor the purposes of this market, it does not matter whether the sentence is concurrent or consecutive to any existing sentence Weinstein is already serving. The market will resolve based on the total prison sentence imposed in this case.\n\nThe primary resolution source for this market will be official information from the New York court system or other involved U.S. government sources; however, a consensus of credible reporting may also be used.",
+    "slug": "will-harvey-weinstein-be-sentenced-to-more-than-30-years-in-prison",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2025-12-31T12:00:00Z",
+    "volume": 59843.765933000024,
+    "liquidity": 1275.27951,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "87036266705700330884624690101790543034325645582506946990660049003915176778714",
+        "price": 0.1075,
+        "bid": 0.1075,
+        "ask": 0.1075,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "26608800110066527607246656145735191327716408714826934367635297922290688100618",
+        "price": 0.8925,
+        "bid": 0.8925,
+        "ask": 0.8925,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0xf7b5491e70b477d451afe7d9c1fde4bf1a927e69ff289d294b96df164f6c10f0",
+    "question": "Will the Carolina Hurricanes win the 2026 NHL Stanley Cup?",
+    "description": "This market will resolve to “Yes” if the Carolina Hurricanes win the 2026 NHL Stanley Cup. Otherwise, this market will resolve to “No”.\n\nThis market will resolve to “No” if it becomes impossible for this team to win the 2026 NHL Stanley Cup based off the rules of the NHL.\n\nThe resolution source for this market will be information from the NHL.\n",
+    "slug": "will-the-carolina-hurricanes-win-the-2026-nhl-stanley-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-06-30T00:00:00Z",
+    "volume": 507707.22873999976,
+    "liquidity": 142248.3705,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "79397003434468715775480922117285203652110865791390656395657957066470661722480",
+        "price": 0.225,
+        "bid": 0.225,
+        "ask": 0.225,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "40473977441010332007887229299980126707900816205713676157646215720073415416624",
+        "price": 0.775,
+        "bid": 0.775,
+        "ask": 0.775,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x4a67e1270a2ed86be8fc524b6114640e41b0c56303ecaa9584deacd62402650a",
+    "question": "Will the Edmonton Oilers win the 2026 NHL Stanley Cup?",
+    "description": "This market will resolve to “Yes” if the Edmonton Oilers win the 2026 NHL Stanley Cup. Otherwise, this market will resolve to “No”.\n\nThis market will resolve to “No” if it becomes impossible for this team to win the 2026 NHL Stanley Cup based off the rules of the NHL.\n\nThe resolution source for this market will be information from the NHL.\n",
+    "slug": "will-the-edmonton-oilers-win-the-2026-nhl-stanley-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-06-30T00:00:00Z",
+    "volume": 765525.727075004,
+    "liquidity": 50316.59348,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "26994926807159308505531352241892510362185630293975165092400997815774500370214",
+        "price": 0.0255,
+        "bid": 0.0255,
+        "ask": 0.0255,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "93243135936056253080731148169253301176422868656587067154045597758216732275467",
+        "price": 0.9745,
+        "bid": 0.9745,
+        "ask": 0.9745,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x44887f53abbfe7531b1384420b185a5f10ee42a4e6c9441d5883abd4f3c1e5ef",
+    "question": "Will the Dallas Stars win the 2026 NHL Stanley Cup?",
+    "description": "This market will resolve to “Yes” if the Dallas Stars win the 2026 NHL Stanley Cup. Otherwise, this market will resolve to “No”.\n\nThis market will resolve to “No” if it becomes impossible for this team to win the 2026 NHL Stanley Cup based off the rules of the NHL.\n\nThe resolution source for this market will be information from the NHL.\n",
+    "slug": "will-the-dallas-stars-win-the-2026-nhl-stanley-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-06-30T00:00:00Z",
+    "volume": 1442446.7363749912,
+    "liquidity": 79936.76806,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "17581551835670188629115760053820570516688258623733228909199148495084738589631",
+        "price": 0.0515,
+        "bid": 0.0515,
+        "ask": 0.0515,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "48350886075645487969183664927181889134443172406220772590108122172302333217567",
+        "price": 0.9485,
+        "bid": 0.9485,
+        "ask": 0.9485,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0xf8f63bb47b2a7c2e0c1be3cedf4075079b11c07476d76a9469065b0c4791961a",
+    "question": "Will the Colorado Avalanche win the 2026 NHL Stanley Cup?",
+    "description": "This market will resolve to “Yes” if the Colorado Avalanche win the 2026 NHL Stanley Cup. Otherwise, this market will resolve to “No”.\n\nThis market will resolve to “No” if it becomes impossible for this team to win the 2026 NHL Stanley Cup based off the rules of the NHL.\n\nThe resolution source for this market will be information from the NHL.\n",
+    "slug": "will-the-colorado-avalanche-win-the-2026-nhl-stanley-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-06-30T00:00:00Z",
+    "volume": 13857101.684637045,
+    "liquidity": 128367.05683,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "101738487887518832481587379955535423775326921556438741919099866785354159699479",
+        "price": 0.2845,
+        "bid": 0.2845,
+        "ask": 0.2845,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "87978082071653935678874296685430503892266481242311708420787197372467948088235",
+        "price": 0.7155,
+        "bid": 0.7155,
+        "ask": 0.7155,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x89389a6b1439856a8d366234c795d72865c927a1aa3cf9d4cc04a3a400defde1",
+    "question": "Will the Vegas Golden Knights win the 2026 NHL Stanley Cup?",
+    "description": "This market will resolve to “Yes” if the Vegas Golden Knights win the 2026 NHL Stanley Cup. Otherwise, this market will resolve to “No”.\n\nThis market will resolve to “No” if it becomes impossible for this team to win the 2026 NHL Stanley Cup based off the rules of the NHL.\n\nThe resolution source for this market will be information from the NHL.\n",
+    "slug": "will-the-vegas-golden-knights-win-the-2026-nhl-stanley-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-06-30T00:00:00Z",
+    "volume": 1682664.5813039918,
+    "liquidity": 96422.14902,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "68803485030073596962715540294172682212192134248970512695855620898253368033218",
+        "price": 0.0395,
+        "bid": 0.0395,
+        "ask": 0.0395,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "58534831224432332845742394199681128700782343287162911891204466367752298448751",
+        "price": 0.9605,
+        "bid": 0.9605,
+        "ask": 0.9605,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0xbdd688664b4f3cf7ec4ec011607934fe8ae720c08353fc14a6e9dfbf6bbcf11a",
+    "question": "Will the Tampa Bay Lightning win the 2026 NHL Stanley Cup?",
+    "description": "This market will resolve to “Yes” if the Tampa Bay Lightning win the 2026 NHL Stanley Cup. Otherwise, this market will resolve to “No”.\n\nThis market will resolve to “No” if it becomes impossible for this team to win the 2026 NHL Stanley Cup based off the rules of the NHL.\n\nThe resolution source for this market will be information from the NHL.\n",
+    "slug": "will-the-tampa-bay-lightning-win-the-2026-nhl-stanley-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-06-30T00:00:00Z",
+    "volume": 1851424.26229897,
+    "liquidity": 73052.7066,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "35573117698117780238142713946749692621043319879346349609080985768472429209643",
+        "price": 0.094,
+        "bid": 0.094,
+        "ask": 0.094,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "76626937605855383085159195963889428951048025160807952406004049979161449392204",
+        "price": 0.906,
+        "bid": 0.906,
+        "ask": 0.906,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x0d082a85f48a5226b1205acdb6e95ead2fe373acabcf6c471f5895f86f42a276",
+    "question": "Will the Minnesota Wild win the 2026 NHL Stanley Cup?",
+    "description": "This market will resolve to “Yes” if the Minnesota Wild win the 2026 NHL Stanley Cup. Otherwise, this market will resolve to “No”.\n\nThis market will resolve to “No” if it becomes impossible for this team to win the 2026 NHL Stanley Cup based off the rules of the NHL.\n\nThe resolution source for this market will be information from the NHL.\n",
+    "slug": "will-the-minnesota-wild-win-the-2026-nhl-stanley-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-06-30T00:00:00Z",
+    "volume": 8942968.797340926,
+    "liquidity": 79648.73298,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "52393600221905688380980180540161090876971894580569515967716227210336633318551",
+        "price": 0.0525,
+        "bid": 0.0525,
+        "ask": 0.0525,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "21431572216384228534336063536634350950418274877940611814171622998125116043513",
+        "price": 0.9475,
+        "bid": 0.9475,
+        "ask": 0.9475,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0xfdc1041ba84bfd8f741eee0bdafce8b1887626c83afd017d18ee9b1f77008b9f",
+    "question": "Will the Utah Mammoth win the 2026 NHL Stanley Cup?",
+    "description": "This market will resolve to “Yes” if the Utah Mammoth win the 2026 NHL Stanley Cup. Otherwise, this market will resolve to “No”.\n\nThis market will resolve to “No” if it becomes impossible for this team to win the 2026 NHL Stanley Cup based off the rules of the NHL.\n\nThe resolution source for this market will be information from the NHL.\n",
+    "slug": "will-the-utah-mammoth-win-the-2026-nhl-stanley-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-06-30T00:00:00Z",
+    "volume": 1244360.6270039952,
+    "liquidity": 149986.21858,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "77381084121703585434442737895792916741546405992903866299069398776973629407962",
+        "price": 0.0415,
+        "bid": 0.0415,
+        "ask": 0.0415,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "113689564696134010397605001832750509195155730029258888570920506901252575318870",
+        "price": 0.9585,
+        "bid": 0.9585,
+        "ask": 0.9585,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0xd66cbb60c333c2eed61717370755c18bc7e494fed90cb507cd9b49c77100951d",
+    "question": "Will the Philadelphia Flyers win the 2026 NHL Stanley Cup?",
+    "description": "This market will resolve to “Yes” if the Philadelphia Flyers win the 2026 NHL Stanley Cup. Otherwise, this market will resolve to “No”.\n\nThis market will resolve to “No” if it becomes impossible for this team to win the 2026 NHL Stanley Cup based off the rules of the NHL.\n\nThe resolution source for this market will be information from the NHL.\n",
+    "slug": "will-the-philadelphia-flyers-win-the-2026-nhl-stanley-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-06-30T00:00:00Z",
+    "volume": 1330233.863574002,
+    "liquidity": 127457.7536,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "89876650777103845660381011502618435196005005316371719080379226306122186643898",
+        "price": 0.0345,
+        "bid": 0.0345,
+        "ask": 0.0345,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "103499896493634243542593138704667892499128832763387792529972229935046936155180",
+        "price": 0.9655,
+        "bid": 0.9655,
+        "ask": 0.9655,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0xceb5e0c99a9195da148d79693f3c6819d44d4d3d7e5be77931e174a3eebe4a85",
+    "question": "Will the Anaheim Ducks win the 2026 NHL Stanley Cup?",
+    "description": "This market will resolve to “Yes” if the Anaheim Ducks win the 2026 NHL Stanley Cup. Otherwise, this market will resolve to “No”.\n\nThis market will resolve to “No” if it becomes impossible for this team to win the 2026 NHL Stanley Cup based off the rules of the NHL.\n\nThe resolution source for this market will be information from the NHL.\n",
+    "slug": "will-the-anaheim-ducks-win-the-2026-nhl-stanley-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-06-30T00:00:00Z",
+    "volume": 1166514.6864579993,
+    "liquidity": 161835.79835,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "1755198236548058730692725634969806667163093356894670716555961840777456036471",
+        "price": 0.0405,
+        "bid": 0.0405,
+        "ask": 0.0405,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "110385100135551380027074853970241483263713796301174664674312206071534212241565",
+        "price": 0.9595,
+        "bid": 0.9595,
+        "ask": 0.9595,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x52847ca1413b76a5570b97c0c432e38dbe61b0140f9d45e912604591b08f6fca",
+    "question": "Will the Montreal Canadiens win the 2026 NHL Stanley Cup?",
+    "description": "This market will resolve to “Yes” if the Montreal Canadiens win the 2026 NHL Stanley Cup. Otherwise, this market will resolve to “No”.\n\nThis market will resolve to “No” if it becomes impossible for this team to win the 2026 NHL Stanley Cup based off the rules of the NHL.\n\nThe resolution source for this market will be information from the NHL.\n",
+    "slug": "will-the-montreal-canadiens-win-the-2026-nhl-stanley-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-06-30T00:00:00Z",
+    "volume": 1835808.971211989,
+    "liquidity": 96262.8376,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "114248353339288476395516704859280406139740194553592209059241667781908210476009",
+        "price": 0.044,
+        "bid": 0.044,
+        "ask": 0.044,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "85705323099460694144578384076010167420188174879039498210125410497783582291911",
+        "price": 0.956,
+        "bid": 0.956,
+        "ask": 0.956,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x82d8c535c037a779ffbd2eb94704b093a5341350b49ca68128fc1c16a0901e4a",
+    "question": "Will the Boston Bruins win the 2026 NHL Stanley Cup?",
+    "description": "This market will resolve to “Yes” if the Boston Bruins win the 2026 NHL Stanley Cup. Otherwise, this market will resolve to “No”.\n\nThis market will resolve to “No” if it becomes impossible for this team to win the 2026 NHL Stanley Cup based off the rules of the NHL.\n\nThe resolution source for this market will be information from the NHL.\n",
+    "slug": "will-the-boston-bruins-win-the-2026-nhl-stanley-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-06-30T00:00:00Z",
+    "volume": 1394968.122515996,
+    "liquidity": 160944.36908,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "96156230578747105661476819749931380321917772151891667564189808442987244872145",
+        "price": 0.003,
+        "bid": 0.003,
+        "ask": 0.003,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "24789905903899678448437032359677789820642352076173124534790862885285353082845",
+        "price": 0.997,
+        "bid": 0.997,
+        "ask": 0.997,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0xbefea6668e49e328db4d5c792bc15cea309bbc06101dfd6ced1e0556ad3ea301",
+    "question": "Will the Buffalo Sabres win the 2026 NHL Stanley Cup?",
+    "description": "This market will resolve to “Yes” if the Buffalo Sabres win the 2026 NHL Stanley Cup. Otherwise, this market will resolve to “No”.\n\nThis market will resolve to “No” if it becomes impossible for this team to win the 2026 NHL Stanley Cup based off the rules of the NHL.\n\nThe resolution source for this market will be information from the NHL.\n",
+    "slug": "will-the-buffalo-sabres-win-the-2026-nhl-stanley-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-06-30T00:00:00Z",
+    "volume": 3235527.723630985,
+    "liquidity": 101630.98039,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "86989765000750155883097827320609652927052275812009422751609183177638176999827",
+        "price": 0.077,
+        "bid": 0.077,
+        "ask": 0.077,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "27567623701936433796601303407226067803713696645804713742508261420706593984700",
+        "price": 0.923,
+        "bid": 0.923,
+        "ask": 0.923,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x9e54856d758cd7de25b75c97273a38d711642f16eacad57e61982028f2791206",
+    "question": "Will the Pittsburgh Penguins win the 2026 NHL Stanley Cup?",
+    "description": "This market will resolve to “Yes” if the Pittsburgh Penguins win the 2026 NHL Stanley Cup. Otherwise, this market will resolve to “No”.\n\nThis market will resolve to “No” if it becomes impossible for this team to win the 2026 NHL Stanley Cup based off the rules of the NHL.\n\nThe resolution source for this market will be information from the NHL.\n",
+    "slug": "will-the-pittsburgh-penguins-win-the-2026-nhl-stanley-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-06-30T00:00:00Z",
+    "volume": 1468884.7850890053,
+    "liquidity": 133720.35873,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "8851645587670338204652278122922654341568030658294043049798551516787478126093",
+        "price": 0.0035,
+        "bid": 0.0035,
+        "ask": 0.0035,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "105159591365972907779164323332625661203129821196625530161327324705373588468320",
+        "price": 0.9965,
+        "bid": 0.9965,
+        "ask": 0.9965,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x22e7b5e35423e76842dd3a5e1a21d13793811080d5e7b2896d0c001bd5e97d54",
+    "question": "Will the Oklahoma City Thunder win the 2026 NBA Finals?",
+    "description": "This market will resolve to “Yes” if the Oklahoma City Thunder win the 2026 NBA Finals. Otherwise, this market will resolve to “No”.\n\nThis market will resolve to “No” if it becomes impossible for this team to win the 2026 NBA Finals based off the rules of the NBA.\n\nThe resolution source for this market will be information from the NBA.",
+    "slug": "will-the-oklahoma-city-thunder-win-the-2026-nba-finals",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-01T00:00:00Z",
+    "volume": 8943563.129251087,
+    "liquidity": 315600.7506,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "49500299856831034491021962156746701298730459370557900271970866855042624695770",
+        "price": 0.525,
+        "bid": 0.525,
+        "ask": 0.525,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "44914465637297319816681463234953032477919413063019359633128421605039733545953",
+        "price": 0.475,
+        "bid": 0.475,
+        "ask": 0.475,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x6b44bd667fad6cb5b3b68d8bd1055a038c77d9176dbd51f123879797cc3368a7",
+    "question": "Will the Cleveland Cavaliers win the 2026 NBA Finals?",
+    "description": "This market will resolve to “Yes” if the Cleveland Cavaliers win the 2026 NBA Finals. Otherwise, this market will resolve to “No”.\n\nThis market will resolve to “No” if it becomes impossible for this team to win the 2026 NBA Finals based off the rules of the NBA.\n\nThe resolution source for this market will be information from the NBA.",
+    "slug": "will-the-cleveland-cavaliers-win-the-2026-nba-finals",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-01T00:00:00Z",
+    "volume": 10462436.766059946,
+    "liquidity": 411832.79429,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "21929863894047830651599085392978377118642353711084157807549430066031384497667",
+        "price": 0.037,
+        "bid": 0.037,
+        "ask": 0.037,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "87330689906224096887625709229706923472442188571057301299963059101866409440363",
+        "price": 0.963,
+        "bid": 0.963,
+        "ask": 0.963,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x713641f745d71f6ec61f906237ffca3c8583f251e49384429a63ceb0ccdb2d37",
+    "question": "Will the New York Knicks win the 2026 NBA Finals?",
+    "description": "This market will resolve to “Yes” if the New York Knicks win the 2026 NBA Finals. Otherwise, this market will resolve to “No”.\n\nThis market will resolve to “No” if it becomes impossible for this team to win the 2026 NBA Finals based off the rules of the NBA.\n\nThe resolution source for this market will be information from the NBA.",
+    "slug": "will-the-new-york-knicks-win-the-2026-nba-finals",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-01T00:00:00Z",
+    "volume": 9345600.003777731,
+    "liquidity": 508568.51003,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "20257190540739490630509657713144742134547949967093643458458133445357169845406",
+        "price": 0.0275,
+        "bid": 0.0275,
+        "ask": 0.0275,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "1770840559776249239623005379825945674336282130390798724203946923853499387834",
+        "price": 0.9725,
+        "bid": 0.9725,
+        "ask": 0.9725,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x649ad05a2868343271fe82ea692031d567ca1af652e3529788933157e94aa088",
+    "question": "Will the Minnesota Timberwolves win the 2026 NBA Finals?",
+    "description": "This market will resolve to “Yes” if the Minnesota Timberwolves win the 2026 NBA Finals. Otherwise, this market will resolve to “No”.\n\nThis market will resolve to “No” if it becomes impossible for this team to win the 2026 NBA Finals based off the rules of the NBA.\n\nThe resolution source for this market will be information from the NBA.",
+    "slug": "will-the-minnesota-timberwolves-win-the-2026-nba-finals",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-01T00:00:00Z",
+    "volume": 12020561.608665885,
+    "liquidity": 731740.83551,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "5771676627182954113677164857547228277089396639521594262964034606220001939923",
+        "price": 0.012,
+        "bid": 0.012,
+        "ask": 0.012,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "65745417184316471123701656851846948699220805945682138735308449338418068204083",
+        "price": 0.988,
+        "bid": 0.988,
+        "ask": 0.988,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x9b56568af78dd036b03c641e0673729d72cd7d63578eb0119cd23eb1f94f1b56",
+    "question": "Will the Houston Rockets win the 2026 NBA Finals?",
+    "description": "This market will resolve to “Yes” if the Houston Rockets win the 2026 NBA Finals. Otherwise, this market will resolve to “No”.\n\nThis market will resolve to “No” if it becomes impossible for this team to win the 2026 NBA Finals based off the rules of the NBA.\n\nThe resolution source for this market will be information from the NBA.",
+    "slug": "will-the-houston-rockets-win-the-2026-nba-finals",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-01T00:00:00Z",
+    "volume": 7426588.186000125,
+    "liquidity": 643718.2306,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "50705248713323657762767401378286601907820885259053704401453562452183494476631",
+        "price": 0.0025,
+        "bid": 0.0025,
+        "ask": 0.0025,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "90032510016992035908144344334497034888131477599689435939081777415620747474258",
+        "price": 0.9975,
+        "bid": 0.9975,
+        "ask": 0.9975,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x13e1cc703a120883a709d3bb29707097952845d61ca6793ea2b4328bae2a7451",
+    "question": "Will the Boston Celtics win the 2026 NBA Finals?",
+    "description": "This market will resolve to “Yes” if the Boston Celtics win the 2026 NBA Finals. Otherwise, this market will resolve to “No”.\n\nThis market will resolve to “No” if it becomes impossible for this team to win the 2026 NBA Finals based off the rules of the NBA.\n\nThe resolution source for this market will be information from the NBA.",
+    "slug": "will-the-boston-celtics-win-the-2026-nba-finals",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-01T00:00:00Z",
+    "volume": 11770536.883899184,
+    "liquidity": 112370.84961,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "98951343420969493497594761179562691809954416596888138302255086663562042936451",
+        "price": 0.1385,
+        "bid": 0.1385,
+        "ask": 0.1385,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "68988781087071608596579516085819336301201525599500826069950065091990393143710",
+        "price": 0.8615,
+        "bid": 0.8615,
+        "ask": 0.8615,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x796e791e7058571e460278814fc7a3183752285338f1400087b98bef3c447908",
+    "question": "Will the Los Angeles Lakers win the 2026 NBA Finals?",
+    "description": "This market will resolve to “Yes” if the Los Angeles Lakers win the 2026 NBA Finals. Otherwise, this market will resolve to “No”.\n\nThis market will resolve to “No” if it becomes impossible for this team to win the 2026 NBA Finals based off the rules of the NBA.\n\nThe resolution source for this market will be information from the NBA.",
+    "slug": "will-the-los-angeles-lakers-win-the-2026-nba-finals",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-01T00:00:00Z",
+    "volume": 17051449.17718501,
+    "liquidity": 379696.56987,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "86297520870744792204751483474339201341298076835836561764334428915355504860913",
+        "price": 0.0355,
+        "bid": 0.0355,
+        "ask": 0.0355,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "70799758189725267592147252808427831117090382599571633897338944002834894241449",
+        "price": 0.9645,
+        "bid": 0.9645,
+        "ask": 0.9645,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x7338d9dea0de820ed621abdff3de2d4b07a573bc0c1a6f7128941f4d0c5606e3",
+    "question": "Will the Orlando Magic win the 2026 NBA Finals?",
+    "description": "This market will resolve to “Yes” if the Orlando Magic win the 2026 NBA Finals. Otherwise, this market will resolve to “No”.\n\nThis market will resolve to “No” if it becomes impossible for this team to win the 2026 NBA Finals based off the rules of the NBA.\n\nThe resolution source for this market will be information from the NBA.",
+    "slug": "will-the-orlando-magic-win-the-2026-nba-finals",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-01T00:00:00Z",
+    "volume": 13533929.388361892,
+    "liquidity": 861288.38212,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "95140346952277551620015228752585531762813913098320669805735291271863965388665",
+        "price": 0.0065,
+        "bid": 0.0065,
+        "ask": 0.0065,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "8332314939688900216478864488824055129773277161185304797159692826491772870785",
+        "price": 0.9935,
+        "bid": 0.9935,
+        "ask": 0.9935,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x4e65282819c98c6aed529f357fbf5983b1ae9407a3c25bd50fe97b2906df68f9",
+    "question": "Will the Denver Nuggets win the 2026 NBA Finals?",
+    "description": "This market will resolve to “Yes” if the Denver Nuggets win the 2026 NBA Finals. Otherwise, this market will resolve to “No”.\n\nThis market will resolve to “No” if it becomes impossible for this team to win the 2026 NBA Finals based off the rules of the NBA.\n\nThe resolution source for this market will be information from the NBA.",
+    "slug": "will-the-denver-nuggets-win-the-2026-nba-finals",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-01T00:00:00Z",
+    "volume": 6849217.330053996,
+    "liquidity": 369658.45903,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "56814725870179920615881424393027028330166672775619196396436430486653645555698",
+        "price": 0.0335,
+        "bid": 0.0335,
+        "ask": 0.0335,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "76502490060038468983308870100553689583720145873703214557423080536912388384600",
+        "price": 0.9665,
+        "bid": 0.9665,
+        "ask": 0.9665,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0xb6b3d7a2037b3faa7e1306d741840d453432902d73cc9a146a035e40271eae73",
+    "question": "Will the San Antonio Spurs win the 2026 NBA Finals?",
+    "description": "This market will resolve to “Yes” if the San Antonio Spurs win the 2026 NBA Finals. Otherwise, this market will resolve to “No”.\n\nThis market will resolve to “No” if it becomes impossible for this team to win the 2026 NBA Finals based off the rules of the NBA.\n\nThe resolution source for this market will be information from the NBA.",
+    "slug": "will-the-san-antonio-spurs-win-the-2026-nba-finals",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-01T00:00:00Z",
+    "volume": 24198427.721079074,
+    "liquidity": 356934.3218,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "102227184035967850089766981958743064457339118173548431660886438726896222843254",
+        "price": 0.1565,
+        "bid": 0.1565,
+        "ask": 0.1565,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "12636035070565821048178968461063687179393834041535317885287743395873720755118",
+        "price": 0.8435,
+        "bid": 0.8435,
+        "ask": 0.8435,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x567f1ff714731fafa702d454a105b064a7ec4d10f6fb71ad3221f4918681c709",
+    "question": "Will the Philadelphia 76ers win the 2026 NBA Finals?",
+    "description": "This market will resolve to “Yes” if the Philadelphia 76ers win the 2026 NBA Finals. Otherwise, this market will resolve to “No”.\n\nThis market will resolve to “No” if it becomes impossible for this team to win the 2026 NBA Finals based off the rules of the NBA.\n\nThe resolution source for this market will be information from the NBA.",
+    "slug": "will-the-philadelphia-76ers-win-the-2026-nba-finals",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-01T00:00:00Z",
+    "volume": 13491511.10801995,
+    "liquidity": 734454.13461,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "5644679982684846699855787022092402984369447277920326773883608030240292167917",
+        "price": 0.0005,
+        "bid": 0.0005,
+        "ask": 0.0005,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "87034176766941774290222899044689953504253543270446832998578029452480078966654",
+        "price": 0.9995,
+        "bid": 0.9995,
+        "ask": 0.9995,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0xe202539dfbeced92dc4112f134a205c80ca6cf4db32bd82f05b291c297219fd8",
+    "question": "Will the Detroit Pistons win the 2026 NBA Finals?",
+    "description": "This market will resolve to “Yes” if the Detroit Pistons win the 2026 NBA Finals. Otherwise, this market will resolve to “No”.\n\nThis market will resolve to “No” if it becomes impossible for this team to win the 2026 NBA Finals based off the rules of the NBA.\n\nThe resolution source for this market will be information from the NBA.",
+    "slug": "will-the-detroit-pistons-win-the-2026-nba-finals",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-01T00:00:00Z",
+    "volume": 12345583.716120755,
+    "liquidity": 320741.21991,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "59742411602053785892348440048778056320272639465974092140970920277782290781360",
+        "price": 0.0225,
+        "bid": 0.0225,
+        "ask": 0.0225,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "17229559412398170618704225341353811929634795955092110836823940954753499964583",
+        "price": 0.9775,
+        "bid": 0.9775,
+        "ask": 0.9775,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x4405c62496c4fdd275d17ec31567a01534013c518c314ce61bb633b5e7cb6426",
+    "question": "Will the Toronto Raptors win the 2026 NBA Finals?",
+    "description": "This market will resolve to “Yes” if the Toronto Raptors win the 2026 NBA Finals. Otherwise, this market will resolve to “No”.\n\nThis market will resolve to “No” if it becomes impossible for this team to win the 2026 NBA Finals based off the rules of the NBA.\n\nThe resolution source for this market will be information from the NBA.",
+    "slug": "will-the-toronto-raptors-win-the-2026-nba-finals",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-01T00:00:00Z",
+    "volume": 15799534.66449068,
+    "liquidity": 667211.52309,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "111039354521750894925304771773687530394455073318948424656845140321925374032772",
+        "price": 0.006,
+        "bid": 0.006,
+        "ask": 0.006,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "30357767947480285883761313215827358416711193584639846702115748417508830705975",
+        "price": 0.994,
+        "bid": 0.994,
+        "ask": 0.994,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0xa49fc89bfb87bb302bfc43567709850565161bdaed5bc506bff4b85fd3c5c2ee",
+    "question": "Will the Phoenix Suns win the 2026 NBA Finals?",
+    "description": "This market will resolve to “Yes” if the Phoenix Suns win the 2026 NBA Finals. Otherwise, this market will resolve to “No”.\n\nThis market will resolve to “No” if it becomes impossible for this team to win the 2026 NBA Finals based off the rules of the NBA.\n\nThe resolution source for this market will be information from the NBA.",
+    "slug": "will-the-phoenix-suns-win-the-2026-nba-finals",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-01T00:00:00Z",
+    "volume": 17564204.051959917,
+    "liquidity": 1777618.60935,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "106572879185916710503631021854572801471104977091252507745096331167318654083650",
+        "price": 0.0005,
+        "bid": 0.0005,
+        "ask": 0.0005,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "58087869106006103428727335605812139174959660101169613412457934526729964554109",
+        "price": 0.9995,
+        "bid": 0.9995,
+        "ask": 0.9995,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x6331a779482df72d904c3c1e12b6409ff836bc06f8c97945cba9b25ada2c605c",
+    "question": "Will the Portland Trail Blazers win the 2026 NBA Finals?",
+    "description": "This market will resolve to “Yes” if the Portland Trail Blazers win the 2026 NBA Finals. Otherwise, this market will resolve to “No”.\n\nThis market will resolve to “No” if it becomes impossible for this team to win the 2026 NBA Finals based off the rules of the NBA.\n\nThe resolution source for this market will be information from the NBA.",
+    "slug": "will-the-portland-trail-blazers-win-the-2026-nba-finals",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-01T00:00:00Z",
+    "volume": 24200650.667439595,
+    "liquidity": 993628.91954,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "82402823484466457361170410951601106261368113664328436062375970009969959380598",
+        "price": 0.0005,
+        "bid": 0.0005,
+        "ask": 0.0005,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "48262548906086150698299934962091284390063927164151224719187427455086357699251",
+        "price": 0.9995,
+        "bid": 0.9995,
+        "ask": 0.9995,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0xfda648d24cdad32dfe959195bd75ef4c81fbea5130eb6c7a4a0c18607a11ce63",
+    "question": "Will the Atlanta Hawks win the 2026 NBA Finals?",
+    "description": "This market will resolve to “Yes” if the Atlanta Hawks win the 2026 NBA Finals. Otherwise, this market will resolve to “No”.\n\nThis market will resolve to “No” if it becomes impossible for this team to win the 2026 NBA Finals based off the rules of the NBA.\n\nThe resolution source for this market will be information from the NBA.",
+    "slug": "will-the-atlanta-hawks-win-the-2026-nba-finals",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-01T00:00:00Z",
+    "volume": 18874924.975957215,
+    "liquidity": 532094.83209,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "46018378684967856456278619377189791752501136727354913341087475972513992392267",
+        "price": 0.0065,
+        "bid": 0.0065,
+        "ask": 0.0065,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "20129983565567341010763130180914686218636854709832178286955080327775892526669",
+        "price": 0.9935,
+        "bid": 0.9935,
+        "ask": 0.9935,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0xe459d1b598da754c9fd5fc155b6efe3a144aa80abbc7d041fce7d35d903d3c8e",
+    "question": "Will MegaETH perform an airdrop by June 30? ",
+    "description": "This market will resolve to \"Yes\" if MegaETH launches a token and performs an airdrop by June 30, 2026, 11:59 PM ET. Otherwise, this market will resolve to \"No\".\n\nFor the purposes of this market \"locked\" tokens or non-swappable tokens will not suffice to resolve this market to \"Yes\". Airdrops of NFTs will not qualify.\n\nThe primary resolution source for this market is on-chain information and official information from MegaETH, however a consensus of credible reporting will also be used.",
+    "slug": "will-megaeth-perform-an-airdrop-by-june-30-143-229-513-574-212-254",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-02-01T05:00:00Z",
+    "volume": 1454015.570037996,
+    "liquidity": 14112.07801,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "96797656031191119176188453471637044475353637081608890153571023284371119486681",
+        "price": 0.52,
+        "bid": 0.52,
+        "ask": 0.52,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "102844052859529992637803443259193395522411387362312885030298797134413940349829",
+        "price": 0.48,
+        "bid": 0.48,
+        "ask": 0.48,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": false
+  },
+  {
+    "condition_id": "0x7976b8dbacf9077eb1453a62bcefd6ab2df199acd28aad276ff0d920d6992892",
+    "question": "Will Spain win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-spain-win-the-2026-fifa-world-cup-963",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 16710433.751181262,
+    "liquidity": 1059673.589,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "4394372887385518214471608448209527405727552777602031099972143344338178308080",
+        "price": 0.1545,
+        "bid": 0.1545,
+        "ask": 0.1545,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "112680630004798425069810935278212000865453267506345451433803052322987302357330",
+        "price": 0.8455,
+        "bid": 0.8455,
+        "ask": 0.8455,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x375409bc5eeeff961e82b479caeccc20f33d15738e5bce1186d628aa3d9dfb1f",
+    "question": "Will England win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-england-win-the-2026-fifa-world-cup-937",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 14029131.25984894,
+    "liquidity": 904729.37323,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "115556263888245616435851357148058235707004733438163639091106356867234218207169",
+        "price": 0.1115,
+        "bid": 0.1115,
+        "ask": 0.1115,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "77121637225348873006259930776623502125079210522997384841464684944292365296940",
+        "price": 0.8885,
+        "bid": 0.8885,
+        "ask": 0.8885,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x9b6fef249040fd17e9c107955b37ac2c3e923509b6b0ff01cc463a331ddeb894",
+    "question": "Will France win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-france-win-the-2026-fifa-world-cup-924",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 18360951.873494487,
+    "liquidity": 560874.10825,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "108233603819467706476318984012158651931658302669301887462181073562758483842092",
+        "price": 0.1665,
+        "bid": 0.1665,
+        "ask": 0.1665,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "32270411694523539495262303868629477861017829722282576458031815333486368239544",
+        "price": 0.8335,
+        "bid": 0.8335,
+        "ask": 0.8335,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x30d55d8124ee1e12dabe89201badc45669b81dff69e4ce44d961f32878ec178a",
+    "question": "Will Brazil win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-brazil-win-the-2026-fifa-world-cup-183",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 15128546.203799877,
+    "liquidity": 1401818.08762,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "27576533317283401577758999384642760405921738493660383550832555714312627457443",
+        "price": 0.0855,
+        "bid": 0.0855,
+        "ask": 0.0855,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "52986718774908357330412653486471347449818893503063830313445318937088822580057",
+        "price": 0.9145,
+        "bid": 0.9145,
+        "ask": 0.9145,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x0c4cd2055d6ea89354ffddc55d6dbcef9355748112ea952fc925f3db6a5c457f",
+    "question": "Will Argentina win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-argentina-win-the-2026-fifa-world-cup-245",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 14413233.68239417,
+    "liquidity": 1191866.94713,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "18812649149814341758733697580460697418474693998558159483117100240528657629879",
+        "price": 0.0885,
+        "bid": 0.0885,
+        "ask": 0.0885,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "115428153746996892211798999366308897078723117634059783423375188043903703749062",
+        "price": 0.9115,
+        "bid": 0.9115,
+        "ask": 0.9115,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x1595b4818eeb1ea1e0bec5de6f057218e557feee9b405a0e930d290384fa1d16",
+    "question": "Will Germany win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-germany-win-the-2026-fifa-world-cup-467",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 13730649.266244737,
+    "liquidity": 1049584.89111,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "81739002353269632749850710185641576213562066971072676369728657545679630163887",
+        "price": 0.0525,
+        "bid": 0.0525,
+        "ask": 0.0525,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "45484070731786948288366703334552551439356529561722304542938873238430842810537",
+        "price": 0.9475,
+        "bid": 0.9475,
+        "ask": 0.9475,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x4f3421fb2daf5cca7430ed8d8132463963081572d75434393a1808fdb8829fe8",
+    "question": "Will Portugal win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-portugal-win-the-2026-fifa-world-cup-912",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 16029501.855085606,
+    "liquidity": 767230.79825,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "45415751658241142530386585138386640503488308219341470020075667342738719018629",
+        "price": 0.0775,
+        "bid": 0.0775,
+        "ask": 0.0775,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "31940783580344558651011323787577288681658737625185216525249046282994042503801",
+        "price": 0.9225,
+        "bid": 0.9225,
+        "ask": 0.9225,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x9be56371f6a29d12769b2f196847ee825b9585ebb8bfa042136be031b081eba1",
+    "question": "Will Netherlands win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-netherlands-win-the-2026-fifa-world-cup-739",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 15320850.731719896,
+    "liquidity": 1434105.61465,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "55935183786009449883683540312350046975246300613283087403691731856990327029236",
+        "price": 0.0335,
+        "bid": 0.0335,
+        "ask": 0.0335,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "103711573894614472510743687764792452240919804104728889027222697502832804498206",
+        "price": 0.9665,
+        "bid": 0.9665,
+        "ask": 0.9665,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0xcdb1f0400949238a63d3e88243d2ada08cd9c2a71985ced9f0cfd5e66354cf90",
+    "question": "Will USA win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-usa-win-the-2026-fifa-world-cup-467",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 24633045.085848954,
+    "liquidity": 2541043.75883,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "94603648636330087039501304492699481091005420017442244191603206509188088089447",
+        "price": 0.0125,
+        "bid": 0.0125,
+        "ask": 0.0125,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "45270201343463663182019040935560267543606888663369415494551943549463253748361",
+        "price": 0.9875,
+        "bid": 0.9875,
+        "ask": 0.9875,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x7876851632c295043c66536150a304cb785abdf712ba8489d298c6e6926be106",
+    "question": "Will Uruguay win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-uruguay-win-the-2026-fifa-world-cup-932",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 14268841.88568999,
+    "liquidity": 3668429.98343,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "97239126062673310243763617236644392945530356142765650402171508075574679292913",
+        "price": 0.0105,
+        "bid": 0.0105,
+        "ask": 0.0105,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "19291692040378529618917910599727571242305935029274321291612270922648172794670",
+        "price": 0.9895,
+        "bid": 0.9895,
+        "ask": 0.9895,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x5ccfe1b69a582d2985db08a8481a0d74c314b1fce9b4711ae2efb2c6467fe6aa",
+    "question": "Will Mexico win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-mexico-win-the-2026-fifa-world-cup-529",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 15549377.12981332,
+    "liquidity": 2303546.75918,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "22587775301869146748237913050505932485648958481571808324285560650057390882036",
+        "price": 0.0105,
+        "bid": 0.0105,
+        "ask": 0.0105,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "89041006475364789358805026139650677807087698981377208157664917554760333198878",
+        "price": 0.9895,
+        "bid": 0.9895,
+        "ask": 0.9895,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x32cfa52198e85e070d1b17d1b53c5c3a6aaae7736cdc33fa6aa04d353f0c2811",
+    "question": "Will Belgium win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-belgium-win-the-2026-fifa-world-cup-358",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 14296205.605737088,
+    "liquidity": 1957633.93395,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "30815807067456631524510535002617106205417832891402132396713720656146245200000",
+        "price": 0.0205,
+        "bid": 0.0205,
+        "ask": 0.0205,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "71145888994888153292442623019750517622535407476309461406574461229898137896934",
+        "price": 0.9795,
+        "bid": 0.9795,
+        "ask": 0.9795,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0xe99cc59f32b10d23acf196d1a0e8264ea30fca198428acadd3464b06ff60e771",
+    "question": "Will Colombia win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-colombia-win-the-2026-fifa-world-cup-734",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 13159729.952395782,
+    "liquidity": 2403009.4342,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "98803390175521456712653678280474920637934596234667490983228578374641217211132",
+        "price": 0.0165,
+        "bid": 0.0165,
+        "ask": 0.0165,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "66826965351166675155887515167306086307412332225034738589879767944935462342380",
+        "price": 0.9835,
+        "bid": 0.9835,
+        "ask": 0.9835,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x0189df05ed7bf84d799213b01a79571e305c03b2ac5359cfbb3a323448ba20fa",
+    "question": "Will Japan win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-japan-win-the-2026-fifa-world-cup-112",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 17386878.878422033,
+    "liquidity": 825048.79215,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "19159976531313550247579355752030367100657092033093647047491459813592996250034",
+        "price": 0.0215,
+        "bid": 0.0215,
+        "ask": 0.0215,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "30480347120583372139084467958111617967991872806450711152133323106144105346695",
+        "price": 0.9785,
+        "bid": 0.9785,
+        "ask": 0.9785,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x7b52405ad0e0d31bfe970940b67d77f24ecedeab8a2361c11148c02a006e325c",
+    "question": "Will Norway win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-norway-win-the-2026-fifa-world-cup-893",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 13638366.051869309,
+    "liquidity": 1509776.81133,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "60447443643099453130956385288904175887233107411078568881602330835010340506057",
+        "price": 0.0225,
+        "bid": 0.0225,
+        "ask": 0.0225,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "111538579557239934343870815626480092245052857494675784434731223739153238373070",
+        "price": 0.9775,
+        "bid": 0.9775,
+        "ask": 0.9775,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x67443cb1ffb2bf180f7df5b6ca7adff63f7e8e933c7e41405ba118f3e9f8befb",
+    "question": "Will Canada win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-canada-win-the-2026-fifa-world-cup-755",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 16116610.119107049,
+    "liquidity": 4678594.43917,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "99303605181956827630838461879484468077121754034387765735989859308848389894408",
+        "price": 0.0055,
+        "bid": 0.0055,
+        "ask": 0.0055,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "69727421603231227453181655442677441322028725849495647325726292556190704508348",
+        "price": 0.9945,
+        "bid": 0.9945,
+        "ask": 0.9945,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0xff0cfa9506cfa95759e4c7591654195bd26e3011f9882b51439135e04f2b69f1",
+    "question": "Will Tunisia win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-tunisia-win-the-2026-fifa-world-cup-165",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 15655380.250351207,
+    "liquidity": 5518537.54636,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "86035858416252385053603758548087253570549129844230230783932738372075949702177",
+        "price": 0.0025,
+        "bid": 0.0025,
+        "ask": 0.0025,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "110028171623846551687151479494325822981244001939750602839571004785511377900325",
+        "price": 0.9975,
+        "bid": 0.9975,
+        "ask": 0.9975,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0xbaf7780f9059e34b84301fd411f8dc573b4d56adfe6e0cda33daf304b1438da4",
+    "question": "Will Ecuador win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-ecuador-win-the-2026-fifa-world-cup-986",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 17125530.3849108,
+    "liquidity": 2258480.45603,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "39971087496427056640429359043364261029374524049464674733142166279730655826181",
+        "price": 0.0075,
+        "bid": 0.0075,
+        "ask": 0.0075,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "76638532101043658630369484092110685720624002077285242368448475410253808399541",
+        "price": 0.9925,
+        "bid": 0.9925,
+        "ask": 0.9925,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x675bba4df50fd123f7fbfbafa67e9b75f4092d85ce0f9148ce78fc945964c856",
+    "question": "Will Paraguay win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-paraguay-win-the-2026-fifa-world-cup-967",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 16734420.67619435,
+    "liquidity": 5056874.54033,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "93165696161088512376930999170413968261015485018106746563527821398897374023845",
+        "price": 0.0045,
+        "bid": 0.0045,
+        "ask": 0.0045,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "64564930076241670294516403352804569921660004975706088367725793399153499601932",
+        "price": 0.9955,
+        "bid": 0.9955,
+        "ask": 0.9955,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x9e5f9d8c384f8fe368b195fa9a780be58643dff7360588a4e577012df8af00a7",
+    "question": "Will New Zealand win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-new-zealand-win-the-2026-fifa-world-cup-635",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 23578657.73550432,
+    "liquidity": 5180057.16033,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "79609298644734030886284029462369514848707878622071495577618126141372199748974",
+        "price": 0.0015,
+        "bid": 0.0015,
+        "ask": 0.0015,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "19300733445673111152563700067702596357686293159476142927049736146587326855017",
+        "price": 0.9985,
+        "bid": 0.9985,
+        "ask": 0.9985,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x098e2be3df8ab529940c567819f8ef007cf007820e9d627642a5bbfaa42af372",
+    "question": "Will Australia win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-australia-win-the-2026-fifa-world-cup-816",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 17773487.70070997,
+    "liquidity": 5065463.0433,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "43661509251351142169227141691164122649250455115438867334436875294380701133091",
+        "price": 0.0025,
+        "bid": 0.0025,
+        "ask": 0.0025,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "36726371220435722462734467218102931225443889493446335046337202920930764439505",
+        "price": 0.9975,
+        "bid": 0.9975,
+        "ask": 0.9975,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x84edef36bded182da6a395ac6c785dba8f3e09b6c5ad041385b2042536cbef25",
+    "question": "Will Iran win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-iran-win-the-2026-fifa-world-cup-788",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 16817418.57246501,
+    "liquidity": 5079847.25416,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "33747305042007778221968790541070114008811587676172030120559423448386310500957",
+        "price": 0.0015,
+        "bid": 0.0015,
+        "ask": 0.0015,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "80777593725072886250387021020386140490553855405927920539616996585797139624012",
+        "price": 0.9985,
+        "bid": 0.9985,
+        "ask": 0.9985,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x965ebc5d79eb1ec02cad67245a44b9e45b33359018f013fb6cf81d5bbf7bcc8d",
+    "question": "Will Uzbekistan win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-uzbekistan-win-the-2026-fifa-world-cup-773",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 33456977.501700103,
+    "liquidity": 4647617.71257,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "90538013438399246674125939147272424357773921253199632436930218305581040235987",
+        "price": 0.0015,
+        "bid": 0.0015,
+        "ask": 0.0015,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "105754735859803813986361714630753276237891536292440584153365249756008425623608",
+        "price": 0.9985,
+        "bid": 0.9985,
+        "ask": 0.9985,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x65307f30dce84ac35e41813035d3c04933da830dc4efbbb2fcdc4b282700ef3b",
+    "question": "Will South Korea win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-south-korea-win-the-2026-fifa-world-cup-485",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 19523084.47716499,
+    "liquidity": 3996062.14168,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "80724786407275266937534613008558715581084712230616856739273522348302669402554",
+        "price": 0.0035,
+        "bid": 0.0035,
+        "ask": 0.0035,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "100966306057435164439067339228624332754270252294302540206756310699254942177976",
+        "price": 0.9965,
+        "bid": 0.9965,
+        "ask": 0.9965,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x33a87d02fa01e958929385c74b8627d32cc4474e9ebd312d268865c5207147fa",
+    "question": "Will Jordan win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-jordan-win-the-2026-fifa-world-cup-233",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 20185859.85908169,
+    "liquidity": 5479339.32421,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "98686749402500678753487703372528277029342097490180026723487433517076969282825",
+        "price": 0.0015,
+        "bid": 0.0015,
+        "ask": 0.0015,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "64799211284650435818319700973089994510508551533538430983091938324711590775445",
+        "price": 0.9985,
+        "bid": 0.9985,
+        "ask": 0.9985,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x37a6de1b21803e5f3fb1965116218215d79963af4f7e51659696366267a63a03",
+    "question": "Will Morocco win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-morocco-win-the-2026-fifa-world-cup-464",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 15702604.274052136,
+    "liquidity": 1286747.99825,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "69910730841487615802736046038473620030754616421912831175284551372639933569112",
+        "price": 0.0155,
+        "bid": 0.0155,
+        "ask": 0.0155,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "64291832879722161879651094688874074984529456778901604558632306686248535158725",
+        "price": 0.9845,
+        "bid": 0.9845,
+        "ask": 0.9845,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x233ce0c3969a5cd5079287f16fcd283be7c1db82263e08697f85dbe1b4d2113c",
+    "question": "Will South Africa win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-south-africa-win-the-2026-fifa-world-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 24116057.107410934,
+    "liquidity": 5270210.97907,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "29544965695734183971376022965555206180154533479443150154863135205600734339980",
+        "price": 0.0025,
+        "bid": 0.0025,
+        "ask": 0.0025,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "111245917748445356120705119950074393193967942028497826347734348592797775138872",
+        "price": 0.9975,
+        "bid": 0.9975,
+        "ask": 0.9975,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x6972edb1b3f8cd8192651a665fc424dff846efe1c4a2376f628d4b20c704144c",
+    "question": "Will Senegal win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-senegal-win-the-2026-fifa-world-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 13920106.896873455,
+    "liquidity": 2691999.406,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "32169302633723235235251659810064817019484855501133685217130365128535248672349",
+        "price": 0.0065,
+        "bid": 0.0065,
+        "ask": 0.0065,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "113265059897956746691843122168656761655221736394810246476379385708691102755798",
+        "price": 0.9935,
+        "bid": 0.9935,
+        "ask": 0.9935,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x289568d555ec620ed6fa33c936c5f42649d3a2e30748a1daf7079f42453fbea4",
+    "question": "Will Ivory Coast win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-ivory-coast-win-the-2026-fifa-world-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 14655662.113467783,
+    "liquidity": 5489762.25776,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "58374167250364215964582274356498746399676421878376948523944979542572589542202",
+        "price": 0.0035,
+        "bid": 0.0035,
+        "ask": 0.0035,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "70753274007979480001882804624792378182371580903023185997594096497692751054228",
+        "price": 0.9965,
+        "bid": 0.9965,
+        "ask": 0.9965,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x881a3ffa618b6ae0ab95a5637e310afb1afc2d99c921bfe3235b15eccfce0344",
+    "question": "Will Ghana win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-ghana-win-the-2026-fifa-world-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 15065407.850679936,
+    "liquidity": 5387210.48369,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "43907673646206657865778036957293730446366626078011238443367990170655175896145",
+        "price": 0.0025,
+        "bid": 0.0025,
+        "ask": 0.0025,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "10398766811303655595339782235864350348828881761515262235130136230008770201075",
+        "price": 0.9975,
+        "bid": 0.9975,
+        "ask": 0.9975,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x7412d284c8f63791fec807f9b1f61c6fe61163621775a3dc8686cd2575272abe",
+    "question": "Will Egypt win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-egypt-win-the-2026-fifa-world-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 16786008.648259304,
+    "liquidity": 4271724.32913,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "30499731947464516579580181356221397335865912996104577000510883912653418218808",
+        "price": 0.0035,
+        "bid": 0.0035,
+        "ask": 0.0035,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "65652065262666433168143828460188123377751865571317729312655170081534213236077",
+        "price": 0.9965,
+        "bid": 0.9965,
+        "ask": 0.9965,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x5a59d269c2b5108cd2f64c624e46ee2c8b5cfd88b882582565f927918315b6aa",
+    "question": "Will Algeria win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-algeria-win-the-2026-fifa-world-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 15693448.86414877,
+    "liquidity": 5282450.02123,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "58392024727359233794992635293106675983094683080284912908526627785964160484939",
+        "price": 0.0025,
+        "bid": 0.0025,
+        "ask": 0.0025,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "49871252661742427315226109307954871479267113637891510501334531720454017709951",
+        "price": 0.9975,
+        "bid": 0.9975,
+        "ask": 0.9975,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x3bc69cb672591e4fcd2ef856b64b219a906e15d4601b50066ac81a446574dfaf",
+    "question": "Will Cape Verde win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-cape-verde-win-the-2026-fifa-world-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 16870864.630299795,
+    "liquidity": 5337429.8718,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "61595193871140044336898809781418183952441527621084596848414908595268863899573",
+        "price": 0.0015,
+        "bid": 0.0015,
+        "ask": 0.0015,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "51603557647605526784272094285656249935467020057355371392584885347569984808630",
+        "price": 0.9985,
+        "bid": 0.9985,
+        "ask": 0.9985,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x4fe305a2ae995a52ff278895344895fe587b4fec3d5f04347b4dbf5e99bce99c",
+    "question": "Will Qatar win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-qatar-win-the-2026-fifa-world-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 17742117.48068883,
+    "liquidity": 5526594.77531,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "18605216520960122093689427575806651607517827372535894526532079999408408169156",
+        "price": 0.0015,
+        "bid": 0.0015,
+        "ask": 0.0015,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "84553189233868837011173802287245466242361930181501918469303092803731514390253",
+        "price": 0.9985,
+        "bid": 0.9985,
+        "ask": 0.9985,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x3fb8a8de2ac275882d72b2c4f22d41776fcf033f9e413a77a84dd395c0d5257c",
+    "question": "Will Saudi Arabia win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-saudi-arabia-win-the-2026-fifa-world-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 22328530.897072513,
+    "liquidity": 5281473.98442,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "23542782083949026234898323432000742558288032327930681121040136746492993951914",
+        "price": 0.0025,
+        "bid": 0.0025,
+        "ask": 0.0025,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "114546670306823666642195507621782951860129088864927983250949362928442688463192",
+        "price": 0.9975,
+        "bid": 0.9975,
+        "ask": 0.9975,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0xf950740bc71136155d6525cc0528a582c81f88812bff227803190c32ca25f54d",
+    "question": "Will Scotland win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-scotland-win-the-2026-fifa-world-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 16538367.566038167,
+    "liquidity": 4705381.43121,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "105252206997885252352889070218074909957179496257006510170583432513037465278006",
+        "price": 0.0035,
+        "bid": 0.0035,
+        "ask": 0.0035,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "83036729811309811995794968105073507480036161583897760544623930912713394505713",
+        "price": 0.9965,
+        "bid": 0.9965,
+        "ask": 0.9965,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x3a26ca6425e2d98f14935670bc22cdb0744defc6f6d83c65f8c413a921c5c70c",
+    "question": "Will Switzerland win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-switzerland-win-the-2026-fifa-world-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 13686341.286921347,
+    "liquidity": 2232922.72405,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "62131913648515148266463816694306031394539656598501514114816028349608560215534",
+        "price": 0.0095,
+        "bid": 0.0095,
+        "ask": 0.0095,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "45315272750116791836504013666029583517532908319286234834610455739871173419179",
+        "price": 0.9905,
+        "bid": 0.9905,
+        "ask": 0.9905,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0xfe230d510eaf545198c0d62bb17871e5fe8989f1b19aa54c0c062b858360987c",
+    "question": "Will Austria win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-austria-win-the-2026-fifa-world-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 14845918.675557397,
+    "liquidity": 2778410.13472,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "88168215299416146215691671077998911754346458567817860712850392736799004561327",
+        "price": 0.0055,
+        "bid": 0.0055,
+        "ask": 0.0055,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "88156352219650092845199724072742433369069988856568846096337560285593531555407",
+        "price": 0.9945,
+        "bid": 0.9945,
+        "ask": 0.9945,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0xe5bd80313b8859e3f5761568ac9498866ea9d4419e4d1b6a877a9a9bd2754cb4",
+    "question": "Will Croatia win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-croatia-win-the-2026-fifa-world-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 13779545.618347924,
+    "liquidity": 1897509.87405,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "106593539437032467615148553707998472829334050617128244920821917025746481184109",
+        "price": 0.0085,
+        "bid": 0.0085,
+        "ask": 0.0085,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "22335540631248526397385139154377717431237265005174891396662761131414559126312",
+        "price": 0.9915,
+        "bid": 0.9915,
+        "ask": 0.9915,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x506f80bcf76bc75e6b31a250e2d754f347c4c231665326931d58bdb339ba1913",
+    "question": "Will Haiti win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-haiti-win-the-2026-fifa-world-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 16059897.590820055,
+    "liquidity": 5692462.16367,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "113379015922744700109400673843380371641970914885846970213129353605968934558386",
+        "price": 0.0015,
+        "bid": 0.0015,
+        "ask": 0.0015,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "7452445673065716792879664309598949732608843578632923430902121866203768915742",
+        "price": 0.9985,
+        "bid": 0.9985,
+        "ask": 0.9985,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0xdb4b2f370c3d0e996fbb32213c87aa5402936e3d4882432b6738e2f5661b79a6",
+    "question": "Will Curaçao win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-curaao-win-the-2026-fifa-world-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 30161416.875593107,
+    "liquidity": 5113868.55568,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "69020832226510184384177497367584971770730339593583713190288186699694495509961",
+        "price": 0.0015,
+        "bid": 0.0015,
+        "ask": 0.0015,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "57880090995762041847706075076337915070476459103836011898392946953962001410644",
+        "price": 0.9985,
+        "bid": 0.9985,
+        "ask": 0.9985,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x9779c09fd4dd0a1c82dd82618269c2aa5669d91305293b396d1e0b8a166b566e",
+    "question": "Will Panama win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-team-z-win-the-2026-fifa-world-cup-316",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 6868191.691104003,
+    "liquidity": 5691942.75624,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "112181485529919660901332188537214992263355343785744498550605179448744432717486",
+        "price": 0.0015,
+        "bid": 0.0015,
+        "ask": 0.0015,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "54713157489249811305010442901837547158293079674050742517995375602657385198814",
+        "price": 0.9985,
+        "bid": 0.9985,
+        "ask": 0.9985,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0xd0dbdc94b28c5cffeef64ed6b13e5f0f2324fb177e5ffaa634b48c88fe18d5e7",
+    "question": "Will Sweden win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-sweden-win-the-2026-fifa-world-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 5553683.541548982,
+    "liquidity": 3503532.86099,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "41004484905556820430171783088292854654441952667499527125436634397522798168110",
+        "price": 0.0055,
+        "bid": 0.0055,
+        "ask": 0.0055,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "5505010946036330007136366602843685650332532780067992773464881166501235782352",
+        "price": 0.9945,
+        "bid": 0.9945,
+        "ask": 0.9945,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0xcd836ec4d94b8a4ddc5713d80fe9db245d2fb4796eaf12337974da1b4e96100d",
+    "question": "Will Congo DR win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-congo-dr-win-the-2026-fifa-world-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 11841923.417635033,
+    "liquidity": 3311572.70682,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "87403333427856945144645806003352057704193778078820484282942507058200689996202",
+        "price": 0.0015,
+        "bid": 0.0015,
+        "ask": 0.0015,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "43528414195007977002195624860045129351164807876978747566236159804271175691009",
+        "price": 0.9985,
+        "bid": 0.9985,
+        "ask": 0.9985,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x51e8c8df709aa78f64d2d9324d9d2556270f81e3966ade308099e5338bb4e4c9",
+    "question": "Will Iraq win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-iraq-win-the-2026-fifa-world-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 6679084.764996967,
+    "liquidity": 5580594.83369,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "53465512181802150755993130711224070738002100921790051090044528012833736167995",
+        "price": 0.0015,
+        "bid": 0.0015,
+        "ask": 0.0015,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "104137480799334367207764507943317769727862093918816792190533154232239547234217",
+        "price": 0.9985,
+        "bid": 0.9985,
+        "ask": 0.9985,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0xbce6698c9a61376c0709a2a724a9cf0dd0236d8dea882533073b6bb062efbee0",
+    "question": "Will Bosnia-Herzegovina win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-bosnia-herzegovina-win-the-2026-fifa-world-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 5365791.990087012,
+    "liquidity": 5457867.69488,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "89770121993255619705119104591644526712193505786928967250693522950895615785005",
+        "price": 0.0025,
+        "bid": 0.0025,
+        "ask": 0.0025,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "334114555297655433618918589540388457186530884312703967834539640747792887116",
+        "price": 0.9975,
+        "bid": 0.9975,
+        "ask": 0.9975,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x5e614739363bbfc399469102c600e4e8260032d41e59e0bc12ebc0e71231642d",
+    "question": "Will Czechia win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-czechia-win-the-2026-fifa-world-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 5787364.368890994,
+    "liquidity": 4297209.71808,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "35797818400757287472708740881657961304270157125643131597907636474183210188025",
+        "price": 0.0025,
+        "bid": 0.0025,
+        "ask": 0.0025,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "7178132479418833271220202496199802982233847400465199094850639568068936253094",
+        "price": 0.9975,
+        "bid": 0.9975,
+        "ask": 0.9975,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x106ccc4508432a065a67394837d4c2c529a8d77ed69fa3ba90b81eedf5236598",
+    "question": "Will Turkiye win the 2026 FIFA World Cup?",
+    "description": "This market will resolve according to the national team that wins the 2026 FIFA World Cup.\n\nIf at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are eliminated in the knockout stage), this market will resolve immediately to “No”.\n\nIf the 2026 FIFA World Cup is permanently canceled or has not been completed by October 13, 2026, 11:59 PM this market will resolve to “Other”.\n\nThe primary resolution source will be official information from FIFA, however, a consensus of credible reporting may also be used.",
+    "slug": "will-turkiye-win-the-2026-fifa-world-cup",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2026-07-20T00:00:00Z",
+    "volume": 7548251.844059014,
+    "liquidity": 2534233.00988,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "18704778540677036028551740861729937822696511439974613107767625408338509619395",
+        "price": 0.0065,
+        "bid": 0.0065,
+        "ask": 0.0065,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "79903375968759183705713252823977157971970949200427111658524625623146332835513",
+        "price": 0.9935,
+        "bid": 0.9935,
+        "ask": 0.9935,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x0f49db97f71c68b1e42a6d16e3de93d85dbf7d4148e3f018eb79e88554be9f75",
+    "question": "Will Gavin Newsom win the 2028 Democratic presidential nomination?",
+    "description": "This market will resolve to “Yes” if the named individual wins and accepts the 2028 nomination of the Democratic Party for U.S. president. Otherwise, this market will resolve to “No”.\n\nThe resolution source for this market will be a consensus of official Democratic Party sources.\n\nAny replacement of the democratic nominee before election day will not change the resolution of the market.",
+    "slug": "will-gavin-newsom-win-the-2028-democratic-presidential-nomination-568",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2028-11-07T00:00:00Z",
+    "volume": 24653464.620940622,
+    "liquidity": 452445.3431,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "54533043819946592547517511176940999955633860128497669742211153063842200957669",
+        "price": 0.2565,
+        "bid": 0.2565,
+        "ask": 0.2565,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "87854174148074652060467921081181402357467303721471806610111179101805869578687",
+        "price": 0.7435,
+        "bid": 0.7435,
+        "ask": 0.7435,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0xe6bcc2f1dd025ce5e1833190f7c60a71171c94f805df55b9ab0ded695ec93565",
+    "question": "Will Alexandria Ocasio-Cortez win the 2028 Democratic presidential nomination?",
+    "description": "This market will resolve to “Yes” if the named individual wins and accepts the 2028 nomination of the Democratic Party for U.S. president. Otherwise, this market will resolve to “No”.\n\nThe resolution source for this market will be a consensus of official Democratic Party sources.\n\nAny replacement of the democratic nominee before election day will not change the resolution of the market.",
+    "slug": "will-alexandria-ocasio-cortez-win-the-2028-democratic-presidential-nomination-653",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2028-11-07T00:00:00Z",
+    "volume": 12588360.986996222,
+    "liquidity": 517688.2199,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "107064985435494333113391038470401719113272800530429703182710416066774068907304",
+        "price": 0.0835,
+        "bid": 0.0835,
+        "ask": 0.0835,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "65176072261324737856085688071627118509549293922582857186996392180609764586527",
+        "price": 0.9165,
+        "bid": 0.9165,
+        "ask": 0.9165,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x4c325469d9b516ef4e6b8f73a81a12607dec075e3c2fd454f91765aaeafc4760",
+    "question": "Will Pete Buttigieg win the 2028 Democratic presidential nomination?",
+    "description": "This market will resolve to “Yes” if the named individual wins and accepts the 2028 nomination of the Democratic Party for U.S. president. Otherwise, this market will resolve to “No”.\n\nThe resolution source for this market will be a consensus of official Democratic Party sources.\n\nAny replacement of the democratic nominee before election day will not change the resolution of the market.",
+    "slug": "will-pete-buttigieg-win-the-2028-democratic-presidential-nomination-687",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2028-11-07T00:00:00Z",
+    "volume": 10307547.636431625,
+    "liquidity": 439223.03141,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "91031279171981959197361710127213577102576826515163085396576756946418341946256",
+        "price": 0.0435,
+        "bid": 0.0435,
+        "ask": 0.0435,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "18494065527924073750217237765784380365430319396356251245973222791140100738948",
+        "price": 0.9565,
+        "bid": 0.9565,
+        "ask": 0.9565,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0xd65891729ce093cc12236856837eba1a0872fc7998fd4294c21346f7db68079c",
+    "question": "Will Josh Shapiro win the 2028 Democratic presidential nomination?",
+    "description": "This market will resolve to “Yes” if the named individual wins and accepts the 2028 nomination of the Democratic Party for U.S. president. Otherwise, this market will resolve to “No”.\n\nThe resolution source for this market will be a consensus of official Democratic Party sources.\n\nAny replacement of the democratic nominee before election day will not change the resolution of the market.",
+    "slug": "will-josh-shapiro-win-the-2028-democratic-presidential-nomination-977",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2028-11-07T00:00:00Z",
+    "volume": 7383374.479868242,
+    "liquidity": 485923.22776,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "71169839497420596285841847514123589847893415750912355173877524195175834054354",
+        "price": 0.0385,
+        "bid": 0.0385,
+        "ask": 0.0385,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "55290827599553280245963175724940496753557722439999671239772487781170052583987",
+        "price": 0.9615,
+        "bid": 0.9615,
+        "ask": 0.9615,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x61d9486c0f7e14ed98f3b177b6adcb3cd45646c92e8bbfbf209789b86472d4b6",
+    "question": "Will Wes Moore win the 2028 Democratic presidential nomination?",
+    "description": "This market will resolve to “Yes” if the named individual wins and accepts the 2028 nomination of the Democratic Party for U.S. president. Otherwise, this market will resolve to “No”.\n\nThe resolution source for this market will be a consensus of official Democratic Party sources.\n\nAny replacement of the democratic nominee before election day will not change the resolution of the market.",
+    "slug": "will-wes-moore-win-the-2028-democratic-presidential-nomination-714",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2028-11-07T00:00:00Z",
+    "volume": 15382067.802135969,
+    "liquidity": 538872.16868,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "90227223115596293448966158151606153337847900483048338623540402385929720677904",
+        "price": 0.0125,
+        "bid": 0.0125,
+        "ask": 0.0125,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "105134691322323565615831879054043168027913414000042547943201361115853277749482",
+        "price": 0.9875,
+        "bid": 0.9875,
+        "ask": 0.9875,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0xc8f1cf5d4f26e0fd9c8fe89f2a7b3263b902cf14fde7bfccef525753bb492e47",
+    "question": "Will Stephen A. Smith win the 2028 Democratic presidential nomination?",
+    "description": "This market will resolve to “Yes” if the named individual wins and accepts the 2028 nomination of the Democratic Party for U.S. president. Otherwise, this market will resolve to “No”.\n\nThe resolution source for this market will be a consensus of official Democratic Party sources.\n\nAny replacement of the democratic nominee before election day will not change the resolution of the market.",
+    "slug": "will-stephen-a-smith-win-the-2028-democratic-presidential-nomination-914",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2028-11-07T00:00:00Z",
+    "volume": 19734469.376668334,
+    "liquidity": 935239.85237,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "60590045489347122735554346200880179420435533609307820342798544098823516727807",
+        "price": 0.0105,
+        "bid": 0.0105,
+        "ask": 0.0105,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "76005700027045000587004110133818166617024719626220722682005164003117993034812",
+        "price": 0.9895,
+        "bid": 0.9895,
+        "ask": 0.9895,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x909659c9436228e2be56d5582ba6188166f2f8bf3c596335512c8f2e380d01ec",
+    "question": "Will Kamala Harris win the 2028 Democratic presidential nomination?",
+    "description": "This market will resolve to “Yes” if the named individual wins and accepts the 2028 nomination of the Democratic Party for U.S. president. Otherwise, this market will resolve to “No”.\n\nThe resolution source for this market will be a consensus of official Democratic Party sources.\n\nAny replacement of the democratic nominee before election day will not change the resolution of the market.",
+    "slug": "will-kamala-harris-win-the-2028-democratic-presidential-nomination-641",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2028-11-07T00:00:00Z",
+    "volume": 11254550.49394101,
+    "liquidity": 310462.96667,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "38171024903091354977195167437673496224420673639143973968032407064172828043588",
+        "price": 0.0765,
+        "bid": 0.0765,
+        "ask": 0.0765,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "26930844951471612827925270830087046333229637930899178134435055616497220846773",
+        "price": 0.9235,
+        "bid": 0.9235,
+        "ask": 0.9235,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0xe39adea057926dc197fe30a441f57a340b2a232d5a687010f78bba9b6e02620f",
+    "question": "Will Gretchen Whitmer win the 2028 Democratic presidential nomination?",
+    "description": "This market will resolve to “Yes” if the named individual wins and accepts the 2028 nomination of the Democratic Party for U.S. president. Otherwise, this market will resolve to “No”.\n\nThe resolution source for this market will be a consensus of official Democratic Party sources.\n\nAny replacement of the democratic nominee before election day will not change the resolution of the market.",
+    "slug": "will-gretchen-whitmer-win-the-2028-democratic-presidential-nomination-676",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2028-11-07T00:00:00Z",
+    "volume": 8511982.683046034,
+    "liquidity": 578640.87655,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "57761428076807364758801249497410455358987881775226117256631754592198558850468",
+        "price": 0.013,
+        "bid": 0.013,
+        "ask": 0.013,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "64300336035644500626313522990854070672468621241744347587785777226296613235598",
+        "price": 0.987,
+        "bid": 0.987,
+        "ask": 0.987,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x1d519b87999e3d4e90e1e8f57b5eee73a0ba488ff3fdb70867f294733aba84a9",
+    "question": "Will Andy Beshear win the 2028 Democratic presidential nomination?",
+    "description": "This market will resolve to “Yes” if the named individual wins and accepts the 2028 nomination of the Democratic Party for U.S. president. Otherwise, this market will resolve to “No”.\n\nThe resolution source for this market will be a consensus of official Democratic Party sources.\n\nAny replacement of the democratic nominee before election day will not change the resolution of the market.",
+    "slug": "will-andy-beshear-win-the-2028-democratic-presidential-nomination-832",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2028-11-07T00:00:00Z",
+    "volume": 11575318.74800187,
+    "liquidity": 646890.97072,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "26468656392978559668331516709623917078428425933265692717836103090220693717685",
+        "price": 0.0215,
+        "bid": 0.0215,
+        "ask": 0.0215,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "26335362363448644358593284423242327477307616743233875606762153873424287882825",
+        "price": 0.9785,
+        "bid": 0.9785,
+        "ask": 0.9785,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x74dba1ce1ae9dd535414e85f2d9ab5ea32c0fb1acc9b7130b67e6d91217e24e1",
+    "question": "Will Jon Ossoff win the 2028 Democratic presidential nomination?",
+    "description": "This market will resolve to “Yes” if the named individual wins and accepts the 2028 nomination of the Democratic Party for U.S. president. Otherwise, this market will resolve to “No”.\n\nThe resolution source for this market will be a consensus of official Democratic Party sources.\n\nAny replacement of the democratic nominee before election day will not change the resolution of the market.",
+    "slug": "will-jon-ossoff-win-the-2028-democratic-presidential-nomination-885",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2028-11-07T00:00:00Z",
+    "volume": 10463976.505105933,
+    "liquidity": 332916.75989,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "70071592420137476676935286377781779672157004436137616627487590484756055232944",
+        "price": 0.0545,
+        "bid": 0.0545,
+        "ask": 0.0545,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "107829893465244243112531790315844862173967342141753896250561816305880797209350",
+        "price": 0.9455,
+        "bid": 0.9455,
+        "ask": 0.9455,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0x9d4f94f82de9d13ff1d3318639ab9000ee2533949e525343156f374fb00bd9b1",
+    "question": "Will Mark Cuban win the 2028 Democratic presidential nomination?",
+    "description": "This market will resolve to “Yes” if the named individual wins and accepts the 2028 nomination of the Democratic Party for U.S. president. Otherwise, this market will resolve to “No”.\n\nThe resolution source for this market will be a consensus of official Democratic Party sources.\n\nAny replacement of the democratic nominee before election day will not change the resolution of the market.",
+    "slug": "will-mark-cuban-win-the-2028-democratic-presidential-nomination-329",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2028-11-07T00:00:00Z",
+    "volume": 21190628.335929308,
+    "liquidity": 1811822.52437,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "58378309871183461257693288827678410871907006920578755035402846056315798427503",
+        "price": 0.0095,
+        "bid": 0.0095,
+        "ask": 0.0095,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "55392527126713018429304496836617506663024188480522297953714346140749923557790",
+        "price": 0.9905,
+        "bid": 0.9905,
+        "ask": 0.9905,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  },
+  {
+    "condition_id": "0xe883f2fda25a605a184bb5fe583afce6cc21ea0b348b6a3728ec3067553c548d",
+    "question": "Will J.B. Pritzker win the 2028 Democratic presidential nomination?",
+    "description": "This market will resolve to “Yes” if the named individual wins and accepts the 2028 nomination of the Democratic Party for U.S. president. Otherwise, this market will resolve to “No”.\n\nThe resolution source for this market will be a consensus of official Democratic Party sources.\n\nAny replacement of the democratic nominee before election day will not change the resolution of the market.",
+    "slug": "will-jb-pritzker-win-the-2028-democratic-presidential-nomination-288",
+    "group_slug": "",
+    "status": "Active",
+    "end_date": "2028-11-07T00:00:00Z",
+    "volume": 13712603.80015505,
+    "liquidity": 587747.3459,
+    "outcomes": [
+      {
+        "name": "Yes",
+        "token_id": "103988345069738240821107916249290759786442703283901164377120414690701074137717",
+        "price": 0.0195,
+        "bid": 0.0195,
+        "ask": 0.0195,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      },
+      {
+        "name": "No",
+        "token_id": "108650988487983371520585351370999192979899647080710024226285750050382033453124",
+        "price": 0.9805,
+        "bid": 0.9805,
+        "ask": 0.9805,
+        "bid_depth": 0.0,
+        "ask_depth": 0.0
+      }
+    ],
+    "category": null,
+    "tags": [],
+    "neg_risk": true
+  }
+]
