@@ -87,27 +87,48 @@ fn render_summary_panel(f: &mut Frame, area: Rect, app: &App) {
     let pos_count = app.positions.len();
 
     // Return vs first net-worth log entry; annualized over the elapsed window.
-    let (return_str, return_color, ann_str, ann_color) = match app.net_worth_history.first() {
+    let (pd_str, pd_color, pm_str, pm_color, pa_str, pa_color) = match app.net_worth_history.first()
+    {
         Some(&(t0, nw0)) if nw0 > 0.0 && app.net_worth_history.len() >= 2 => {
             let t1 = app.net_worth_history.last().map(|&(t, _)| t).unwrap_or(t0);
             let r = (net_worth - nw0) / nw0;
             let elapsed = (t1 - t0).max(1.0);
+
+            let days = elapsed / 86400.0;
+            let months = elapsed / (30.4375 * 86400.0);
             let years = elapsed / (365.25 * 86400.0);
-            let ann = if years > 0.0 && (1.0 + r) > 0.0 {
-                (1.0 + r).powf(1.0 / years) - 1.0
-            } else {
-                0.0
+
+            let calc_ret = |t: f64| {
+                if t > 0.0 && (1.0 + r) > 0.0 {
+                    (1.0 + r).powf(1.0 / t) - 1.0
+                } else {
+                    0.0
+                }
             };
+
+            let pd = calc_ret(days);
+            let pm = calc_ret(months);
+            let pa = calc_ret(years);
+
             let color = |v: f64| if v >= 0.0 { theme::GREEN } else { theme::RED };
             let sign = |v: f64| if v >= 0.0 { "+" } else { "" };
             (
-                format!("{}{:.2}%", sign(r), r * 100.0),
-                color(r),
-                format!("{}{:.1}%", sign(ann), ann * 100.0),
-                color(ann),
+                format!("{}{:.2}%", sign(pd), pd * 100.0),
+                color(pd),
+                format!("{}{:.2}%", sign(pm), pm * 100.0),
+                color(pm),
+                format!("{}{:.2}%", sign(pa), pa * 100.0),
+                color(pa),
             )
         }
-        _ => ("—".to_string(), theme::DIM, "—".to_string(), theme::DIM),
+        _ => (
+            "—".to_string(),
+            theme::DIM,
+            "—".to_string(),
+            theme::DIM,
+            "—".to_string(),
+            theme::DIM,
+        ),
     };
 
     // Title with metadata
@@ -137,26 +158,29 @@ fn render_summary_panel(f: &mut Frame, area: Rect, app: &App) {
         "Cash",
         "Positions",
         "Max Payout",
-        "Return",
-        "Return (annualised)",
+        "Return p.d.",
+        "Return p.m.",
+        "Return p.a.",
     ];
     let value_strs = [
         format!("${:.2}", net_worth),
         format!("${:.2}", bal),
         format!("${:.2} ({})", positions_value, pos_count),
         format!("${:.2}", max_payout),
-        return_str,
-        ann_str,
+        pd_str,
+        pm_str,
+        pa_str,
     ];
     let value_colors = [
         theme::GREEN,
         theme::TEXT,
         theme::TEXT,
         theme::BLUE,
-        return_color,
-        ann_color,
+        pd_color,
+        pm_color,
+        pa_color,
     ];
-    let value_bold = [true, true, true, true, true, true];
+    let value_bold = [true, true, true, true, true, true, true];
 
     let col_w = (inner.width as usize).saturating_sub(2) / labels.len();
 
