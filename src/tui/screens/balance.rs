@@ -77,18 +77,7 @@ fn render_summary_panel(f: &mut Frame, area: Rect, app: &App) {
 
     let bal = app.balance.unwrap_or(0.0);
 
-    let allowance_str = match app.allowance {
-        Some(a) if a > 1e18 => "Unlimited".to_string(),
-        Some(a) => format!("${:.2}", a),
-        None => "—".to_string(),
-    };
-
     let low_allowance = app.allowance.map(|a| a < 10.0).unwrap_or(false);
-    let allowance_color = if low_allowance {
-        theme::BORDER_WARNING
-    } else {
-        theme::GREEN
-    };
 
     let positions_value: f64 = app.positions.iter().map(|p| p.size * p.current_price).sum();
     let total_shares: f64 = app.positions.iter().map(|p| p.size).sum();
@@ -144,36 +133,33 @@ fn render_summary_panel(f: &mut Frame, area: Rect, app: &App) {
     f.render_widget(block, area);
 
     let labels = [
+        "Net Worth",
         "Cash",
-        "Allowance",
         "Positions",
         "Shares",
-        "Net Worth",
         "Max Payout",
         "Return",
         "Return (annualised)",
     ];
     let value_strs = [
+        format!("${:.2}", net_worth),
         format!("${:.2}", bal),
-        allowance_str,
         format!("${:.2} ({})", positions_value, pos_count),
         format!("{:.2}", total_shares),
-        format!("${:.2}", net_worth),
         format!("${:.2}", max_payout),
         return_str,
         ann_str,
     ];
     let value_colors = [
-        theme::TEXT,
-        allowance_color,
-        theme::TEXT,
-        theme::TEXT,
         theme::GREEN,
+        theme::TEXT,
+        theme::TEXT,
+        theme::TEXT,
         theme::BLUE,
         return_color,
         ann_color,
     ];
-    let value_bold = [true, false, true, false, true, true, true, true];
+    let value_bold = [true, true, true, false, true, true, true];
 
     let col_w = (inner.width as usize).saturating_sub(2) / labels.len();
 
