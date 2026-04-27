@@ -204,7 +204,12 @@ fn build_item(
     if starred {
         line1_spans.push(Span::styled("★ ", Style::default().fg(theme::YELLOW)));
     }
-    line1_spans.push(Span::styled(question, Style::default().fg(theme::TEXT)));
+    line1_spans.push(Span::styled(
+        question,
+        Style::default()
+            .fg(theme::TEXT)
+            .add_modifier(Modifier::BOLD),
+    ));
     let line1 = Line::from(line1_spans);
 
     // Line 2: metadata
@@ -215,7 +220,7 @@ fn build_item(
 
     let mut spans: Vec<Span> = vec![
         Span::raw("  "),
-        Span::styled(vol, Style::default().fg(theme::YELLOW)),
+        Span::styled(vol, Style::default().fg(theme::DIM)),
     ];
     if !prices_str.is_empty() {
         spans.push(Span::styled("  · ", Style::default().fg(theme::VERY_DIM)));

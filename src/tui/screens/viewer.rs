@@ -370,7 +370,12 @@ fn build_viewer_items(
         .map(|r| {
             let line1 = Line::from(vec![
                 Span::raw("  "),
-                Span::styled(r.question, Style::default().fg(theme::TEXT)),
+                Span::styled(
+                    r.question,
+                    Style::default()
+                        .fg(theme::TEXT)
+                        .add_modifier(Modifier::BOLD),
+                ),
             ]);
 
             let outcome_cell = pad_right(truncate(&r.outcome, outcome_width), outcome_width);
@@ -381,17 +386,15 @@ fn build_viewer_items(
 
             let line2 = Line::from(vec![
                 Span::raw("  "),
-                Span::styled(outcome_cell, Style::default().fg(theme::CYAN)),
+                Span::styled(outcome_cell, Style::default().fg(theme::DIM)),
                 Span::styled("  · ", Style::default().fg(theme::VERY_DIM)),
-                Span::styled(size_cell, Style::default().fg(theme::TEXT)),
+                Span::styled(size_cell, Style::default().fg(theme::DIM)),
                 Span::styled("  · ", Style::default().fg(theme::VERY_DIM)),
                 Span::styled(price_cell, Style::default().fg(r.cur_color)),
                 Span::styled("  · ", Style::default().fg(theme::VERY_DIM)),
                 Span::styled(
                     value_cell,
-                    Style::default()
-                        .fg(theme::TEXT)
-                        .add_modifier(Modifier::BOLD),
+                    Style::default().fg(theme::DIM).add_modifier(Modifier::BOLD),
                 ),
                 Span::styled("  · ", Style::default().fg(theme::VERY_DIM)),
                 Span::styled(
