@@ -84,7 +84,7 @@ fn render_summary(f: &mut Frame, area: Rect, app: &App) {
 
     labels.push(("Shares", theme::DIM));
     values.push((
-        format!("{:.0} ({})", total_shares, count),
+        format!("{:.2} ({})", total_shares, count),
         theme::TEXT,
         true,
     ));
