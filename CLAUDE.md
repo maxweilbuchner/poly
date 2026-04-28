@@ -60,12 +60,12 @@ src/
 - `GET /events?slug=<slug>` — event by slug (contains nested markets)
 - `GET /markets?market_slug=<slug>` — market by slug directly
 
-**CLOB API** (`https://clob.polymarket.com`) — public reads, auth for writes:
+**CLOB API** (`https://clob.polymarket.com`, V2 since 2026-04-28; override with `POLY_CLOB_URL`) — public reads, auth for writes:
 - `GET /book?token_id=<id>` — order book (public)
-- `GET /fee-rate?token_id=<id>` — fee rate (public)
+- `GET /clob-markets/<condition_id>` — market parameters incl. fee details `fd: {r, e, to}`, tick size, min order size (public)
 - `POST /order` — place order (EIP-712 signed + HMAC auth headers)
 - `DELETE /order` — cancel order (HMAC auth headers)
-- `DELETE /orders` — cancel all (HMAC auth headers)
+- `POST /cancel-all` — cancel all (HMAC auth headers)
 - `GET /data/orders?status=live` — open orders (HMAC auth headers)
 - `GET /data/order/<id>` — single order status (HMAC auth headers)
 - `GET /data/positions?user=<address>` — positions (HMAC auth headers)
@@ -79,21 +79,21 @@ Two independent auth mechanisms:
 - signature = `url_safe_base64(hmac_sha256(url_safe_base64_decode(secret), message))`
 - headers: `POLY_ADDRESS`, `POLY_API_KEY`, `POLY_PASSPHRASE`, `POLY_TIMESTAMP`, `POLY_SIGNATURE`
 
-**EIP-712** (for order signing, `client.rs::place_order`):
-- Domain: name="Polymarket CTF Exchange", version="1", chainId=137, verifyingContract=CTF_EXCHANGE
-- Type: `Order(uint256 salt, address maker, ...)` — exact camelCase field names required
-- `maker` = funder/proxy address (or signer if no proxy), `signer` = EOA private key address
-- `signatureType` = 0 (EOA) or 1 (proxy wallet)
-- `owner` in POST body = CLOB API key UUID (not wallet address)
-- Amounts are in USDC micro-units (6 decimals): `size_scaled = size * 1_000_000`
+**EIP-712** (for order signing, `client.rs::place_order`, **CLOB V2**):
+- Domain: name="Polymarket CTF Exchange", version="2", chainId=137, verifyingContract=`0xE111...996B` (standard) / `0xe222...0F59` (neg-risk).
+- Type: `Order(uint256 salt, address maker, address signer, uint256 tokenId, uint256 makerAmount, uint256 takerAmount, uint8 side, uint8 signatureType, uint256 timestamp, bytes32 metadata, bytes32 builder)` — 11 fields, no `taker`/`expiration`/`nonce`/`feeRateBps`. `taker` and `expiration` are unsigned server-side fields included in the JSON body but excluded from the signed digest.
+- `maker` = funder/proxy address (or signer if no proxy), `signer` = EOA private key address.
+- `signatureType` = 0 (EOA) or 1 (proxy wallet); fees applied by protocol at match time, not embedded in the order.
+- `owner` in POST body = CLOB API key UUID (not wallet address).
+- Amounts are in pUSD micro-units (6 decimals): `size_scaled = size * 1_000_000`.
 
 ## Key Constraints
 
-- Minimum order: 5 shares, $1.00 USDC total cost
+- Minimum order: 5 shares, $1.00 pUSD total cost
 - Price range: 0.01 – 0.99 (inclusive)
 - Size precision: 2 decimal places; cost precision: 4 decimal places
 - Token IDs are large decimal integers (from `clobTokenIds` in Gamma API response)
-- USDC on Polygon has 6 decimals (not 18)
+- pUSD on Polygon has 6 decimals (1:1 USDC-backed via the Collateral Onramp)
 
 ## Environment Variables
 

@@ -82,24 +82,27 @@ fn extract_data_array(v: serde_json::Value) -> Vec<serde_json::Value> {
 const GAMMA_API: &str = "https://gamma-api.polymarket.com";
 const CLOB_API: &str = "https://clob.polymarket.com";
 const DATA_API: &str = "https://data-api.polymarket.com";
-const CTF_EXCHANGE: &str = "0x4bFb41d5B3570DeFd03C39a9A4D8dE6Bd8B8982E";
-const NEG_RISK_CTF_EXCHANGE: &str = "0xC5d563A36AE78145C45a50134d48A1215220f80a";
+// V2 (post-2026-04-28) exchange addresses.
+const CTF_EXCHANGE: &str = "0xE111180000d2663C0091e4f400237545B87B996B";
+const NEG_RISK_CTF_EXCHANGE: &str = "0xe2222d279d744050d28e00520010520000310F59";
 
-/// EIP-712 inputs for a Polymarket CTF Exchange order. Amount fields are in
-/// USDC micro-units (6 decimals). Exposed for regression testing.
+/// EIP-712 inputs for a Polymarket CTF Exchange V2 order. Amount fields are in
+/// pUSD micro-units (6 decimals). `expiration` and `taker` are server-side body
+/// fields and are intentionally NOT in this struct — V2 omits them from the
+/// signed payload. Exposed for regression testing.
 #[derive(Debug, Clone)]
 pub struct OrderSigningInputs {
     pub salt: U256,
     pub maker: H160,
     pub signer: H160,
-    pub taker: H160,
     pub token_id: U256,
     pub maker_amount: u64,
     pub taker_amount: u64,
-    pub expiration: u64,
-    pub fee_rate_bps: u64,
     pub side_u8: u8,
     pub signature_type: u8,
+    pub timestamp_ms: u64,
+    pub metadata: [u8; 32],
+    pub builder: [u8; 32],
     pub neg_risk: bool,
 }
 
@@ -109,15 +112,17 @@ pub struct OrderSigningInputs {
 /// that `LocalWallet::sign_hash` should be invoked on. Pure function — no
 /// randomness, no I/O — so it is directly testable against golden vectors.
 pub fn order_eip712_digest(i: &OrderSigningInputs) -> [u8; 32] {
+    // V2 typehash — 11 fields, no taker/expiration/nonce/feeRateBps. Field
+    // order matches `clob-client-v2/src/order-utils/model/ctfExchangeV2TypedData.ts`.
     let type_hash = ethers::utils::keccak256(
-        b"Order(uint256 salt,address maker,address signer,address taker,uint256 tokenId,uint256 makerAmount,uint256 takerAmount,uint256 expiration,uint256 nonce,uint256 feeRateBps,uint8 side,uint8 signatureType)",
+        b"Order(uint256 salt,address maker,address signer,uint256 tokenId,uint256 makerAmount,uint256 takerAmount,uint8 side,uint8 signatureType,uint256 timestamp,bytes32 metadata,bytes32 builder)",
     );
 
     let domain_type_hash = ethers::utils::keccak256(
         b"EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)",
     );
     let domain_name_hash = ethers::utils::keccak256(b"Polymarket CTF Exchange");
-    let domain_version_hash = ethers::utils::keccak256(b"1");
+    let domain_version_hash = ethers::utils::keccak256(b"2");
     let chain_id = U256::from(137u64);
     let exchange_addr = if i.neg_risk {
         NEG_RISK_CTF_EXCHANGE
@@ -141,7 +146,7 @@ pub fn order_eip712_digest(i: &OrderSigningInputs) -> [u8; 32] {
     };
 
     let struct_hash = {
-        let mut enc = Vec::with_capacity(13 * 32);
+        let mut enc = Vec::with_capacity(12 * 32);
         enc.extend_from_slice(&type_hash);
         let mut v = [0u8; 32];
         i.salt.to_big_endian(&mut v);
@@ -153,9 +158,6 @@ pub fn order_eip712_digest(i: &OrderSigningInputs) -> [u8; 32] {
         v[12..].copy_from_slice(i.signer.as_bytes());
         enc.extend_from_slice(&v);
         let mut v = [0u8; 32];
-        v[12..].copy_from_slice(i.taker.as_bytes());
-        enc.extend_from_slice(&v);
-        let mut v = [0u8; 32];
         i.token_id.to_big_endian(&mut v);
         enc.extend_from_slice(&v);
         let mut v = [0u8; 32];
@@ -165,18 +167,16 @@ pub fn order_eip712_digest(i: &OrderSigningInputs) -> [u8; 32] {
         U256::from(i.taker_amount).to_big_endian(&mut v);
         enc.extend_from_slice(&v);
         let mut v = [0u8; 32];
-        U256::from(i.expiration).to_big_endian(&mut v);
-        enc.extend_from_slice(&v);
-        enc.extend_from_slice(&[0u8; 32]); // nonce = 0
-        let mut v = [0u8; 32];
-        U256::from(i.fee_rate_bps).to_big_endian(&mut v);
-        enc.extend_from_slice(&v);
-        let mut v = [0u8; 32];
         v[31] = i.side_u8;
         enc.extend_from_slice(&v);
         let mut v = [0u8; 32];
         v[31] = i.signature_type;
         enc.extend_from_slice(&v);
+        let mut v = [0u8; 32];
+        U256::from(i.timestamp_ms).to_big_endian(&mut v);
+        enc.extend_from_slice(&v);
+        enc.extend_from_slice(&i.metadata);
+        enc.extend_from_slice(&i.builder);
         ethers::utils::keccak256(enc)
     };
 
@@ -187,7 +187,9 @@ pub fn order_eip712_digest(i: &OrderSigningInputs) -> [u8; 32] {
     msg[34..66].copy_from_slice(&struct_hash);
     ethers::utils::keccak256(msg)
 }
-const USDC_ADDRESS: &str = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174";
+// V2 collateral: pUSD (Polymarket USD), 6 decimals, ERC-20 on Polygon. Backed
+// 1:1 by USDC via the Collateral Onramp. Replaces USDC.e at the V2 cutover.
+const COLLATERAL_ADDRESS: &str = "0xC011a7E12a19f7B1f670d46F03B03f3342E82DFB";
 /// Gnosis ConditionalTokens contract — holds ERC-1155 outcome tokens and handles redemption.
 const CTF_ADDRESS: &str = "0x4D97DCd97eC945f40cF65F87097ACe5EA0476045";
 
@@ -370,7 +372,9 @@ impl PolyClient {
             auth,
             provider,
             gamma_url: GAMMA_API.to_string(),
-            clob_url: CLOB_API.to_string(),
+            // Allow `POLY_CLOB_URL` override for testing against the V2 staging
+            // endpoint (`https://clob-v2.polymarket.com`) before the cutover.
+            clob_url: std::env::var("POLY_CLOB_URL").unwrap_or_else(|_| CLOB_API.to_string()),
             data_url: DATA_API.to_string(),
             api_semaphore: Arc::new(Semaphore::new(MAX_CONCURRENT_REQUESTS)),
         }
@@ -841,7 +845,7 @@ impl PolyClient {
                 AppError::Auth("No wallet or funder address configured (POLY_PRIVATE_KEY)".into())
             })?;
 
-        let usdc: H160 = USDC_ADDRESS.parse().map_err(AppError::other)?;
+        let usdc: H160 = COLLATERAL_ADDRESS.parse().map_err(AppError::other)?;
         let contract = ERC20::new(usdc, provider.clone().into());
         let raw: U256 = contract
             .balance_of(address)
@@ -864,7 +868,7 @@ impl PolyClient {
                 AppError::Auth("No wallet or funder address configured (POLY_PRIVATE_KEY)".into())
             })?;
 
-        let usdc: H160 = USDC_ADDRESS.parse().map_err(AppError::other)?;
+        let usdc: H160 = COLLATERAL_ADDRESS.parse().map_err(AppError::other)?;
         let spender: H160 = CTF_EXCHANGE.parse().map_err(AppError::other)?;
         let contract = ERC20::new(usdc, provider.clone().into());
         let raw: U256 = contract
@@ -1300,9 +1304,7 @@ impl PolyClient {
         let order_type = params.order_type;
         let expiry = params.expiry;
         let neg_risk = params.neg_risk;
-        let fee_rate_bps = self.get_fee_rate(token_id).await.ok_or_else(|| {
-            AppError::Network("fee rate fetch failed — cannot place order safely".to_string())
-        })?;
+        // V2: fees are protocol-set at match time and not part of the signed order.
         let (auth, wallet) = self.require_auth()?;
 
         let salt = {
@@ -1315,7 +1317,14 @@ impl PolyClient {
 
         let signer = wallet.address();
         let maker = self.funder_address.unwrap_or(signer);
+        // `taker` is unsigned in V2 (sent in JSON body, not in EIP-712 struct).
         let taker = H160::zero();
+        let timestamp_ms = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_millis() as u64)
+            .unwrap_or(0);
+        let metadata = [0u8; 32];
+        let builder = [0u8; 32];
 
         // Round to CLOB-acceptable precision.
         // Market buy (FOK+Buy): maker=USDC cost (max 2dp), taker=shares (max 5dp).
@@ -1349,20 +1358,23 @@ impl PolyClient {
             salt,
             maker,
             signer,
-            taker,
             token_id: token_id_u256,
             maker_amount,
             taker_amount,
-            expiration: expiry.unwrap_or(0),
-            fee_rate_bps,
             side_u8,
             signature_type,
+            timestamp_ms,
+            metadata,
+            builder,
             neg_risk,
         });
 
         let signature = wallet.sign_hash(digest.into()).map_err(AppError::other)?;
         let sig_str = format!("0x{}", signature);
 
+        let zero_bytes32 = format!("0x{}", "0".repeat(64));
+        // V2 JSON body: `salt` is an integer (V2 SDK does parseInt(order.salt, 10));
+        // `taker` and `expiration` are unsigned server-side fields kept here for the API.
         let body = serde_json::json!({
             "order": {
                 "salt": salt.as_u64(),
@@ -1372,11 +1384,12 @@ impl PolyClient {
                 "tokenId": token_id_u256.to_string(),
                 "makerAmount": U256::from(maker_amount).to_string(),
                 "takerAmount": U256::from(taker_amount).to_string(),
-                "expiration": expiry.unwrap_or(0).to_string(),
-                "nonce": "0",
-                "feeRateBps": fee_rate_bps.to_string(),
                 "side": match side { Side::Buy => "BUY", Side::Sell => "SELL" },
                 "signatureType": signature_type,
+                "timestamp": timestamp_ms.to_string(),
+                "expiration": expiry.unwrap_or(0).to_string(),
+                "metadata": zero_bytes32,
+                "builder": zero_bytes32,
                 "signature": sig_str
             },
             "owner": auth.key,
@@ -1467,13 +1480,14 @@ impl PolyClient {
     pub async fn cancel_all_orders(&self) -> Result<()> {
         let (auth, wallet) = self.require_auth()?;
         let signer_str = format!("{:#x}", wallet.address());
-        let headers = auth.headers("DELETE", "/orders", None, &signer_str)?;
+        // V2 moved cancel-all from `DELETE /orders` to `POST /cancel-all`.
+        let headers = auth.headers("POST", "/cancel-all", None, &signer_str)?;
 
         let clob_url = self.clob_url.clone();
         let resp = self
             .throttled_send(|| {
                 self.http
-                    .delete(format!("{}/orders", clob_url))
+                    .post(format!("{}/cancel-all", clob_url))
                     .headers(headers.clone())
             })
             .await
@@ -1523,7 +1537,7 @@ impl PolyClient {
         cid_bytes[offset..].copy_from_slice(&decoded[..decoded.len().min(32)]);
 
         let ctf_addr: H160 = CTF_ADDRESS.parse().map_err(AppError::other)?;
-        let collateral: H160 = USDC_ADDRESS.parse().map_err(AppError::other)?;
+        let collateral: H160 = COLLATERAL_ADDRESS.parse().map_err(AppError::other)?;
 
         use ethers::middleware::SignerMiddleware;
         let signer = SignerMiddleware::new(provider.clone(), wallet.clone().with_chain_id(137u64));

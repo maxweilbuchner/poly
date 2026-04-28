@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Migrated to Polymarket CLOB V2 (cutover 2026-04-28). EIP-712 domain bumps to version `"2"` with new exchange addresses (`0xE111...996B` standard, `0xe222...0F59` neg-risk); the signed Order struct drops `nonce`/`feeRateBps`/`taker`/`expiration` and gains `timestamp`/`metadata`/`builder`. Collateral switches from USDC.e to pUSD (`0xC011a7E12a19f7B1f670d46F03B03f3342E82DFB`, 6 decimals, 1:1 USDC-backed). Fees are now protocol-set at match time; `/fee-rate` is no longer fetched before signing. `cancel-all` moves from `DELETE /orders` to `POST /cancel-all`. `POLY_CLOB_URL` env var added to override the CLOB base URL (e.g., for staging tests).
 - Removed ambiguous colored status dots from market lists.
 - Moved market filters into a dedicated sub-header row for improved scannability.
 
