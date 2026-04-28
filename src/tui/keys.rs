@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEvent, MouseEventKind, MouseButton};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 use tokio::sync::mpsc::UnboundedSender;
 use tokio::sync::watch;
 
@@ -1591,15 +1591,15 @@ pub(super) fn handle_mouse(
                 // " 1 Markets │ 2 Positions │ 3 Balance │ 4 Analytics │ 5 Viewer "
                 //  012345678901234567890123456789012345678901234567890123456789012
                 let c = mouse.column;
-                let new_tab = if c >= 1 && c <= 11 {
+                let new_tab = if (1..=11).contains(&c) {
                     Some(Tab::Markets)
-                } else if c >= 13 && c <= 25 {
+                } else if (13..=25).contains(&c) {
                     Some(Tab::Positions)
-                } else if c >= 27 && c <= 37 {
+                } else if (27..=37).contains(&c) {
                     Some(Tab::Balance)
-                } else if c >= 39 && c <= 51 {
+                } else if (39..=51).contains(&c) {
                     Some(Tab::Analytics)
-                } else if c >= 53 && c <= 62 {
+                } else if (53..=62).contains(&c) {
                     Some(Tab::Viewer)
                 } else {
                     None
