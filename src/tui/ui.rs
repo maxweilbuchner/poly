@@ -572,7 +572,7 @@ fn render_redeem_confirm(f: &mut Frame, area: Rect, app: &App) {
         lines.push(Line::from(vec![
             Span::styled("  Proceeds   ", Style::default().fg(theme::VERY_DIM)),
             Span::styled(
-                format!("≈ ${:.4} USDC", p.size),
+                format!("≈ ${:.4} pUSD", p.size),
                 Style::default()
                     .fg(theme::GREEN)
                     .add_modifier(Modifier::BOLD),
@@ -656,7 +656,7 @@ fn render_redeem_all_confirm(f: &mut Frame, area: Rect, app: &App) {
     lines.push(Line::from(vec![
         Span::styled("  Total proceeds  ", Style::default().fg(theme::VERY_DIM)),
         Span::styled(
-            format!("≈ ${:.4} USDC", total_proceeds),
+            format!("≈ ${:.4} pUSD", total_proceeds),
             Style::default()
                 .fg(theme::GREEN)
                 .add_modifier(Modifier::BOLD),

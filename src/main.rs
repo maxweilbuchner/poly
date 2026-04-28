@@ -618,7 +618,7 @@ async fn cmd_trade(client: &PolyClient, args: TradeArgs) -> client::Result<()> {
         return Err("Minimum order size is 5 shares".into());
     }
     if size * price < 1.0 {
-        return Err("Minimum order value is $1.00 USDC".into());
+        return Err("Minimum order value is $1.00 pUSD".into());
     }
 
     if dry_run {
@@ -1132,9 +1132,9 @@ async fn cmd_doctor(client: &PolyClient) -> client::Result<()> {
 
     // ── USDC balance (requires RPC + wallet) ─────────────────────────────────
     match client.get_balance().await {
-        Ok(balance) => pass("USDC balance", &format!("${:.4}", balance)),
-        Err(AppError::Auth(msg)) => skip("USDC balance", &format!("skipped — {}", msg)),
-        Err(e) => fail(&mut failures, "USDC balance", &format!("{}", e)),
+        Ok(balance) => pass("pUSD balance", &format!("${:.4}", balance)),
+        Err(AppError::Auth(msg)) => skip("pUSD balance", &format!("skipped — {}", msg)),
+        Err(e) => fail(&mut failures, "pUSD balance", &format!("{}", e)),
     }
 
     // ── CTF allowance ────────────────────────────────────────────────────────
@@ -1144,7 +1144,7 @@ async fn cmd_doctor(client: &PolyClient) -> client::Result<()> {
                 warn(
                     "CTF allowance",
                     &format!(
-                        "${:.4} — too low to trade (approve USDC on CTF Exchange)",
+                        "${:.4} — too low to trade (approve pUSD on CTF Exchange)",
                         allowance
                     ),
                 );

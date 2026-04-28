@@ -329,7 +329,7 @@ pub fn print_positions(positions: &[Position]) {
 pub fn print_balance(balance: f64, allowance: f64) {
     println!();
     println!(
-        "  USDC Balance  : {}",
+        "  pUSD Balance  : {}",
         format!("${:.2}", balance).green().bold()
     );
     println!(
