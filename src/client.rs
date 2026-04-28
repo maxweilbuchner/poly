@@ -372,8 +372,8 @@ impl PolyClient {
             auth,
             provider,
             gamma_url: GAMMA_API.to_string(),
-            // Allow `POLY_CLOB_URL` override for testing against the V2 staging
-            // endpoint (`https://clob-v2.polymarket.com`) before the cutover.
+            // `POLY_CLOB_URL` overrides the CLOB base URL — used for staging
+            // tests, local mocks, or future endpoint migrations.
             clob_url: std::env::var("POLY_CLOB_URL").unwrap_or_else(|_| CLOB_API.to_string()),
             data_url: DATA_API.to_string(),
             api_semaphore: Arc::new(Semaphore::new(MAX_CONCURRENT_REQUESTS)),
