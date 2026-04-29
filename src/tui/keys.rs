@@ -120,6 +120,11 @@ fn switch_tab(app: &mut App, tab: Tab, client: Arc<PolyClient>, tx: &UnboundedSe
     }
     stop_ws(app); // disconnect WS when leaving detail screen via tab switch
     app.last_error = None; // clear stale errors from previous tab
+                           // Refresh balance + positions when leaving the Balance tab so other tabs see fresh values.
+    if app.active_tab == Tab::Balance {
+        tasks::spawn_load_balance(Arc::clone(&client), tx.clone());
+        tasks::spawn_load_positions(Arc::clone(&client), tx.clone());
+    }
     app.active_tab = tab.clone();
     app.screen_stack = match &tab {
         Tab::Markets => vec![Screen::MarketList],
@@ -147,8 +152,9 @@ fn switch_tab(app: &mut App, tab: Tab, client: Arc<PolyClient>, tx: &UnboundedSe
         Tab::Balance => {
             if app.balance.is_none() {
                 app.loading = true;
-                tasks::spawn_load_balance(client, tx.clone());
             }
+            tasks::spawn_load_balance(Arc::clone(&client), tx.clone());
+            tasks::spawn_load_positions(client, tx.clone());
         }
         Tab::Analytics => {
             // Only compute on first visit; cached stats are shown instantly on

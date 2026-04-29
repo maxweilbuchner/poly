@@ -326,6 +326,7 @@ pub fn test_app() -> App {
         description_expanded: false,
         tick: 0,
         positions_refreshed_at: None,
+        balance_refreshed_at: None,
         refresh_interval_secs: 30,
         max_markets: MAX_MARKETS,
         db_path: std::path::PathBuf::from("/tmp/poly-test.db"),

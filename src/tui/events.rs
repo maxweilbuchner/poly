@@ -50,6 +50,22 @@ pub(super) fn handle_event(
                 tasks::spawn_load_orders(Arc::clone(&client), tx.clone());
             }
 
+            // Balance tab: refresh balance + positions every 2s while visible.
+            if app.active_tab == Tab::Balance
+                && !matches!(
+                    app.current_screen(),
+                    Some(Screen::QuitConfirm) | Some(Screen::Help)
+                )
+                && app
+                    .balance_refreshed_at
+                    .is_some_and(|t| t.elapsed() >= Duration::from_secs(2))
+            {
+                tasks::spawn_load_balance(Arc::clone(&client), tx.clone());
+                tasks::spawn_load_positions(Arc::clone(&client), tx.clone());
+                // Reset timer optimistically so we don't double-spawn before reply arrives.
+                app.balance_refreshed_at = Some(Instant::now());
+            }
+
             // Hourly market snapshot.
             // First run: ~30 s after startup (if never run before in any session).
             // Subsequent runs: 1 h after the last completed snapshot (wall-clock).
@@ -224,6 +240,7 @@ pub(super) fn handle_event(
         AppEvent::BalanceLoaded(balance, allowance) => {
             app.balance = Some(balance);
             app.allowance = Some(allowance);
+            app.balance_refreshed_at = Some(Instant::now());
             if app.active_tab == Tab::Balance {
                 app.loading = false;
             }

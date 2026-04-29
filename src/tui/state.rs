@@ -354,6 +354,9 @@ pub struct App {
     // When positions data last arrived — used for auto-refresh timer and "Xs ago" display
     pub positions_refreshed_at: Option<Instant>,
 
+    // When balance data last arrived — used for Balance tab 2s auto-refresh
+    pub balance_refreshed_at: Option<Instant>,
+
     // Runtime config (from ~/.config/poly/config.toml [tui] section)
     pub refresh_interval_secs: u64,
     pub max_markets: usize,
@@ -477,6 +480,7 @@ impl App {
             description_expanded: false,
             tick: 0,
             positions_refreshed_at: None,
+            balance_refreshed_at: None,
             refresh_interval_secs: 30,
             max_markets: MAX_MARKETS,
 
