@@ -56,7 +56,7 @@ rusqlite = { version = "0.31", features = ["bundled"] }
 thiserror = "1"
 rand = "0.8"
 hex = "0.4"
-rpassword = "7"
+rpassword = "=7.4.0"
 
 # Terminal output
 colored = "2"
