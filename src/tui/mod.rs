@@ -354,6 +354,8 @@ pub fn test_app() -> App {
         viewer_address: None,
         viewer_positions: Vec::new(),
         viewer_list_state: ratatui::widgets::ListState::default(),
+        viewer_recent: Vec::new(),
+        viewer_recent_selected: None,
     }
 }
 

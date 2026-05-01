@@ -164,6 +164,54 @@ pub fn save_watchlist(watchlist: &HashSet<String>) {
     }
 }
 
+// ── Viewer recent addresses (MRU) ─────────────────────────────────────────────
+
+const VIEWER_RECENT_VERSION: u32 = 1;
+pub const VIEWER_RECENT_MAX: usize = 10;
+
+#[derive(Serialize, Deserialize)]
+struct ViewerRecentFile {
+    version: u32,
+    items: Vec<String>,
+}
+
+fn viewer_recent_path() -> PathBuf {
+    data_dir().join("viewer_recent.json")
+}
+
+pub fn load_viewer_recent() -> Vec<String> {
+    let path = viewer_recent_path();
+    let text = match std::fs::read_to_string(&path) {
+        Ok(t) => t,
+        Err(_) => return Vec::new(),
+    };
+    let value: serde_json::Value = match serde_json::from_str(&text) {
+        Ok(v) => v,
+        Err(_) => return Vec::new(),
+    };
+    let version = value.get("version").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    if version > VIEWER_RECENT_VERSION {
+        return Vec::new();
+    }
+    serde_json::from_value::<ViewerRecentFile>(value)
+        .map(|f| f.items)
+        .unwrap_or_default()
+}
+
+pub fn save_viewer_recent(items: &[String]) {
+    let path = viewer_recent_path();
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    let f = ViewerRecentFile {
+        version: VIEWER_RECENT_VERSION,
+        items: items.to_vec(),
+    };
+    if let Ok(text) = serde_json::to_string(&f) {
+        let _ = std::fs::write(&path, text);
+    }
+}
+
 // ── CSV / data paths ──────────────────────────────────────────────────────────
 
 pub fn resolutions_csv_path() -> PathBuf {

@@ -13,17 +13,74 @@ pub fn render(f: &mut Frame, area: Rect, app: &mut App) {
     // When no address is set and the input isn't open, show a single centered
     // prompt instead of two stacked empty panels.
     if app.viewer_address.is_none() && !app.viewer_address_editing {
-        render_empty_prompt(f, area);
+        render_empty_prompt(f, area, app);
         return;
     }
 
-    let chunks = Layout::vertical([Constraint::Length(3), Constraint::Min(0)]).split(area);
+    let show_recent = app.viewer_address_editing && !app.viewer_recent.is_empty();
+    let recent_h = if show_recent {
+        (app.viewer_recent.len().min(8) as u16) + 2
+    } else {
+        0
+    };
+
+    let chunks = Layout::vertical([
+        Constraint::Length(3),
+        Constraint::Length(recent_h),
+        Constraint::Min(0),
+    ])
+    .split(area);
 
     render_address_bar(f, chunks[0], app);
-    render_viewer_positions(f, chunks[1], app);
+    if show_recent {
+        render_recent_list(f, chunks[1], app);
+    }
+    render_viewer_positions(f, chunks[2], app);
 }
 
-fn render_empty_prompt(f: &mut Frame, area: Rect) {
+fn render_recent_list(f: &mut Frame, area: Rect, app: &App) {
+    let block = Block::bordered()
+        .title(Span::styled(
+            " Recent ",
+            Style::default()
+                .fg(theme::CYAN)
+                .add_modifier(Modifier::BOLD),
+        ))
+        .border_style(Style::default().fg(theme::BORDER))
+        .style(Style::default().bg(theme::PANEL_BG));
+    let inner = block.inner(area);
+    f.render_widget(block, area);
+
+    let lines: Vec<Line<'static>> = app
+        .viewer_recent
+        .iter()
+        .take(8)
+        .enumerate()
+        .map(|(i, addr)| {
+            let selected = app.viewer_recent_selected == Some(i);
+            let (marker, style) = if selected {
+                (
+                    "▸ ",
+                    Style::default()
+                        .fg(theme::CYAN)
+                        .add_modifier(Modifier::BOLD),
+                )
+            } else {
+                ("  ", Style::default().fg(theme::TEXT))
+            };
+            Line::from(vec![
+                Span::styled(marker, Style::default().fg(theme::CYAN)),
+                Span::styled(abbreviate_address(addr), style),
+                Span::raw("  "),
+                Span::styled(addr.clone(), Style::default().fg(theme::VERY_DIM)),
+            ])
+        })
+        .collect();
+
+    f.render_widget(Paragraph::new(lines), inner);
+}
+
+fn render_empty_prompt(f: &mut Frame, area: Rect, app: &App) {
     let block = Block::bordered()
         .title(Span::styled(
             " Viewer ",
@@ -56,6 +113,20 @@ fn render_empty_prompt(f: &mut Frame, area: Rect) {
         "Example: 0x123... or vitalik.eth",
         Style::default().fg(theme::VERY_DIM),
     )]));
+
+    if !app.viewer_recent.is_empty() {
+        lines.push(Line::from(""));
+        lines.push(Line::from(vec![Span::styled(
+            "Recent",
+            Style::default().fg(theme::DIM).add_modifier(Modifier::BOLD),
+        )]));
+        for addr in app.viewer_recent.iter().take(5) {
+            lines.push(Line::from(vec![Span::styled(
+                abbreviate_address(addr),
+                Style::default().fg(theme::TEXT),
+            )]));
+        }
+    }
 
     f.render_widget(
         Paragraph::new(lines).alignment(ratatui::layout::Alignment::Center),
@@ -99,6 +170,8 @@ fn render_address_bar(f: &mut Frame, area: Rect, app: &App) {
             Span::raw("  "),
             Span::styled("Enter", Style::default().fg(theme::CYAN)),
             Span::styled(" submit  ", Style::default().fg(theme::HINT)),
+            Span::styled("↑↓", Style::default().fg(theme::CYAN)),
+            Span::styled(" recent  ", Style::default().fg(theme::HINT)),
             Span::styled("Esc", Style::default().fg(theme::CYAN)),
             Span::styled(" cancel", Style::default().fg(theme::HINT)),
         ]);

@@ -1092,28 +1092,63 @@ fn handle_viewer_key(
         match key.code {
             KeyCode::Esc => {
                 app.viewer_address_editing = false;
-                // Restore previous address if one exists
+                app.viewer_recent_selected = None;
                 if let Some(addr) = &app.viewer_address {
                     app.viewer_address_input = addr.clone();
                 }
             }
             KeyCode::Enter => {
-                let addr = app.viewer_address_input.trim().to_string();
+                let addr = if let Some(i) = app.viewer_recent_selected {
+                    app.viewer_recent.get(i).cloned().unwrap_or_default()
+                } else {
+                    app.viewer_address_input.trim().to_string()
+                };
                 if addr.starts_with("0x") && addr.len() == 42 {
                     app.viewer_address_editing = false;
+                    app.viewer_recent_selected = None;
                     app.viewer_address = Some(addr.clone());
                     app.viewer_positions.clear();
                     app.viewer_list_state = ratatui::widgets::ListState::default();
                     app.loading = true;
+
+                    app.viewer_recent.retain(|a| !a.eq_ignore_ascii_case(&addr));
+                    app.viewer_recent.insert(0, addr.clone());
+                    app.viewer_recent
+                        .truncate(crate::persist::VIEWER_RECENT_MAX);
+                    crate::persist::save_viewer_recent(&app.viewer_recent);
+
                     tasks::spawn_load_viewer_positions(Arc::clone(&client), tx.clone(), addr);
                 } else {
                     app.set_error_flash("Invalid address — must be 0x followed by 40 hex chars");
                 }
             }
+            KeyCode::Up => {
+                if !app.viewer_recent.is_empty() {
+                    let next = match app.viewer_recent_selected {
+                        None => 0,
+                        Some(i) => (i + 1).min(app.viewer_recent.len() - 1),
+                    };
+                    app.viewer_recent_selected = Some(next);
+                    app.viewer_address_input = app.viewer_recent[next].clone();
+                }
+            }
+            KeyCode::Down => match app.viewer_recent_selected {
+                Some(0) | None => {
+                    app.viewer_recent_selected = None;
+                    app.viewer_address_input.clear();
+                }
+                Some(i) => {
+                    let new_i = i - 1;
+                    app.viewer_recent_selected = Some(new_i);
+                    app.viewer_address_input = app.viewer_recent[new_i].clone();
+                }
+            },
             KeyCode::Backspace => {
+                app.viewer_recent_selected = None;
                 app.viewer_address_input.pop();
             }
             KeyCode::Char(c) => {
+                app.viewer_recent_selected = None;
                 app.viewer_address_input.push(c);
             }
             _ => {}

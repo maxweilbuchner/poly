@@ -409,6 +409,11 @@ pub struct App {
     pub viewer_address: Option<String>,
     pub viewer_positions: Vec<crate::types::Position>,
     pub viewer_list_state: ratatui::widgets::ListState,
+    /// Most-recently-used wallet addresses (most recent first).
+    pub viewer_recent: Vec<String>,
+    /// Selection index into `viewer_recent` while the input bar is open. `None`
+    /// means the user is typing freely; `Some(i)` means an MRU entry is highlighted.
+    pub viewer_recent_selected: Option<usize>,
 }
 
 /// Maximum number of markets to load in total. Keeps memory bounded and
@@ -517,6 +522,8 @@ impl App {
             viewer_address: None,
             viewer_positions: Vec::new(),
             viewer_list_state: ratatui::widgets::ListState::default(),
+            viewer_recent: crate::persist::load_viewer_recent(),
+            viewer_recent_selected: None,
         }
     }
 
