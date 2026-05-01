@@ -325,16 +325,34 @@ fn build_position_items(
         })
         .collect();
 
-    // Max width of each variable column across all rows.
+    // Each column width is max(header label, widest data value) so the header
+    // labels never overflow into the next column when data is narrower.
     let max_outcome = rows
         .iter()
         .map(|r| r.outcome.chars().count())
         .max()
-        .unwrap_or(3);
+        .unwrap_or(3)
+        .max("Outcome".len());
     let max_size = rows.iter().map(|r| r.size_num.len()).max().unwrap_or(4);
-    let max_avg = rows.iter().map(|r| r.avg_str.len()).max().unwrap_or(10);
-    let max_cur = rows.iter().map(|r| r.cur_str.len()).max().unwrap_or(10);
-    let max_pnl = rows.iter().map(|r| r.pnl_str.len()).max().unwrap_or(11);
+    let max_avg = rows
+        .iter()
+        .map(|r| r.avg_str.len())
+        .max()
+        .unwrap_or(10)
+        .max("Avg".len());
+    let max_cur = rows
+        .iter()
+        .map(|r| r.cur_str.len())
+        .max()
+        .unwrap_or(10)
+        .max("Cur".len());
+    let max_pnl = rows
+        .iter()
+        .map(|r| r.pnl_str.len())
+        .max()
+        .unwrap_or(11)
+        .max("P&L".len());
+    let status_width = status_width.max("Status".len());
 
     // Single-line layout:
     //   indent(2) + outcome + sep(4) + question + sep(4) + status + sep(4)
