@@ -489,6 +489,7 @@ mod tests {
         let variants = [
             DateFilter::Hours3,
             DateFilter::Hours6,
+            DateFilter::Hours9,
             DateFilter::Hours12,
             DateFilter::Hours24,
             DateFilter::Week,

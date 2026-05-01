@@ -77,6 +77,7 @@ pub enum DateFilter {
     All,
     Hours3,
     Hours6,
+    Hours9,
     Hours12,
     Hours24,
     Week,
@@ -88,7 +89,8 @@ impl DateFilter {
         match self {
             DateFilter::All => DateFilter::Hours3,
             DateFilter::Hours3 => DateFilter::Hours6,
-            DateFilter::Hours6 => DateFilter::Hours12,
+            DateFilter::Hours6 => DateFilter::Hours9,
+            DateFilter::Hours9 => DateFilter::Hours12,
             DateFilter::Hours12 => DateFilter::Hours24,
             DateFilter::Hours24 => DateFilter::Week,
             DateFilter::Week => DateFilter::Month,
@@ -100,6 +102,7 @@ impl DateFilter {
             DateFilter::All => "all",
             DateFilter::Hours3 => "3h",
             DateFilter::Hours6 => "6h",
+            DateFilter::Hours9 => "9h",
             DateFilter::Hours12 => "12h",
             DateFilter::Hours24 => "24h",
             DateFilter::Week => "7d",
@@ -562,6 +565,7 @@ impl App {
                     let cutoff: DateTime<Local> = match self.date_filter {
                         DateFilter::Hours3 => now + Duration::hours(3),
                         DateFilter::Hours6 => now + Duration::hours(6),
+                        DateFilter::Hours9 => now + Duration::hours(9),
                         DateFilter::Hours12 => now + Duration::hours(12),
                         DateFilter::Hours24 => now + Duration::hours(24),
                         DateFilter::Week => now + Duration::days(7),
