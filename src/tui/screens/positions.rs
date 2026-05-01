@@ -291,11 +291,6 @@ fn build_position_items(
     let has_redeemable = positions.iter().any(|p| p.redeemable);
     let badge_width = if has_redeemable { 5 } else { 0 };
 
-    // borders(2) + highlight(2) + indent(2) + separator(4) + status + optional badge
-    let q_width = area_width
-        .saturating_sub(6 + 4 + status_width + badge_width)
-        .max(20);
-
     // ── Pass 1: format every field, measure column widths ─────────────────────
 
     let rows: Vec<PRow> = positions
@@ -305,7 +300,7 @@ fn build_position_items(
             let pnl_sign = if p.unrealized_pnl >= 0.0 { "+" } else { "" };
             let (status, status_color) = compute_status(p, ed.as_deref());
             PRow {
-                question: truncate(&p.market_question, q_width),
+                question: p.market_question.clone(),
                 outcome: p.outcome.clone(),
                 size_num: format!("{:.2}", p.size),
                 avg_str: format!("{:.4}", p.avg_price),
@@ -331,23 +326,52 @@ fn build_position_items(
         .collect();
 
     // Max width of each variable column across all rows.
+    let max_outcome = rows
+        .iter()
+        .map(|r| r.outcome.chars().count())
+        .max()
+        .unwrap_or(3);
     let max_size = rows.iter().map(|r| r.size_num.len()).max().unwrap_or(4);
     let max_avg = rows.iter().map(|r| r.avg_str.len()).max().unwrap_or(10);
     let max_cur = rows.iter().map(|r| r.cur_str.len()).max().unwrap_or(10);
     let max_pnl = rows.iter().map(|r| r.pnl_str.len()).max().unwrap_or(11);
 
-    // Fixed overhead: indent(2) + 4 separators(16) + " shares"(7)
+    // Single-line layout:
+    //   indent(2) + outcome + sep(4) + question + sep(4) + status + sep(4)
+    //   + size + " shares"(7) + sep(4) + avg + sep(4) + cur + sep(4) + pnl + badge
     // Subtract 4 extra for borders(2) + highlight symbol "▸ "(2) not in line content.
-    let fixed = 2 + 4 * 4 + max_size + 7 + max_avg + max_cur + max_pnl;
-    let outcome_width = area_width.saturating_sub(4).saturating_sub(fixed).max(4);
+    let size_hdr_w = max_size + 7;
+    let fixed = 2
+        + max_outcome
+        + 4
+        + 4
+        + status_width
+        + 4
+        + size_hdr_w
+        + 4
+        + max_avg
+        + 4
+        + max_cur
+        + 4
+        + max_pnl
+        + badge_width;
+    let q_width = area_width.saturating_sub(4).saturating_sub(fixed).max(20);
 
     // ── Column header ─────────────────────────────────────────────────────────
-    // 4 = highlight_symbol(2) + item indent(2)
-    let size_hdr_w = max_size + 7;
     let header = Line::from(vec![
         Span::raw("    "),
         Span::styled(
-            pad_right("Outcome".to_string(), outcome_width),
+            pad_right("Outcome".to_string(), max_outcome),
+            Style::default().fg(theme::DIM),
+        ),
+        Span::raw("    "),
+        Span::styled(
+            pad_right("Market".to_string(), q_width),
+            Style::default().fg(theme::DIM),
+        ),
+        Span::raw("    "),
+        Span::styled(
+            pad_right("Status".to_string(), status_width),
             Style::default().fg(theme::DIM),
         ),
         Span::raw("    "),
@@ -377,41 +401,26 @@ fn build_position_items(
     let items = rows
         .into_iter()
         .map(|r| {
-            // Line 1: question  ·  status  [R]
-            let mut line1_spans = vec![
-                Span::raw("  "),
-                Span::styled(
-                    pad_right(r.question, q_width),
-                    Style::default().fg(theme::TEXT),
-                ),
-            ];
-            line1_spans.push(Span::styled("  · ", Style::default().fg(theme::VERY_DIM)));
-            line1_spans.push(Span::styled(
-                r.status,
-                Style::default()
-                    .fg(r.status_color)
-                    .add_modifier(Modifier::BOLD),
-            ));
-            if r.redeemable {
-                line1_spans.push(Span::styled(
-                    "  [R]",
-                    Style::default()
-                        .fg(theme::GREEN)
-                        .add_modifier(Modifier::BOLD),
-                ));
-            }
-            let line1 = Line::from(line1_spans);
-
-            // Line 2: outcome · shares · avg · cur · PnL
-            let outcome_cell = pad_right(truncate(&r.outcome, outcome_width), outcome_width);
+            let outcome_cell = pad_right(truncate(&r.outcome, max_outcome), max_outcome);
+            let question_cell = pad_right(truncate(&r.question, q_width), q_width);
+            let status_cell = pad_right(r.status, status_width);
             let size_cell = format!("{:>width$} shares", r.size_num, width = max_size);
             let avg_cell = pad_left(r.avg_str, max_avg);
             let cur_cell = pad_left(r.cur_str, max_cur);
             let pnl_cell = pad_left(r.pnl_str, max_pnl);
 
-            let line2 = Line::from(vec![
+            let mut spans = vec![
                 Span::raw("  "),
                 Span::styled(outcome_cell, Style::default().fg(theme::CYAN)),
+                Span::styled("  · ", Style::default().fg(theme::VERY_DIM)),
+                Span::styled(question_cell, Style::default().fg(theme::TEXT)),
+                Span::styled("  · ", Style::default().fg(theme::VERY_DIM)),
+                Span::styled(
+                    status_cell,
+                    Style::default()
+                        .fg(r.status_color)
+                        .add_modifier(Modifier::BOLD),
+                ),
                 Span::styled("  · ", Style::default().fg(theme::VERY_DIM)),
                 Span::styled(size_cell, Style::default().fg(theme::TEXT)),
                 Span::styled("  · ", Style::default().fg(theme::VERY_DIM)),
@@ -425,9 +434,17 @@ fn build_position_items(
                         .fg(r.pnl_color)
                         .add_modifier(Modifier::BOLD),
                 ),
-            ]);
+            ];
+            if r.redeemable {
+                spans.push(Span::styled(
+                    "  [R]",
+                    Style::default()
+                        .fg(theme::GREEN)
+                        .add_modifier(Modifier::BOLD),
+                ));
+            }
 
-            ListItem::new(vec![line1, line2])
+            ListItem::new(Line::from(spans))
         })
         .collect();
 
