@@ -6,3 +6,4 @@ pub mod persist;
 pub mod setup;
 pub mod tui;
 pub mod types;
+pub mod weather;
