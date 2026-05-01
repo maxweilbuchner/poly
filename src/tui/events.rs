@@ -177,6 +177,32 @@ pub(super) fn handle_event(
             app.order_book_updated_at = Some(Instant::now());
             app.loading = false;
             app.last_error = None;
+
+            // Flash a one-shot warning when a weather market resolves against
+            // a station we don't have coordinates for, so we know to extend
+            // src/weather/airports.rs (re-run scripts/gen_airports.py).
+            if let Some(m) = &app.selected_market {
+                if crate::tui::market_category(m) == Some("Weather") {
+                    if let Some(loc) = crate::weather::weather_location(m) {
+                        if loc.icao.is_empty() {
+                            tracing::warn!(question = %m.question, "weather market without ICAO — extractor needs prose pattern");
+                            app.flash = Some((
+                                "weather market without ICAO — extractor needs prose pattern"
+                                    .to_string(),
+                                Instant::now(),
+                                false,
+                            ));
+                        } else if crate::weather::lookup_airport(&loc.icao).is_none() {
+                            tracing::warn!(icao = %loc.icao, "unknown ICAO — run scripts/gen_airports.py");
+                            app.flash = Some((
+                                format!("unknown ICAO {} — run scripts/gen_airports.py", loc.icao),
+                                Instant::now(),
+                                false,
+                            ));
+                        }
+                    }
+                }
+            }
         }
 
         AppEvent::OrderBookUpdated(books) => {
