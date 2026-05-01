@@ -10,6 +10,8 @@
 //! The helper combines both sources: question gives a clean display name
 //! ("Seattle"), URL gives the canonical `(country, icao)` pair.
 
+use chrono::NaiveDate;
+
 use crate::types::Market;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -85,6 +87,55 @@ fn country_icao_from_prose(desc: &str) -> Option<(String, String)> {
         desc.contains(needle)
             .then(|| ((*country).to_string(), (*icao).to_string()))
     })
+}
+
+/// Resolution date for a weather market.
+///
+/// Slugs encode the date deterministically:
+/// `highest-temperature-in-milan-on-may-1-2026-16c` → `2026-05-01`.
+/// Falls back to the date portion of `end_date` (UTC) when the slug doesn't
+/// match — accurate to within a day, which is fine for the D+0..D+2 window
+/// check and avoids parsing failures on novel slug formats.
+pub fn resolution_date(market: &Market) -> Option<NaiveDate> {
+    if let Some(d) = date_from_slug(&market.slug) {
+        return Some(d);
+    }
+    market
+        .end_date
+        .as_deref()
+        .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
+        .map(|dt| dt.date_naive())
+}
+
+fn date_from_slug(slug: &str) -> Option<NaiveDate> {
+    let key = "-on-";
+    let idx = slug.find(key)?;
+    let tail = &slug[idx + key.len()..];
+    // tail = "may-1-2026-16c"
+    let mut parts = tail.split('-');
+    let month = parts.next()?;
+    let day: u32 = parts.next()?.parse().ok()?;
+    let year: i32 = parts.next()?.parse().ok()?;
+    let month_n = month_from_name(month)?;
+    NaiveDate::from_ymd_opt(year, month_n, day)
+}
+
+fn month_from_name(name: &str) -> Option<u32> {
+    match name {
+        "january" | "jan" => Some(1),
+        "february" | "feb" => Some(2),
+        "march" | "mar" => Some(3),
+        "april" | "apr" => Some(4),
+        "may" => Some(5),
+        "june" | "jun" => Some(6),
+        "july" | "jul" => Some(7),
+        "august" | "aug" => Some(8),
+        "september" | "sep" | "sept" => Some(9),
+        "october" | "oct" => Some(10),
+        "november" | "nov" => Some(11),
+        "december" | "dec" => Some(12),
+        _ => None,
+    }
 }
 
 fn display_from_question(question: &str) -> Option<String> {
@@ -295,6 +346,37 @@ mod tests {
         );
         let loc = weather_location(&m).unwrap();
         assert_eq!(loc.icao, "LTFM");
+    }
+
+    #[test]
+    fn resolution_date_from_slug() {
+        let m = Market {
+            slug: "highest-temperature-in-milan-on-may-1-2026-16c".into(),
+            ..mk(
+                "Will the highest temperature in Milan be 16°C on May 1?",
+                None,
+            )
+        };
+        assert_eq!(
+            resolution_date(&m),
+            Some(NaiveDate::from_ymd_opt(2026, 5, 1).unwrap())
+        );
+    }
+
+    #[test]
+    fn resolution_date_falls_back_to_end_date() {
+        let m = Market {
+            slug: "totally-unparseable".into(),
+            end_date: Some("2026-04-30T23:59:00Z".into()),
+            ..mk(
+                "Will the highest temperature in X be 1°C on April 30?",
+                None,
+            )
+        };
+        assert_eq!(
+            resolution_date(&m),
+            Some(NaiveDate::from_ymd_opt(2026, 4, 30).unwrap())
+        );
     }
 
     #[test]

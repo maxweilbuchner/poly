@@ -144,6 +144,15 @@ fn render_header(f: &mut Frame, area: Rect, app: &App) {
                 }
             }
             lines.push(Line::from(q_spans));
+
+            // Forecast block (weather markets only).
+            if crate::tui::market_category(m) == Some("Weather") {
+                lines.push(Line::from(""));
+                for line in render_forecast_lines(m, app) {
+                    lines.push(line);
+                }
+            }
+
             // Description, capped unless expanded
             let desc = m.description.as_deref().unwrap_or("");
             if !desc.is_empty() {
@@ -392,4 +401,81 @@ fn wrap_text(text: &str, max_width: usize) -> Vec<String> {
         }
     }
     lines
+}
+
+fn render_forecast_lines<'a>(m: &'a crate::types::Market, app: &'a App) -> Vec<Line<'static>> {
+    use crate::tui::state::ForecastState;
+    let dim = Style::default().fg(theme::DIM);
+    let very_dim = Style::default().fg(theme::VERY_DIM);
+    let text = Style::default().fg(theme::TEXT);
+
+    let header = |suffix: String| -> Line<'static> {
+        Line::from(vec![
+            Span::styled("  Forecast  ", Style::default().fg(theme::CYAN)),
+            Span::styled(suffix, very_dim),
+        ])
+    };
+
+    match app.forecasts.get(&m.condition_id) {
+        None | Some(ForecastState::Loading) => {
+            vec![header("fetching ECMWF ensemble…".to_string())]
+        }
+        Some(ForecastState::OutOfWindow) => {
+            vec![header("available within 2 days of resolution".to_string())]
+        }
+        Some(ForecastState::Failed(e)) => {
+            let msg = format!("unavailable: {}", truncate_err(e, 60));
+            vec![Line::from(vec![
+                Span::styled("  Forecast  ", Style::default().fg(theme::CYAN)),
+                Span::styled(msg, Style::default().fg(theme::ERROR)),
+            ])]
+        }
+        Some(ForecastState::Ready(f)) => {
+            let lead = match f.lead_days {
+                0 => "D+0 (today)".to_string(),
+                n => format!("D+{}", n),
+            };
+            let head = header(format!(
+                "ECMWF ensemble · {} members · {}",
+                f.high.members.len(),
+                lead
+            ));
+            let high = render_band("High", &f.high, f.high_anchor, dim, text, very_dim);
+            let low = render_band("Low ", &f.low, f.low_anchor, dim, text, very_dim);
+            vec![head, high, low]
+        }
+    }
+}
+
+fn render_band(
+    label: &'static str,
+    d: &crate::forecast::Distribution,
+    anchor: f64,
+    dim: Style,
+    text: Style,
+    very_dim: Style,
+) -> Line<'static> {
+    let (counts, lo, hi) = crate::forecast::histogram(&d.members);
+    let bars = crate::forecast::histogram_bars(&counts);
+    Line::from(vec![
+        Span::styled(format!("    {}  ", label), dim),
+        Span::styled(format!("{:>5.1}°C   ", d.mean), text),
+        Span::styled(
+            format!("p10 {:>5.1}  p90 {:>5.1}   ", d.p10, d.p90),
+            very_dim,
+        ),
+        Span::styled(bars, text),
+        Span::styled(format!("  {}–{}°C   ", lo, hi), very_dim),
+        Span::styled(format!("anchor {:>5.1}°C", anchor), very_dim),
+    ])
+}
+
+fn truncate_err(s: &str, max: usize) -> String {
+    if s.chars().count() <= max {
+        s.to_string()
+    } else {
+        let mut t: String = s.chars().take(max - 1).collect();
+        t.push('…');
+        t
+    }
 }

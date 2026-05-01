@@ -311,6 +311,8 @@ pub fn test_app() -> App {
         watchlist: HashSet::new(),
         watchlist_only: false,
         price_history: std::collections::HashMap::new(),
+        forecasts: std::collections::HashMap::new(),
+        forecast_cache: crate::forecast::Cache::new(),
         sparkline_interval: "1d",
         ws_cancel: None,
         order_book_updated_at: None,

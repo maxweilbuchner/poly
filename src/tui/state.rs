@@ -329,6 +329,11 @@ pub struct App {
     /// Current interval for sparkline display: "1d" | "1w"
     pub sparkline_interval: &'static str,
 
+    /// Open-Meteo forecast state per condition_id (weather markets only).
+    pub forecasts: HashMap<String, ForecastState>,
+    /// Process-wide forecast cache; persisted to disk on shutdown.
+    pub forecast_cache: crate::forecast::Cache,
+
     // WebSocket order book feed — cancel signal for the active WS task
     pub ws_cancel: Option<tokio::sync::watch::Sender<bool>>,
     /// Timestamp of the last received order book update (WS or HTTP fallback).
@@ -470,6 +475,8 @@ impl App {
             watchlist_only: false,
 
             price_history: HashMap::new(),
+            forecasts: HashMap::new(),
+            forecast_cache: crate::forecast::Cache::load_from_disk(),
             sparkline_interval: "1d",
 
             ws_cancel: None,
@@ -895,6 +902,14 @@ pub(crate) fn market_category_from_parts(question: &str, slug: &str) -> Option<&
 
 // ── TUI event enum ───────────────────────────────────────────────────────────
 
+#[derive(Debug, Clone)]
+pub enum ForecastState {
+    Loading,
+    OutOfWindow,
+    Ready(crate::forecast::Forecast),
+    Failed(String),
+}
+
 pub enum AppEvent {
     Key(KeyEvent),
     Mouse(MouseEvent),
@@ -955,4 +970,14 @@ pub enum AppEvent {
 
     /// Viewer tab: positions loaded for an arbitrary address.
     ViewerPositionsLoaded(Vec<Position>),
+
+    /// Open-Meteo ensemble forecast loaded for a weather market.
+    ForecastLoaded {
+        condition_id: String,
+        forecast: Box<crate::forecast::Forecast>,
+    },
+    ForecastFailed {
+        condition_id: String,
+        error: String,
+    },
 }

@@ -1434,3 +1434,34 @@ pub fn spawn_backfill_group_slugs(
         let _ = tx.send(AppEvent::GroupSlugBackfillComplete(filled));
     });
 }
+
+/// Fetch an Open-Meteo forecast for the given airport + resolution date and
+/// emit `ForecastLoaded`/`ForecastFailed` keyed by `condition_id`.
+pub fn spawn_load_forecast(
+    tx: UnboundedSender<AppEvent>,
+    condition_id: String,
+    airport: crate::weather::Airport,
+    resolution_date: chrono::NaiveDate,
+) {
+    tokio::spawn(async move {
+        let http = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(15))
+            .build()
+            .expect("reqwest client");
+        match crate::forecast::fetch_forecast(&http, &airport, resolution_date).await {
+            Ok(forecast) => {
+                let _ = tx.send(AppEvent::ForecastLoaded {
+                    condition_id,
+                    forecast: Box::new(forecast),
+                });
+            }
+            Err(e) => {
+                tracing::warn!(error = %e, "forecast fetch failed");
+                let _ = tx.send(AppEvent::ForecastFailed {
+                    condition_id,
+                    error: e.to_string(),
+                });
+            }
+        }
+    });
+}

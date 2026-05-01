@@ -178,29 +178,9 @@ pub(super) fn handle_event(
             app.loading = false;
             app.last_error = None;
 
-            // Flash a one-shot warning when a weather market resolves against
-            // a station we don't have coordinates for, so we know to extend
-            // src/weather/airports.rs (re-run scripts/gen_airports.py).
-            if let Some(m) = &app.selected_market {
-                if crate::tui::market_category(m) == Some("Weather") {
-                    if let Some(loc) = crate::weather::weather_location(m) {
-                        if loc.icao.is_empty() {
-                            tracing::warn!(question = %m.question, "weather market without ICAO — extractor needs prose pattern");
-                            app.flash = Some((
-                                "weather market without ICAO — extractor needs prose pattern"
-                                    .to_string(),
-                                Instant::now(),
-                                false,
-                            ));
-                        } else if crate::weather::lookup_airport(&loc.icao).is_none() {
-                            tracing::warn!(icao = %loc.icao, "unknown ICAO — run scripts/gen_airports.py");
-                            app.flash = Some((
-                                format!("unknown ICAO {} — run scripts/gen_airports.py", loc.icao),
-                                Instant::now(),
-                                false,
-                            ));
-                        }
-                    }
+            if let Some(m) = app.selected_market.clone() {
+                if crate::tui::market_category(&m) == Some("Weather") {
+                    handle_weather_market_open(app, tx, &m);
                 }
             }
         }
@@ -476,6 +456,94 @@ pub(super) fn handle_event(
                 app.viewer_list_state.select(Some(0));
             }
         }
+
+        AppEvent::ForecastLoaded {
+            condition_id,
+            forecast,
+        } => {
+            // Look up the ICAO + date so we can populate the cache as well.
+            if let Some(m) = app
+                .selected_market
+                .as_ref()
+                .filter(|m| m.condition_id == condition_id)
+                .cloned()
+            {
+                if let (Some(loc), Some(date)) = (
+                    crate::weather::weather_location(&m),
+                    crate::weather::resolution_date(&m),
+                ) {
+                    if !loc.icao.is_empty() {
+                        app.forecast_cache.insert(loc.icao, date, *forecast.clone());
+                        app.forecast_cache.save_to_disk();
+                    }
+                }
+            }
+            app.forecasts
+                .insert(condition_id, super::state::ForecastState::Ready(*forecast));
+        }
+
+        AppEvent::ForecastFailed {
+            condition_id,
+            error,
+        } => {
+            app.forecasts
+                .insert(condition_id, super::state::ForecastState::Failed(error));
+        }
     }
     false
+}
+
+/// Decide whether to fetch (or restore from cache) a forecast for a freshly
+/// opened weather market, and flash + log when the station/ICAO is unmappable.
+fn handle_weather_market_open(
+    app: &mut App,
+    tx: &UnboundedSender<AppEvent>,
+    market: &crate::types::Market,
+) {
+    use super::state::ForecastState;
+
+    let loc = match crate::weather::weather_location(market) {
+        Some(l) => l,
+        None => return,
+    };
+    if loc.icao.is_empty() {
+        tracing::warn!(question = %market.question, "weather market without ICAO — extractor needs prose pattern");
+        app.flash = Some((
+            "weather market without ICAO — extractor needs prose pattern".to_string(),
+            Instant::now(),
+            false,
+        ));
+        return;
+    }
+    let airport = match crate::weather::lookup_airport(&loc.icao) {
+        Some(a) => *a,
+        None => {
+            tracing::warn!(icao = %loc.icao, "unknown ICAO — run scripts/gen_airports.py");
+            app.flash = Some((
+                format!("unknown ICAO {} — run scripts/gen_airports.py", loc.icao),
+                Instant::now(),
+                false,
+            ));
+            return;
+        }
+    };
+    let date = match crate::weather::resolution_date(market) {
+        Some(d) => d,
+        None => return,
+    };
+    if crate::forecast::lead_days_in_window(date, chrono::Utc::now().date_naive()).is_none() {
+        app.forecasts
+            .insert(market.condition_id.clone(), ForecastState::OutOfWindow);
+        return;
+    }
+    if let Some(cached) = app.forecast_cache.get(&loc.icao, date) {
+        app.forecasts.insert(
+            market.condition_id.clone(),
+            ForecastState::Ready(cached.clone()),
+        );
+        return;
+    }
+    app.forecasts
+        .insert(market.condition_id.clone(), ForecastState::Loading);
+    super::tasks::spawn_load_forecast(tx.clone(), market.condition_id.clone(), airport, date);
 }

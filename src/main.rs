@@ -3,6 +3,7 @@ mod client;
 mod db;
 mod display;
 mod error;
+mod forecast;
 mod persist;
 mod setup;
 mod tui;

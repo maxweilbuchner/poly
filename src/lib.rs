@@ -2,6 +2,7 @@ pub mod auth;
 pub mod client;
 pub mod db;
 pub mod error;
+pub mod forecast;
 pub mod persist;
 pub mod setup;
 pub mod tui;
