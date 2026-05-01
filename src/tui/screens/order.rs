@@ -8,7 +8,56 @@ use ratatui::{
 
 use crate::tui::widgets::order_book;
 use crate::tui::{theme, App};
-use crate::types::{OrderType, Side};
+use crate::types::{OrderBook, OrderType, Side};
+
+struct FillPreview {
+    avg_price: f64,
+    filled_size: f64,
+    requested_size: f64,
+    levels_used: usize,
+    total_cost: f64,
+    /// Best price on the side we're crossing (for slippage display).
+    best_price: f64,
+}
+
+/// Walk the order book to estimate the fill for `size` shares.
+/// BUY consumes asks (cheapest first); SELL consumes bids (highest first).
+fn walk_book(side: Side, book: &OrderBook, size: f64) -> Option<FillPreview> {
+    if size <= 0.0 {
+        return None;
+    }
+    let levels = match side {
+        Side::Buy => &book.asks,
+        Side::Sell => &book.bids,
+    };
+    let best_price = levels.first().map(|l| l.price)?;
+
+    let mut remaining = size;
+    let mut cost = 0.0;
+    let mut filled = 0.0;
+    let mut used = 0;
+    for lvl in levels {
+        if remaining <= 0.0 {
+            break;
+        }
+        let take = remaining.min(lvl.size);
+        cost += take * lvl.price;
+        filled += take;
+        remaining -= take;
+        used += 1;
+    }
+    if filled <= 0.0 {
+        return None;
+    }
+    Some(FillPreview {
+        avg_price: cost / filled,
+        filled_size: filled,
+        requested_size: size,
+        levels_used: used,
+        total_cost: cost,
+        best_price,
+    })
+}
 
 pub fn render(f: &mut Frame, area: Rect, app: &App) {
     f.render_widget(Clear, area);
@@ -70,19 +119,20 @@ fn render_form(f: &mut Frame, area: Rect, app: &App) {
     f.render_widget(block, area);
 
     let rows = Layout::vertical([
-        Constraint::Length(1), // spacer
-        Constraint::Length(1), // side (read-only)
-        Constraint::Length(1), // spacer
-        Constraint::Length(1), // size field
-        Constraint::Length(1), // price field
-        Constraint::Length(1), // order type
-        Constraint::Length(1), // spacer
-        Constraint::Length(1), // dry run
-        Constraint::Length(1), // spacer
-        Constraint::Length(1), // cost display
-        Constraint::Length(1), // fee display
-        Constraint::Length(1), // spacer
-        Constraint::Min(0),    // footer
+        Constraint::Length(1), // spacer                     0
+        Constraint::Length(1), // side (read-only)           1
+        Constraint::Length(1), // spacer                     2
+        Constraint::Length(1), // size field                 3
+        Constraint::Length(1), // price field                4
+        Constraint::Length(1), // order type                 5
+        Constraint::Length(1), // spacer                     6
+        Constraint::Length(1), // dry run                    7
+        Constraint::Length(1), // spacer                     8
+        Constraint::Length(1), // est. fill                  9
+        Constraint::Length(1), // est. cost                  10
+        Constraint::Length(1), // fee display                11
+        Constraint::Length(1), // spacer                     12
+        Constraint::Min(0),    // footer                     13
     ])
     .split(inner);
 
@@ -121,6 +171,8 @@ fn render_form(f: &mut Frame, area: Rect, app: &App) {
         format!("Size (max {:.2})", app.order_form.max_size.unwrap_or(0.0))
     } else if size_below_min {
         "Size (min 5 shares)".to_string()
+    } else if app.order_form.size_input.is_empty() {
+        "Size (min 5 / $1)".to_string()
     } else {
         "Size (shares)".to_string()
     };
@@ -222,48 +274,106 @@ fn render_form(f: &mut Frame, area: Rect, app: &App) {
     };
     render_field(f, rows[7], "Dry Run", dr_label, false, dr_color);
 
+    // Estimated fill — walk the book given current size input.
+    let size_parsed_pos: Option<f64> = size_parsed.filter(|&v| v > 0.0);
+    let book = app
+        .order_books
+        .iter()
+        .find(|(_, b)| b.token_id == app.order_form.token_id)
+        .map(|(_, b)| b);
+
+    let fill = match (app.order_form.side.as_ref().copied(), size_parsed_pos, book) {
+        (Some(side), Some(s), Some(b)) if app.order_form.market_order => walk_book(side, b, s),
+        _ => None,
+    };
+
+    // The price used for cost/fee math: walked-book avg if we have one, otherwise
+    // the form's price field (limit order) or fetched best price (market).
+    let effective_price: Option<f64> = fill.as_ref().map(|f| f.avg_price).or_else(|| {
+        if app.order_form.market_order {
+            app.order_form.market_price
+        } else {
+            app.order_form.price_input.parse().ok()
+        }
+    });
+
+    if let Some(fp) = &fill {
+        let slip_bps = ((fp.avg_price - fp.best_price) / fp.best_price * 10_000.0).abs();
+        let partial = fp.filled_size + 1e-6 < fp.requested_size;
+        let label = if partial {
+            format!(
+                "avg {:.4}  fills {:.2}/{:.2}  {} lvls  slip {:.0} bps",
+                fp.avg_price, fp.filled_size, fp.requested_size, fp.levels_used, slip_bps,
+            )
+        } else {
+            format!(
+                "avg {:.4}  {} lvl{}  slip {:.0} bps",
+                fp.avg_price,
+                fp.levels_used,
+                if fp.levels_used == 1 { "" } else { "s" },
+                slip_bps,
+            )
+        };
+        let color = if partial { theme::RED } else { theme::CYAN };
+        render_field(f, rows[9], "Est. Fill", &label, false, color);
+    }
+
     // Cost preview
-    if let Some(cost) = app.order_form.cost() {
+    let cost_value: Option<f64> = match (&fill, app.order_form.cost()) {
+        (Some(fp), _) => Some(fp.total_cost),
+        (None, Some(c)) => Some(c),
+        _ => None,
+    };
+    if let Some(cost) = cost_value {
         let (cost_str, cost_color) = if cost < 1.0 {
             (format!("${:.4}  (min $1.00)", cost), theme::RED)
         } else {
             (format!("${:.4}", cost), theme::BLUE)
         };
-        render_field(f, rows[9], "Est. Cost", &cost_str, false, cost_color);
+        render_field(f, rows[10], "Est. Cost", &cost_str, false, cost_color);
     }
 
-    // Fee display
+    // Fee display.
+    // The `base_fee` returned by the CLOB is the bell-curve maximum (peaks at p=0.5);
+    // the realized fee is `size × rate × p × (1-p)`. We lead with the dollar amount and
+    // the *effective* bps at the trading price, since the headline "1000 bps" was being
+    // misread as a flat 10% rate.
     let (fee_label, fee_color) = match app.order_form.fee_rate_bps {
         None => ("fetching…".to_string(), theme::DIM),
-        Some(0) => ("0 bps  (no fee)".to_string(), theme::DIM),
+        Some(0) => ("0 bps".to_string(), theme::DIM),
         Some(bps) => {
-            let pct = bps as f64 / 100.0;
-            let price: Option<f64> = if app.order_form.market_order {
-                app.order_form.market_price
-            } else {
-                app.order_form.price_input.parse().ok()
-            };
             let size: Option<f64> = app.order_form.size_input.parse().ok();
-            match (size, price) {
-                (Some(s), Some(p)) if p > 0.0 && p < 1.0 => {
+            match (size, effective_price) {
+                (Some(s), Some(p)) if (0.0..1.0).contains(&p) => {
                     let fee = crate::client::PolyClient::calculate_fee(s, p, bps);
+                    let eff_bps = (bps as f64) * p * (1.0 - p);
                     (
-                        format!("{} bps  ({:.2}%)  ≈ ${:.5}", bps, pct, fee),
+                        format!("≈ ${:.4}  ({:.0} bps eff · base {} bps)", fee, eff_bps, bps),
                         theme::YELLOW,
                     )
                 }
-                _ => (format!("{} bps  ({:.2}%)", bps, pct), theme::YELLOW),
+                (_, Some(p)) if (0.0..1.0).contains(&p) => {
+                    let eff_bps = (bps as f64) * p * (1.0 - p);
+                    (
+                        format!("{:.0} bps eff @ {:.4}  (base {} bps)", eff_bps, p, bps),
+                        theme::YELLOW,
+                    )
+                }
+                _ => (
+                    format!("base {} bps  (≤ size×p×(1-p) × rate)", bps),
+                    theme::DIM,
+                ),
             }
         }
     };
-    render_field(f, rows[10], "Fee", &fee_label, false, fee_color);
+    render_field(f, rows[11], "Fee", &fee_label, false, fee_color);
 
     // Footer hint
     let footer = Paragraph::new(Span::styled(
         "  Tab/Shift+Tab fields   m max size   Enter submit   Esc cancel",
         Style::default().fg(theme::VERY_DIM),
     ));
-    f.render_widget(footer, rows[12]);
+    f.render_widget(footer, rows[13]);
 }
 
 fn render_text_field(

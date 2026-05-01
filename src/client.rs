@@ -1300,7 +1300,7 @@ impl PolyClient {
         let token_id = params.token_id.as_str();
         let price = params.price;
         let size = params.size;
-        let side = params.side.clone();
+        let side = params.side;
         let order_type = params.order_type;
         let expiry = params.expiry;
         let neg_risk = params.neg_risk;

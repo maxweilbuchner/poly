@@ -653,7 +653,7 @@ async fn cmd_trade(client: &PolyClient, args: TradeArgs) -> client::Result<()> {
         token_id,
         price,
         size,
-        side: side.clone(),
+        side,
         order_type,
         expiry,
         neg_risk,

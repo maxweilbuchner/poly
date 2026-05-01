@@ -573,7 +573,7 @@ fn handle_order_key(
             app.order_form.market_price = None;
             app.order_form.market_price_failed = false;
             let token_id = app.order_form.token_id.clone();
-            let side = app.order_form.side.clone().unwrap_or(Side::Buy);
+            let side = app.order_form.side.unwrap_or(Side::Buy);
             tasks::spawn_fetch_market_price(Arc::clone(&client), tx.clone(), token_id, side);
         }
         KeyCode::Char(' ') if app.order_form.focused_field == 2 => {
@@ -592,7 +592,7 @@ fn handle_order_key(
                         app.order_form.market_price = None;
                         app.order_form.market_price_failed = false;
                         let token_id = app.order_form.token_id.clone();
-                        let side = app.order_form.side.clone().unwrap_or(Side::Buy);
+                        let side = app.order_form.side.unwrap_or(Side::Buy);
                         tasks::spawn_fetch_market_price(
                             Arc::clone(&client),
                             tx.clone(),
@@ -675,7 +675,7 @@ fn submit_order(app: &mut App, client: Arc<PolyClient>, tx: &UnboundedSender<App
     }
 
     let side = match &app.order_form.side {
-        Some(s) => s.clone(),
+        Some(s) => *s,
         None => {
             app.set_flash("No side selected");
             return;
@@ -979,7 +979,7 @@ fn handle_close_confirm_key(
             app.order_form.market_price = None;
             app.order_form.market_price_failed = false;
             let token_id = app.order_form.token_id.clone();
-            let side = app.order_form.side.clone().unwrap_or(Side::Sell);
+            let side = app.order_form.side.unwrap_or(Side::Sell);
             tasks::spawn_fetch_market_price(Arc::clone(&client), tx.clone(), token_id, side);
             false
         }
@@ -1059,7 +1059,7 @@ fn open_order_from_position(
     };
 
     app.order_form = OrderForm {
-        side: Some(side.clone()),
+        side: Some(side),
         token_id: token_id.clone(),
         outcome_name,
         size_input,

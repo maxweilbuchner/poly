@@ -81,7 +81,7 @@ pub struct Order {
     pub created_at: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum Side {
     Buy,
     Sell,
