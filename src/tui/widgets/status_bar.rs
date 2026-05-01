@@ -155,19 +155,12 @@ pub fn render(f: &mut Frame, area: Rect, app: &mut App) {
     }
 }
 
-fn render_version(f: &mut Frame, area: Rect, ws_connected: bool) {
-    let mut spans = Vec::new();
-    if ws_connected {
-        spans.push(Span::styled(
-            " WS",
-            Style::default().fg(theme::GREEN).bg(theme::BG),
-        ));
-        spans.push(Span::styled(" ", Style::default().bg(theme::BG)));
-    }
-    spans.push(Span::styled(
+fn render_version(f: &mut Frame, area: Rect, _ws_connected: bool) {
+    // WS state is now shown in the tab bar; this row keeps just the version.
+    let spans = vec![Span::styled(
         concat!("poly v", env!("CARGO_PKG_VERSION"), " "),
         Style::default().fg(theme::VERY_DIM).bg(theme::BG),
-    ));
+    )];
     let v = Paragraph::new(Line::from(spans))
         .style(Style::default().bg(theme::BG))
         .alignment(ratatui::layout::Alignment::Right);
