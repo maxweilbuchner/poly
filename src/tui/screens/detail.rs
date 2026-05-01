@@ -65,10 +65,9 @@ fn description_line_count(app: &App, area_width: u16, area_height: u16) -> usize
         total
     } else {
         let fifth = (area_height as usize).saturating_sub(7) / 5;
-        let max_text = total.min(fifth.max(2).saturating_sub(1));
-        let truncated = max_text < total;
-        // text lines + optional "..." indicator
-        max_text + if truncated { 1 } else { 0 }
+        // The truncation indicator is now appended to the last visible line,
+        // so it no longer needs its own row.
+        total.min(fifth.max(2).saturating_sub(1))
     }
 }
 
@@ -147,17 +146,25 @@ fn render_header(f: &mut Frame, area: Rect, app: &App) {
                     total.min(fifth.max(2).saturating_sub(1))
                 };
                 let truncated = !app.description_expanded && max_desc < total;
-                for line in wrapped.into_iter().take(max_desc) {
-                    lines.push(Line::from(vec![
-                        Span::styled("  ", Style::default()),
-                        Span::styled(line, Style::default().fg(theme::DIM)),
-                    ]));
-                }
-                if truncated {
-                    lines.push(Line::from(vec![Span::styled(
-                        "  ... [e expand]",
-                        Style::default().fg(theme::VERY_DIM),
-                    )]));
+                let visible: Vec<String> = wrapped.into_iter().take(max_desc).collect();
+                let last_idx = visible.len().saturating_sub(1);
+                for (i, line) in visible.into_iter().enumerate() {
+                    if truncated && i == last_idx {
+                        // Append the truncation indicator to the last visible line so
+                        // the reader sees a preview ending in "… [e expand]" rather
+                        // than a bare "..." on its own line.
+                        lines.push(Line::from(vec![
+                            Span::styled("  ", Style::default()),
+                            Span::styled(line, Style::default().fg(theme::DIM)),
+                            Span::styled("…", Style::default().fg(theme::DIM)),
+                            Span::styled("  [e expand]", Style::default().fg(theme::VERY_DIM)),
+                        ]));
+                    } else {
+                        lines.push(Line::from(vec![
+                            Span::styled("  ", Style::default()),
+                            Span::styled(line, Style::default().fg(theme::DIM)),
+                        ]));
+                    }
                 }
             }
             lines

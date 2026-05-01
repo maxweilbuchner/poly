@@ -37,9 +37,28 @@ pub fn render_with_selection(
         .border_style(Style::default().fg(border_color))
         .style(Style::default().bg(theme::PANEL_BG));
 
-    // Header row
-    let header = Row::new(vec!["Price", "Size", "", "Price", "Size"])
-        .style(Style::default().fg(theme::DIM).add_modifier(Modifier::BOLD));
+    // Header row — group labels (Asks / Bids) over price+size.
+    let header = Row::new(vec![
+        ratatui::text::Span::styled(
+            "Ask",
+            Style::default().fg(theme::RED).add_modifier(Modifier::BOLD),
+        ),
+        ratatui::text::Span::styled(
+            "Size",
+            Style::default().fg(theme::DIM).add_modifier(Modifier::BOLD),
+        ),
+        ratatui::text::Span::styled("│", Style::default().fg(theme::BORDER)),
+        ratatui::text::Span::styled(
+            "Bid",
+            Style::default()
+                .fg(theme::GREEN)
+                .add_modifier(Modifier::BOLD),
+        ),
+        ratatui::text::Span::styled(
+            "Size",
+            Style::default().fg(theme::DIM).add_modifier(Modifier::BOLD),
+        ),
+    ]);
 
     let rows: Vec<Row> = match book {
         None => vec![Row::new(vec!["—", "", "", "", ""])],
