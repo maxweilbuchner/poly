@@ -356,9 +356,9 @@ fn build_position_items(
 
     // Single-line layout:
     //   indent(2) + outcome + sep(4) + question + sep(4) + status + sep(4)
-    //   + size + " shares"(7) + sep(4) + avg + sep(4) + cur + sep(4) + pnl + badge
+    //   + size + sep(4) + avg + sep(4) + cur + sep(4) + pnl + badge
     // Subtract 4 extra for borders(2) + highlight symbol "▸ "(2) not in line content.
-    let size_hdr_w = max_size + 7;
+    let size_hdr_w = max_size.max("Shares".len());
     let fixed = 2
         + max_outcome
         + 4
@@ -422,7 +422,7 @@ fn build_position_items(
             let outcome_cell = pad_right(truncate(&r.outcome, max_outcome), max_outcome);
             let question_cell = pad_right(truncate(&r.question, q_width), q_width);
             let status_cell = pad_right(r.status, status_width);
-            let size_cell = format!("{:>width$} shares", r.size_num, width = max_size);
+            let size_cell = pad_left(r.size_num, size_hdr_w);
             let avg_cell = pad_left(r.avg_str, max_avg);
             let cur_cell = pad_left(r.cur_str, max_cur);
             let pnl_cell = pad_left(r.pnl_str, max_pnl);
