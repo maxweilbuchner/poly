@@ -124,7 +124,7 @@ fn render_header(f: &mut Frame, area: Rect, app: &App) {
             ]));
             // Question
             lines.push(Line::from(""));
-            lines.push(Line::from(vec![
+            let mut q_spans = vec![
                 Span::styled("  ", Style::default()),
                 Span::styled(
                     &m.question,
@@ -132,7 +132,18 @@ fn render_header(f: &mut Frame, area: Rect, app: &App) {
                         .fg(theme::TEXT)
                         .add_modifier(Modifier::BOLD),
                 ),
-            ]));
+            ];
+            if crate::tui::market_category(m) == Some("Weather") {
+                if let Some(loc) = crate::weather::weather_location(m) {
+                    if !loc.icao.is_empty() {
+                        q_spans.push(Span::styled(
+                            format!("  {}·{}", loc.icao, loc.country),
+                            Style::default().fg(theme::VERY_DIM),
+                        ));
+                    }
+                }
+            }
+            lines.push(Line::from(q_spans));
             // Description, capped unless expanded
             let desc = m.description.as_deref().unwrap_or("");
             if !desc.is_empty() {

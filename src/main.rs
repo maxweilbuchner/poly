@@ -7,6 +7,7 @@ mod persist;
 mod setup;
 mod tui;
 mod types;
+mod weather;
 
 use clap::{CommandFactory, Parser, Subcommand};
 use client::PolyClient;

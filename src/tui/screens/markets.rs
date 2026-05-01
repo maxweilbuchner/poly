@@ -8,6 +8,7 @@ use ratatui::{
 
 use crate::tui::{market_category, theme, App};
 use crate::types::Market;
+use crate::weather::weather_location;
 
 pub fn render(f: &mut Frame, area: Rect, app: &mut App) {
     let (list_area, search_area) = if app.search_mode || !app.search_query.is_empty() {
@@ -197,7 +198,22 @@ fn build_item(
     } else {
         q_width
     };
-    let question = truncate(&m.question, q_width);
+
+    // For weather markets, surface the resolution station next to the question
+    // so the user can see *where* the market resolves at a glance (the question
+    // names the city in plain English, but the ICAO code is the canonical
+    // station identifier and disambiguates e.g. multiple "Springfield"s).
+    let weather_suffix: Option<String> = market_category(m)
+        .filter(|c| *c == "Weather")
+        .and_then(|_| weather_location(m))
+        .filter(|loc| !loc.icao.is_empty())
+        .map(|loc| format!("  {}·{}", loc.icao, loc.country));
+
+    let suffix_w = weather_suffix
+        .as_deref()
+        .map(|s| s.chars().count())
+        .unwrap_or(0);
+    let question = truncate(&m.question, q_width.saturating_sub(suffix_w));
 
     // Line 1: question (with optional star prefix)
     let mut line1_spans = vec![Span::raw("  ")];
@@ -210,6 +226,9 @@ fn build_item(
             .fg(theme::TEXT)
             .add_modifier(Modifier::BOLD),
     ));
+    if let Some(s) = weather_suffix {
+        line1_spans.push(Span::styled(s, Style::default().fg(theme::VERY_DIM)));
+    }
     let line1 = Line::from(line1_spans);
 
     // Line 2: metadata
