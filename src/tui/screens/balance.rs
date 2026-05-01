@@ -273,13 +273,35 @@ fn render_net_worth_chart(f: &mut Frame, area: Rect, app: &App) {
     let y_hi = y_max + y_range * 0.05;
 
     let x_labels = make_time_labels(x_min, x_max);
-    let y_labels = make_value_labels(y_lo, y_hi);
+    let gridline_values = make_gridline_values(y_lo, y_hi, 5);
+    let y_labels: Vec<Span<'static>> = gridline_values
+        .iter()
+        .map(|&v| Span::styled(format!("${:.0}", v), Style::default().fg(theme::VERY_DIM)))
+        .collect();
 
-    let datasets = vec![Dataset::default()
-        .data(&data)
-        .graph_type(GraphType::Line)
-        .marker(symbols::Marker::Braille)
-        .style(Style::default().fg(theme::GREEN))];
+    // Horizontal gridlines, drawn behind the net-worth line.
+    let gridline_data: Vec<Vec<(f64, f64)>> = gridline_values
+        .iter()
+        .map(|&y| vec![(x_min, y), (x_max, y)])
+        .collect();
+
+    let mut datasets: Vec<Dataset> = gridline_data
+        .iter()
+        .map(|d| {
+            Dataset::default()
+                .data(d)
+                .graph_type(GraphType::Line)
+                .marker(symbols::Marker::Dot)
+                .style(Style::default().fg(theme::VERY_DIM))
+        })
+        .collect();
+    datasets.push(
+        Dataset::default()
+            .data(&data)
+            .graph_type(GraphType::Line)
+            .marker(symbols::Marker::Braille)
+            .style(Style::default().fg(theme::GREEN)),
+    );
 
     let chart = Chart::new(datasets)
         .block(block)
@@ -322,10 +344,10 @@ fn make_time_labels(x_min: f64, x_max: f64) -> Vec<Span<'static>> {
         .collect()
 }
 
-fn make_value_labels(y_lo: f64, y_hi: f64) -> Vec<Span<'static>> {
-    let mid = (y_lo + y_hi) / 2.0;
-    [y_lo, mid, y_hi]
-        .iter()
-        .map(|&v| Span::styled(format!("${:.0}", v), Style::default().fg(theme::VERY_DIM)))
-        .collect()
+fn make_gridline_values(y_lo: f64, y_hi: f64, n: usize) -> Vec<f64> {
+    if n < 2 {
+        return vec![y_lo, y_hi];
+    }
+    let step = (y_hi - y_lo) / (n - 1) as f64;
+    (0..n).map(|i| y_lo + step * i as f64).collect()
 }
