@@ -44,17 +44,14 @@ fn render_search_bar(f: &mut Frame, area: Rect, app: &App) {
 }
 
 fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
-    // Build position badge lookup before the markets borrow.
-    // Keyed by condition_id; value is a list of (badge_text, color) per outcome held.
-    let pos_badges: std::collections::HashMap<String, Vec<(String, ratatui::style::Color)>> = {
-        let mut map: std::collections::HashMap<String, Vec<(String, ratatui::style::Color)>> =
-            std::collections::HashMap::new();
+    // Build held-position lookup: condition_id → color (worst direction wins so a
+    // losing leg of a multi-outcome hold isn't masked by a winning one).
+    let held_color: std::collections::HashMap<String, Color> = {
+        let mut map: std::collections::HashMap<String, Color> = std::collections::HashMap::new();
         for p in &app.positions {
             if p.size <= 0.0 {
                 continue;
             }
-            let cents = (p.avg_price * 100.0).round() as u64;
-            let label = format!("↑ {} @{}¢", truncate(&p.outcome, 6), cents);
             let color = if p.current_price > p.avg_price + 0.005 {
                 theme::GREEN
             } else if p.current_price < p.avg_price - 0.005 {
@@ -63,8 +60,13 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
                 theme::CYAN
             };
             map.entry(p.market_id.clone())
-                .or_default()
-                .push((label, color));
+                .and_modify(|c| {
+                    // Prefer red > cyan > green so a losing leg surfaces.
+                    if *c != theme::RED && (color == theme::RED || *c == theme::GREEN) {
+                        *c = color;
+                    }
+                })
+                .or_insert(color);
         }
         map
     };
@@ -205,7 +207,7 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
                 end_color,
                 cat_str: cat.to_string(),
                 cat_color: category_color(cat),
-                badges: pos_badges.get(&m.condition_id).cloned().unwrap_or_default(),
+                held: held_color.get(&m.condition_id).copied(),
             }
         })
         .collect();
@@ -236,19 +238,34 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
         .max("Cat".len());
 
     // Row layout (rendered inside the bordered list):
-    //   highlight "▸ "(2) + indent "  "(2) + q_width + 4× sep "  · "(4 each)
-    //   + max_prices + max_vol + max_ends + max_cat
-    // Subtract borders(2) from area.width to get the inner width.
-    let fixed = 2 /* highlight */ + 2 /* indent */ + 4 * 4 /* separators */
+    //   highlight "▸ "(2) + gutter "★●"(2) + " "(1) + q_width
+    //   + "    "(4, no bullet) + max_prices
+    //   + "  · "(4) + max_vol + "  · "(4) + max_ends + "  · "(4) + max_cat
+    let fixed = 2 /* highlight */ + 2 /* gutter */ + 1 /* gutter→q gap */
+        + 4 /* q→prices spacer */ + 3 * 4 /* bullet separators */
         + max_prices + max_vol + max_ends + max_cat;
-    let q_width = (area.width as usize)
+    let q_avail = (area.width as usize)
         .saturating_sub(2) // borders
-        .saturating_sub(fixed)
-        .max(20);
+        .saturating_sub(fixed);
+    // Cap q_width at the longest actual question+suffix (+2 slack) so short
+    // questions don't leave a wide dead gap before the Prices column.
+    let max_q_content = mrows
+        .iter()
+        .map(|r| {
+            r.question.chars().count()
+                + r.weather_suffix
+                    .as_deref()
+                    .map(|s| s.chars().count())
+                    .unwrap_or(0)
+        })
+        .max()
+        .unwrap_or(20);
+    let q_width = q_avail.min(max_q_content + 2).max(20);
 
     // ── Header row ────────────────────────────────────────────────────────────
+    // Indent = highlight(2) + gutter(2) + gap(1) = 5 chars to align with question.
     let header = Line::from(vec![
-        Span::raw("    "),
+        Span::raw("     "),
         Span::styled(
             pad_right("Market".to_string(), q_width),
             Style::default().fg(theme::DIM),
@@ -305,7 +322,7 @@ struct MRow {
     end_color: Color,
     cat_str: String,
     cat_color: Color,
-    badges: Vec<(String, Color)>,
+    held: Option<Color>,
 }
 
 fn build_row(
@@ -327,24 +344,31 @@ fn build_row(
         end_color,
         cat_str,
         cat_color,
-        badges,
+        held,
     } = r;
 
-    // Reserve space for star prefix and weather suffix inside the question column.
-    let star_w = if starred { 2 } else { 0 };
     let suffix_w = weather_suffix
         .as_deref()
         .map(|s| s.chars().count())
         .unwrap_or(0);
-    let q_avail = q_width.saturating_sub(star_w).saturating_sub(suffix_w);
+    let q_avail = q_width.saturating_sub(suffix_w);
     let q_truncated = truncate(&question, q_avail);
-    let q_used = star_w + q_truncated.chars().count() + suffix_w;
+    let q_used = q_truncated.chars().count() + suffix_w;
     let q_pad = q_width.saturating_sub(q_used);
 
-    let mut spans: Vec<Span> = vec![Span::raw("  ")];
-    if starred {
-        spans.push(Span::styled("★ ", Style::default().fg(theme::YELLOW)));
-    }
+    // ── Gutter: ★ for starred, ● colored by held P&L direction ──────────────
+    let star_span = if starred {
+        Span::styled("★", Style::default().fg(theme::YELLOW))
+    } else {
+        Span::raw(" ")
+    };
+    let held_span = match held {
+        Some(c) => Span::styled("●", Style::default().fg(c)),
+        None => Span::raw(" "),
+    };
+
+    let mut spans: Vec<Span> = vec![star_span, held_span, Span::raw(" ")];
+
     spans.push(Span::styled(
         q_truncated,
         Style::default()
@@ -358,7 +382,8 @@ fn build_row(
         spans.push(Span::raw(" ".repeat(q_pad)));
     }
 
-    spans.push(Span::styled("  · ", Style::default().fg(theme::VERY_DIM)));
+    // Plain spacer (no orphan bullet) between Market and Prices.
+    spans.push(Span::raw("    "));
     spans.push(Span::styled(
         pad_right(prices_str, max_prices),
         Style::default().fg(prices_color),
@@ -381,16 +406,6 @@ fn build_row(
         pad_right(cat_str, max_cat),
         Style::default().fg(cat_color),
     ));
-
-    if !badges.is_empty() {
-        spans.push(Span::styled("  · ", Style::default().fg(theme::VERY_DIM)));
-        for (i, (badge, badge_color)) in badges.into_iter().enumerate() {
-            if i > 0 {
-                spans.push(Span::styled("  ", Style::default().fg(theme::VERY_DIM)));
-            }
-            spans.push(Span::styled(badge, Style::default().fg(badge_color)));
-        }
-    }
 
     ListItem::new(Line::from(spans))
 }
