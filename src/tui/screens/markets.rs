@@ -193,7 +193,7 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
                         .unwrap_or_default();
                     format!("  {}·{}{}", loc.icao, loc.country, local)
                 });
-            let cells = price_cells(m);
+            let lead = lead_cell(m);
             let vol_str = format_volume(m.volume);
             let vol_color = volume_color(m.volume);
             let end = format_end(m.end_date.as_deref());
@@ -211,7 +211,7 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
                 question: m.question.clone(),
                 weather_suffix,
                 starred: app.watchlist.contains(&m.condition_id),
-                cells,
+                lead,
                 vol_str,
                 vol_color,
                 end_str,
@@ -226,14 +226,14 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
     const LABEL_CAP: usize = 10;
     let max_label = mrows
         .iter()
-        .flat_map(|r| r.cells.iter().map(|c| c.label.chars().count()))
+        .filter_map(|r| r.lead.as_ref().map(|l| l.label.chars().count()))
         .max()
         .unwrap_or(3)
         .min(LABEL_CAP)
         .max("Yes".len());
-    let max_pct = 4; // "100%" / " 95%" / "  5%"
-    let cell_w = max_label + 1 + max_pct; // label + ":" + pct
-    let prices_col_w = (2 * cell_w + 2).max("Prices".len());
+    let max_pct = 4; // "100%" / " 95%"
+                     // label + 2-space gap + bar + 2-space gap + pct
+    let prices_col_w = (max_label + 2 + BAR_W + 2 + max_pct).max("Prices".len());
     let max_vol = mrows
         .iter()
         .map(|r| r.vol_str.chars().count())
@@ -312,7 +312,7 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
 
     let items: Vec<ListItem> = mrows
         .into_iter()
-        .map(|r| build_row(r, q_width, max_label, max_pct, max_vol, max_ends, max_cat))
+        .map(|r| build_row(r, q_width, max_label, max_vol, max_ends, max_cat))
         .collect();
 
     let list = List::new(items)
@@ -327,17 +327,20 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
     f.render_stateful_widget(list, content_chunks[2], &mut app.market_list_state);
 }
 
-struct PriceCell {
+struct LeadCell {
     label: String,
     pct: String,
+    prob: f64,
     color: Color,
 }
+
+const BAR_W: usize = 12;
 
 struct MRow {
     question: String,
     weather_suffix: Option<String>,
     starred: bool,
-    cells: Vec<PriceCell>,
+    lead: Option<LeadCell>,
     vol_str: String,
     vol_color: Color,
     end_str: String,
@@ -351,7 +354,6 @@ fn build_row(
     r: MRow,
     q_width: usize,
     max_label: usize,
-    max_pct: usize,
     max_vol: usize,
     max_ends: usize,
     max_cat: usize,
@@ -360,7 +362,7 @@ fn build_row(
         question,
         weather_suffix,
         starred,
-        cells,
+        lead,
         vol_str,
         vol_color,
         end_str,
@@ -407,22 +409,23 @@ fn build_row(
 
     // Plain spacer (no orphan bullet) between Market and Prices.
     spans.push(Span::raw("    "));
-    let cell_w = max_label + 1 + max_pct;
-    for i in 0..2 {
-        if i > 0 {
+    let prices_col_w = max_label + 2 + BAR_W + 2 + 4;
+    match lead {
+        Some(l) => {
+            let label = pad_right(truncate(&l.label, max_label), max_label);
+            let bar = render_bar(l.prob, BAR_W);
+            let pct = pad_left(l.pct.clone(), 4);
+            spans.push(Span::styled(label, Style::default().fg(l.color)));
             spans.push(Span::raw("  "));
+            spans.push(Span::styled(bar, Style::default().fg(l.color)));
+            spans.push(Span::raw("  "));
+            spans.push(Span::styled(
+                pct,
+                Style::default().fg(l.color).add_modifier(Modifier::BOLD),
+            ));
         }
-        match cells.get(i) {
-            Some(cell) => {
-                let label = pad_right(truncate(&cell.label, max_label), max_label);
-                let pct = pad_left(cell.pct.clone(), max_pct);
-                spans.push(Span::styled(label, Style::default().fg(cell.color)));
-                spans.push(Span::styled(":", Style::default().fg(theme::VERY_DIM)));
-                spans.push(Span::styled(pct, Style::default().fg(cell.color)));
-            }
-            None => {
-                spans.push(Span::raw(" ".repeat(cell_w)));
-            }
+        None => {
+            spans.push(Span::raw(" ".repeat(prices_col_w)));
         }
     }
 
@@ -459,16 +462,47 @@ fn format_volume(v: f64) -> String {
     }
 }
 
-fn price_cells(m: &Market) -> Vec<PriceCell> {
-    m.outcomes
-        .iter()
-        .take(2)
-        .map(|o| PriceCell {
-            label: o.name.clone(),
-            pct: format!("{:.0}%", o.price * 100.0),
-            color: prob_color(o.price),
-        })
-        .collect()
+fn lead_cell(m: &Market) -> Option<LeadCell> {
+    let leader = m.outcomes.iter().max_by(|a, b| {
+        a.price
+            .partial_cmp(&b.price)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    })?;
+    Some(LeadCell {
+        label: leader.name.clone(),
+        pct: format!("{:.0}%", leader.price * 100.0),
+        prob: leader.price,
+        color: prob_color(leader.price),
+    })
+}
+
+/// Horizontal probability bar with eighth-cell precision.
+/// `width` is the total cell width; output is exactly `width` columns wide.
+fn render_bar(p: f64, width: usize) -> String {
+    let p = p.clamp(0.0, 1.0);
+    let total_eighths = (p * width as f64 * 8.0).round() as usize;
+    let full = total_eighths / 8;
+    let partial = total_eighths % 8;
+    let partial_char = match partial {
+        1 => "▏",
+        2 => "▎",
+        3 => "▍",
+        4 => "▌",
+        5 => "▋",
+        6 => "▊",
+        7 => "▉",
+        _ => "",
+    };
+    let mut s = String::new();
+    for _ in 0..full {
+        s.push('█');
+    }
+    s.push_str(partial_char);
+    let used = full + if partial > 0 { 1 } else { 0 };
+    for _ in used..width {
+        s.push(' ');
+    }
+    s
 }
 
 /// Brighten the volume cell as the market gets bigger so high-volume rows

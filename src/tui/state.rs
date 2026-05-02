@@ -896,10 +896,32 @@ pub(crate) fn market_category_from_parts(question: &str, slug: &str) -> Option<&
         "counter-strike",
         " lcs",
         " lpl",
+        " lec ",
         "valorant",
         "win on 202",
         "win the 202",
         "end in a draw",
+        // LoL / esports match prop markets
+        "game 1:",
+        "game 2:",
+        "game 3:",
+        "any player quadra kill",
+        "destroy inhibitors",
+        "slay a dragon",
+        "slay baron",
+        "baron nashor",
+        "first blood in game",
+        "leviatan",
+        "pain gaming",
+        "league of legends",
+        // Boxing / MMA
+        "boxing",
+        "fight night",
+        "pbc fight",
+        "title fight",
+        "knockout",
+        // Common O/U / spread phrasing
+        "total kills over/under",
     ];
     if sports_q_kw.iter().any(|k| q.contains(k) || s.contains(k)) {
         return Some("Sports");
@@ -941,6 +963,14 @@ pub(crate) fn market_category_from_parts(question: &str, slug: &str) -> Option<&
         "criminal trial",
         "mayor of",
         "governor of",
+        "bernie sanders",
+        " maduro",
+        "nyt front-page",
+        "front-page headlines",
+        "supreme court",
+        "white house",
+        "executive order",
+        "impeach",
     ];
     if politics_kw.iter().any(|k| q.contains(k) || s.contains(k)) {
         return Some("Politics");
