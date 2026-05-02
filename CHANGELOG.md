@@ -7,7 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-05-02
+
 ### Added
+- Weather-market intelligence: extractor for location (`display`, `country`, ICAO) from question + Wunderground/NOAA description prose; lookup table covering all 51 ICAO stations currently referenced by active Polymarket temperature markets (lat/lon/elevation/IANA tz); generator script `scripts/gen_airports.py` to refresh the table from gamma + the OurAirports public-domain CSV.
+- Open-Meteo ECMWF-IFS025 ensemble forecast (51 members) plus best_match deterministic anchor for weather markets resolving in D+0..D+2; rendered inline below the question on the market detail screen as `mean / p10 / p90 / 7-cell histogram / anchor` for both Tmax and Tmin. 30-min in-memory + on-disk cache (`forecast.json`, versioned).
+- ICAO + airport-local time (`h:mm am/pm`) shown next to the question on the Markets list and the market detail header for every weather market.
+- New `local time` sort mode for the Markets tab (cycled with `s`): weather markets ordered ascending by current minute-of-day at their resolution station; non-weather markets fall to the bottom by volume desc.
+- One-shot warning flash + `tracing::warn!` when a weather market is opened with an ICAO not in the airport lookup table (prompts re-running the generator).
 - `9h` option in the markets date filter cycle (between `6h` and `12h`).
 
 ### Changed
@@ -144,7 +151,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - HMAC-SHA256 authentication for CLOB API
 - Colored terminal output
 
-[Unreleased]: https://gitlab.com/maxweilbuchner/poly-v2/-/compare/v0.4.2...HEAD
+[Unreleased]: https://gitlab.com/maxweilbuchner/poly-v2/-/compare/v0.4.3...HEAD
+[0.4.3]: https://gitlab.com/maxweilbuchner/poly-v2/-/compare/v0.4.2...v0.4.3
 [0.4.2]: https://gitlab.com/maxweilbuchner/poly-v2/-/compare/v0.4.1...v0.4.2
 [0.4.1]: https://gitlab.com/maxweilbuchner/poly-v2/-/compare/v0.4.0...v0.4.1
 [0.4.0]: https://gitlab.com/maxweilbuchner/poly-v2/-/compare/v0.3.3...v0.4.0
