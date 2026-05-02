@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Market detail header redesigned: question moves into the panel title; `Status`, absolute `Ends` timestamp, `Category` (when empty/weather), and the long `ID:` row are dropped; one stats line shows `<icao> · <country> · <local time> local · Ends <countdown> · Vol · Liq`. Frees ~3 rows for the order books / sparklines.
+- Forecast anchor temperature now coloured cyan to distinguish it from the ensemble percentiles.
+- Removed the duplicate market-question breadcrumb from the top tab bar (it's already the detail panel title).
+
 ## [0.4.3] - 2026-05-02
 
 ### Added

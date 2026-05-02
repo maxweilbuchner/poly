@@ -20,10 +20,21 @@ pub fn render(f: &mut Frame, area: Rect, app: &mut App) {
     let history_key = format!("{}:{}", condition_id, app.sparkline_interval);
     let has_history = app.price_history.contains_key(&history_key);
 
-    // Compute header height: base rows + description lines (capped at 20%
-    // of available height unless 'e' was pressed to expand).
+    // Compute header height: borders + stats row + (weather forecast block)
+    // + description rows. Description is capped at 20% of available height
+    // unless 'e' was pressed to expand.
     let desc_lines = description_line_count(app, area.width, area.height);
-    let header_height = 7 + desc_lines as u16;
+    let is_weather = app
+        .selected_market
+        .as_ref()
+        .is_some_and(|m| crate::tui::market_category(m) == Some("Weather"));
+    let forecast_rows: u16 = if is_weather { 4 } else { 0 }; // blank + header + high + low
+    let desc_rows: u16 = if desc_lines > 0 {
+        1 + desc_lines as u16 // blank + lines
+    } else {
+        0
+    };
+    let header_height = 2 /* borders */ + 1 /* stats */ + forecast_rows + desc_rows;
 
     let chunks = if has_history {
         Layout::vertical([
@@ -71,10 +82,34 @@ fn description_line_count(app: &App, area_width: u16, area_height: u16) -> usize
     }
 }
 
+/// Truncate a string with an ellipsis to fit within `max` chars.
+fn truncate(s: &str, max: usize) -> String {
+    if s.chars().count() <= max {
+        s.to_string()
+    } else if max == 0 {
+        String::new()
+    } else {
+        let mut t: String = s.chars().take(max - 1).collect();
+        t.push('…');
+        t
+    }
+}
+
 fn render_header(f: &mut Frame, area: Rect, app: &App) {
+    // Title text: the market question itself (the page identity), truncated
+    // to fit. Falls back to "Market Detail" while loading.
+    let title_text = match &app.selected_market {
+        Some(m) => {
+            // Reserve borders + side padding (4 chars) when sizing the title.
+            let max = (area.width as usize).saturating_sub(4).max(8);
+            format!(" {} ", truncate(&m.question, max))
+        }
+        None => " Market Detail ".to_string(),
+    };
+
     let block = Block::bordered()
         .title(Span::styled(
-            " Market Detail ",
+            title_text,
             Style::default()
                 .fg(theme::CYAN)
                 .add_modifier(Modifier::BOLD),
@@ -83,74 +118,64 @@ fn render_header(f: &mut Frame, area: Rect, app: &App) {
         .style(Style::default().bg(theme::PANEL_BG));
 
     let lines = match &app.selected_market {
-        None => vec![
-            Line::from(""),
-            Line::from(Span::styled("  Loading…", Style::default().fg(theme::DIM))),
-        ],
+        None => vec![Line::from(Span::styled(
+            "  Loading…",
+            Style::default().fg(theme::DIM),
+        ))],
         Some(m) => {
-            let vol = format_volume(m.volume);
-            let liq = format_volume(m.liquidity);
-            let end = m.end_date.as_deref().unwrap_or("—");
-            let cat = m.category.as_deref().unwrap_or("—");
-            // Stats first
-            let mut lines = vec![Line::from(vec![
-                Span::styled("  Status: ", Style::default().fg(theme::DIM)),
-                Span::styled(m.status.to_string(), Style::default().fg(theme::CYAN)),
-                Span::styled("   Vol: ", Style::default().fg(theme::DIM)),
-                Span::styled(vol, Style::default().fg(theme::YELLOW)),
-                Span::styled("   Liq: ", Style::default().fg(theme::DIM)),
-                Span::styled(liq, Style::default().fg(theme::YELLOW)),
-            ])];
-            {
-                let mut ends_line = vec![
-                    Span::styled("  Category: ", Style::default().fg(theme::DIM)),
-                    Span::styled(cat, Style::default().fg(theme::TEXT)),
-                    Span::styled("   Ends: ", Style::default().fg(theme::DIM)),
-                    Span::styled(end, Style::default().fg(theme::TEXT)),
-                ];
-                if let Some((label, color)) = remaining_time(end) {
-                    ends_line.push(Span::styled("  (", Style::default().fg(theme::DIM)));
-                    ends_line.push(Span::styled(
-                        label,
-                        Style::default().fg(color).add_modifier(Modifier::BOLD),
-                    ));
-                    ends_line.push(Span::styled(")", Style::default().fg(theme::DIM)));
-                }
-                lines.push(Line::from(ends_line));
-            }
-            lines.push(Line::from(vec![
-                Span::styled("  ID: ", Style::default().fg(theme::DIM)),
-                Span::styled(&m.condition_id, Style::default().fg(theme::VERY_DIM)),
-            ]));
-            // Question
-            lines.push(Line::from(""));
-            let mut q_spans = vec![
-                Span::styled("  ", Style::default()),
-                Span::styled(
-                    &m.question,
-                    Style::default()
-                        .fg(theme::TEXT)
-                        .add_modifier(Modifier::BOLD),
-                ),
-            ];
-            if crate::tui::market_category(m) == Some("Weather") {
+            let mut lines: Vec<Line> = Vec::new();
+            let dim = Style::default().fg(theme::DIM);
+            let text = Style::default().fg(theme::TEXT);
+            let yellow = Style::default().fg(theme::YELLOW);
+            let very_dim = Style::default().fg(theme::VERY_DIM);
+            let sep = || Span::styled("  ·  ", very_dim);
+
+            // Stats line: "<icao> · <country> · <h:mm am/pm> local    Ends <countdown>  ·  Vol <v>  ·  Liq <l>"
+            let mut stats: Vec<Span> = vec![Span::styled("  ", Style::default())];
+            let is_weather = crate::tui::market_category(m) == Some("Weather");
+            if is_weather {
                 if let Some(loc) = crate::weather::weather_location(m) {
                     if !loc.icao.is_empty() {
-                        let local = crate::weather::lookup_airport(&loc.icao)
+                        stats.push(Span::styled(loc.icao.clone(), text));
+                        stats.push(Span::styled(" · ", very_dim));
+                        stats.push(Span::styled(loc.country.clone(), text));
+                        if let Some(t) = crate::weather::lookup_airport(&loc.icao)
                             .and_then(crate::weather::local_time_now)
-                            .map(|t| format!(" · {}", t))
-                            .unwrap_or_default();
-                        q_spans.push(Span::styled(
-                            format!("  {}·{}{}", loc.icao, loc.country, local),
-                            Style::default().fg(theme::VERY_DIM),
-                        ));
+                        {
+                            stats.push(Span::styled(" · ", very_dim));
+                            stats.push(Span::styled(t, text));
+                            stats.push(Span::styled(" local", dim));
+                        }
+                        stats.push(sep());
                     }
                 }
+            } else if let Some(cat) = m.category.as_deref().filter(|s| !s.is_empty()) {
+                stats.push(Span::styled(cat.to_string(), text));
+                stats.push(sep());
             }
-            lines.push(Line::from(q_spans));
+
+            // Ends countdown (skip the absolute timestamp; the countdown is
+            // what traders care about).
+            let end = m.end_date.as_deref().unwrap_or("—");
+            stats.push(Span::styled("Ends ", dim));
+            if let Some((label, color)) = remaining_time(end) {
+                stats.push(Span::styled(
+                    label,
+                    Style::default().fg(color).add_modifier(Modifier::BOLD),
+                ));
+            } else {
+                stats.push(Span::styled(end.to_string(), text));
+            }
+            stats.push(sep());
+            stats.push(Span::styled("Vol ", dim));
+            stats.push(Span::styled(format_volume(m.volume), yellow));
+            stats.push(sep());
+            stats.push(Span::styled("Liq ", dim));
+            stats.push(Span::styled(format_volume(m.liquidity), yellow));
+            lines.push(Line::from(stats));
 
             // Forecast block (weather markets only).
-            if crate::tui::market_category(m) == Some("Weather") {
+            if is_weather {
                 lines.push(Line::from(""));
                 for line in render_forecast_lines(m, app) {
                     lines.push(line);
@@ -160,6 +185,7 @@ fn render_header(f: &mut Frame, area: Rect, app: &App) {
             // Description, capped unless expanded
             let desc = m.description.as_deref().unwrap_or("");
             if !desc.is_empty() {
+                lines.push(Line::from(""));
                 let usable = (area.width as usize).saturating_sub(4).max(1);
                 let wrapped = wrap_text(desc, usable);
                 let total = wrapped.len();
@@ -174,19 +200,16 @@ fn render_header(f: &mut Frame, area: Rect, app: &App) {
                 let last_idx = visible.len().saturating_sub(1);
                 for (i, line) in visible.into_iter().enumerate() {
                     if truncated && i == last_idx {
-                        // Append the truncation indicator to the last visible line so
-                        // the reader sees a preview ending in "… [e expand]" rather
-                        // than a bare "..." on its own line.
                         lines.push(Line::from(vec![
                             Span::styled("  ", Style::default()),
-                            Span::styled(line, Style::default().fg(theme::DIM)),
-                            Span::styled("…", Style::default().fg(theme::DIM)),
-                            Span::styled("  [e expand]", Style::default().fg(theme::VERY_DIM)),
+                            Span::styled(line, dim),
+                            Span::styled("…", dim),
+                            Span::styled("  [e]", very_dim),
                         ]));
                     } else {
                         lines.push(Line::from(vec![
                             Span::styled("  ", Style::default()),
-                            Span::styled(line, Style::default().fg(theme::DIM)),
+                            Span::styled(line, dim),
                         ]));
                     }
                 }
@@ -470,7 +493,11 @@ fn render_band(
         ),
         Span::styled(bars, text),
         Span::styled(format!("  {}–{}°C   ", lo, hi), very_dim),
-        Span::styled(format!("anchor {:>5.1}°C", anchor), very_dim),
+        Span::styled("anchor ", very_dim),
+        Span::styled(
+            format!("{:>5.1}°C", anchor),
+            Style::default().fg(theme::CYAN),
+        ),
     ])
 }
 

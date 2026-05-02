@@ -39,40 +39,17 @@ pub fn render(f: &mut Frame, area: Rect, app: &App) {
         }
     }
 
-    // Breadcrumb: when a detail/order screen is open, append "  › <market question>"
-    // (and " › Order" for the order entry overlay).
-    if let Some(market) = &app.selected_market {
-        let on_detail = matches!(
-            app.current_screen(),
-            Some(Screen::MarketDetail) | Some(Screen::OrderEntry)
-        );
-        if on_detail {
-            spans.push(Span::styled(
-                "  ›  ",
-                Style::default().fg(theme::VERY_DIM).bg(theme::BG),
-            ));
-            // Cap breadcrumb to leave room for the right-side WS indicator.
-            let used: usize = spans.iter().map(|s| s.content.chars().count()).sum();
-            let right_w = ws_indicator_width(app);
-            let avail = (area.width as usize)
-                .saturating_sub(used)
-                .saturating_sub(right_w + 2)
-                .max(8);
-            spans.push(Span::styled(
-                truncate(&market.question, avail),
-                Style::default().fg(theme::TEXT).bg(theme::BG),
-            ));
-            if matches!(app.current_screen(), Some(Screen::OrderEntry)) {
-                spans.push(Span::styled(
-                    "  ›  ",
-                    Style::default().fg(theme::VERY_DIM).bg(theme::BG),
-                ));
-                spans.push(Span::styled(
-                    "Order",
-                    Style::default().fg(theme::CYAN).bg(theme::BG),
-                ));
-            }
-        }
+    // Breadcrumb: only annotate the order-entry overlay; the question itself
+    // is already rendered in the detail header, so duplicating it here is noise.
+    if matches!(app.current_screen(), Some(Screen::OrderEntry)) {
+        spans.push(Span::styled(
+            "  ›  ",
+            Style::default().fg(theme::VERY_DIM).bg(theme::BG),
+        ));
+        spans.push(Span::styled(
+            "Order",
+            Style::default().fg(theme::CYAN).bg(theme::BG),
+        ));
     }
 
     let right_spans = ws_indicator_spans(app);
@@ -93,18 +70,6 @@ pub fn render(f: &mut Frame, area: Rect, app: &App) {
             .alignment(ratatui::layout::Alignment::Right),
         chunks[1],
     );
-}
-
-fn truncate(s: &str, max: usize) -> String {
-    if s.chars().count() <= max {
-        s.to_string()
-    } else if max == 0 {
-        String::new()
-    } else {
-        let mut t: String = s.chars().take(max - 1).collect();
-        t.push('…');
-        t
-    }
 }
 
 /// Per-channel WS state: only show what's actually connected/active.
@@ -134,13 +99,6 @@ fn ws_indicator_spans(app: &App) -> Vec<Span<'static>> {
         spans.insert(0, Span::styled(" ", Style::default().bg(theme::BG)));
     }
     spans
-}
-
-fn ws_indicator_width(app: &App) -> usize {
-    ws_indicator_spans(app)
-        .iter()
-        .map(|s| s.content.chars().count())
-        .sum()
 }
 
 fn book_ws_state(app: &App) -> Option<(&'static str, ratatui::style::Color)> {
