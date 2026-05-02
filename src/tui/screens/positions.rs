@@ -7,6 +7,7 @@ use ratatui::{
     Frame,
 };
 
+use super::util::{pad_left, pad_right, truncate};
 use crate::tui::{is_auth_error, theme, App};
 use crate::types::{Order, OrderStatus, Position, Side};
 
@@ -736,29 +737,6 @@ fn build_order_items(orders: &[Order], area_width: usize) -> Vec<ListItem<'stati
         .collect()
 }
 
-/// Right-pad `s` with spaces (so `s` sits on the left).
-fn pad_right(s: String, width: usize) -> String {
-    let len = s.chars().count();
-    if len >= width {
-        s
-    } else {
-        let mut out = s;
-        out.extend(std::iter::repeat_n(' ', width - len));
-        out
-    }
-}
-
-/// Left-pad `s` with spaces (so `s` sits on the right — for right-aligned numerics).
-fn pad_left(s: String, width: usize) -> String {
-    let len = s.chars().count();
-    if len >= width {
-        s
-    } else {
-        let pad: String = std::iter::repeat_n(' ', width - len).collect();
-        pad + &s
-    }
-}
-
 /// Build a Paragraph that shows an auth/credentials error persistently inside a panel.
 fn auth_error_paragraph<'a>(err: &'a str, block: Block<'a>) -> Paragraph<'a> {
     let mut lines = vec![Line::from("")];
@@ -782,14 +760,4 @@ fn auth_error_paragraph<'a>(err: &'a str, block: Block<'a>) -> Paragraph<'a> {
         }
     }
     Paragraph::new(lines).block(block)
-}
-
-fn truncate(s: &str, max: usize) -> String {
-    if s.chars().count() <= max {
-        s.to_string()
-    } else {
-        let mut t: String = s.chars().take(max - 1).collect();
-        t.push('…');
-        t
-    }
 }

@@ -6,6 +6,7 @@ use ratatui::{
     Frame,
 };
 
+use super::util::{pad_left, pad_right, truncate};
 use crate::tui::{market_category, theme, App};
 use crate::types::Market;
 use crate::weather::weather_location;
@@ -134,11 +135,20 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
     let inner_area = block.inner(area);
     f.render_widget(block, area);
 
-    let content_chunks = ratatui::layout::Layout::vertical([
-        ratatui::layout::Constraint::Length(1),
-        ratatui::layout::Constraint::Min(0),
-    ])
-    .split(inner_area);
+    let content_chunks = if filtered.is_empty() {
+        ratatui::layout::Layout::vertical([
+            ratatui::layout::Constraint::Length(1),
+            ratatui::layout::Constraint::Min(0),
+        ])
+        .split(inner_area)
+    } else {
+        ratatui::layout::Layout::vertical([
+            ratatui::layout::Constraint::Length(1),
+            ratatui::layout::Constraint::Length(1),
+            ratatui::layout::Constraint::Min(0),
+        ])
+        .split(inner_area)
+    };
 
     f.render_widget(
         ratatui::widgets::Paragraph::new(filters).alignment(ratatui::layout::Alignment::Right),
@@ -164,15 +174,108 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
         return;
     }
 
-    // borders(2) + highlight_symbol "▸ "(2) + content indent "  "(2)
-    let q_width = area.width.saturating_sub(6) as usize;
-
-    let items: Vec<ListItem> = filtered
+    // ── Pre-pass: format every row's columns and measure widths ──────────────
+    let mrows: Vec<MRow> = filtered
         .iter()
         .map(|m| {
-            let badges = pos_badges.get(&m.condition_id).cloned().unwrap_or_default();
-            build_item(m, q_width, app.watchlist.contains(&m.condition_id), badges)
+            let weather_suffix: Option<String> = market_category(m)
+                .filter(|c| *c == "Weather")
+                .and_then(|_| weather_location(m))
+                .filter(|loc| !loc.icao.is_empty())
+                .map(|loc| {
+                    let local = crate::weather::lookup_airport(&loc.icao)
+                        .and_then(crate::weather::local_time_now)
+                        .map(|t| format!(" · {}", t))
+                        .unwrap_or_default();
+                    format!("  {}·{}{}", loc.icao, loc.country, local)
+                });
+            let (prices_str, prices_color) = format_prices(m);
+            let vol_str = format_volume(m.volume);
+            let (end_str, end_color) = format_end(m.end_date.as_deref())
+                .unwrap_or_else(|| (String::new(), theme::VERY_DIM));
+            let cat = market_category(m).unwrap_or("");
+            MRow {
+                question: m.question.clone(),
+                weather_suffix,
+                starred: app.watchlist.contains(&m.condition_id),
+                prices_str,
+                prices_color,
+                vol_str,
+                end_str,
+                end_color,
+                cat_str: cat.to_string(),
+                cat_color: category_color(cat),
+                badges: pos_badges.get(&m.condition_id).cloned().unwrap_or_default(),
+            }
         })
+        .collect();
+
+    let max_prices = mrows
+        .iter()
+        .map(|r| r.prices_str.chars().count())
+        .max()
+        .unwrap_or(0)
+        .max("Prices".len());
+    let max_vol = mrows
+        .iter()
+        .map(|r| r.vol_str.chars().count())
+        .max()
+        .unwrap_or(0)
+        .max("Vol".len());
+    let max_ends = mrows
+        .iter()
+        .map(|r| r.end_str.chars().count())
+        .max()
+        .unwrap_or(0)
+        .max("Ends".len());
+    let max_cat = mrows
+        .iter()
+        .map(|r| r.cat_str.chars().count())
+        .max()
+        .unwrap_or(0)
+        .max("Cat".len());
+
+    // borders(2) + highlight_symbol "▸ "(2) + content indent "  "(2) + 4 sep groups of 4
+    let fixed = 2 + max_prices + 4 + max_vol + 4 + max_ends + 4 + max_cat;
+    let q_width = (area.width as usize)
+        .saturating_sub(6)
+        .saturating_sub(fixed)
+        .max(20);
+
+    // ── Header row ────────────────────────────────────────────────────────────
+    let header = Line::from(vec![
+        Span::raw("    "),
+        Span::styled(
+            pad_right("Market".to_string(), q_width),
+            Style::default().fg(theme::DIM),
+        ),
+        Span::raw("    "),
+        Span::styled(
+            pad_right("Prices".to_string(), max_prices),
+            Style::default().fg(theme::DIM),
+        ),
+        Span::raw("    "),
+        Span::styled(
+            pad_left("Vol".to_string(), max_vol),
+            Style::default().fg(theme::DIM),
+        ),
+        Span::raw("    "),
+        Span::styled(
+            pad_left("Ends".to_string(), max_ends),
+            Style::default().fg(theme::DIM),
+        ),
+        Span::raw("    "),
+        Span::styled(
+            pad_right("Cat".to_string(), max_cat),
+            Style::default().fg(theme::DIM),
+        ),
+    ]);
+
+    f.render_widget(ratatui::widgets::Paragraph::new(header), content_chunks[1]);
+
+    let items: Vec<ListItem> = mrows
+        .into_iter()
+        .map(|r| build_row(r, q_width, max_prices, max_vol, max_ends, max_cat))
         .collect();
 
     let list = List::new(items)
@@ -184,87 +287,100 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
         )
         .highlight_symbol("▸ ");
 
-    f.render_stateful_widget(list, content_chunks[1], &mut app.market_list_state);
+    f.render_stateful_widget(list, content_chunks[2], &mut app.market_list_state);
 }
 
-fn build_item(
-    m: &Market,
-    q_width: usize,
+struct MRow {
+    question: String,
+    weather_suffix: Option<String>,
     starred: bool,
-    positions: Vec<(String, ratatui::style::Color)>,
+    prices_str: String,
+    prices_color: Color,
+    vol_str: String,
+    end_str: String,
+    end_color: Color,
+    cat_str: String,
+    cat_color: Color,
+    badges: Vec<(String, Color)>,
+}
+
+fn build_row(
+    r: MRow,
+    q_width: usize,
+    max_prices: usize,
+    max_vol: usize,
+    max_ends: usize,
+    max_cat: usize,
 ) -> ListItem<'static> {
-    let q_width = if starred {
-        q_width.saturating_sub(2)
-    } else {
-        q_width
-    };
+    let MRow {
+        question,
+        weather_suffix,
+        starred,
+        prices_str,
+        prices_color,
+        vol_str,
+        end_str,
+        end_color,
+        cat_str,
+        cat_color,
+        badges,
+    } = r;
 
-    // For weather markets, surface the resolution station next to the question
-    // so the user can see *where* the market resolves at a glance (the question
-    // names the city in plain English, but the ICAO code is the canonical
-    // station identifier and disambiguates e.g. multiple "Springfield"s).
-    let weather_suffix: Option<String> = market_category(m)
-        .filter(|c| *c == "Weather")
-        .and_then(|_| weather_location(m))
-        .filter(|loc| !loc.icao.is_empty())
-        .map(|loc| {
-            let local = crate::weather::lookup_airport(&loc.icao)
-                .and_then(crate::weather::local_time_now)
-                .map(|t| format!(" · {}", t))
-                .unwrap_or_default();
-            format!("  {}·{}{}", loc.icao, loc.country, local)
-        });
-
+    // Reserve space for star prefix and weather suffix inside the question column.
+    let star_w = if starred { 2 } else { 0 };
     let suffix_w = weather_suffix
         .as_deref()
         .map(|s| s.chars().count())
         .unwrap_or(0);
-    let question = truncate(&m.question, q_width.saturating_sub(suffix_w));
+    let q_avail = q_width.saturating_sub(star_w).saturating_sub(suffix_w);
+    let q_truncated = truncate(&question, q_avail);
+    let q_used = star_w + q_truncated.chars().count() + suffix_w;
+    let q_pad = q_width.saturating_sub(q_used);
 
-    // Line 1: question (with optional star prefix)
-    let mut line1_spans = vec![Span::raw("  ")];
+    let mut spans: Vec<Span> = vec![Span::raw("  ")];
     if starred {
-        line1_spans.push(Span::styled("★ ", Style::default().fg(theme::YELLOW)));
+        spans.push(Span::styled("★ ", Style::default().fg(theme::YELLOW)));
     }
-    line1_spans.push(Span::styled(
-        question,
+    spans.push(Span::styled(
+        q_truncated,
         Style::default()
             .fg(theme::TEXT)
             .add_modifier(Modifier::BOLD),
     ));
     if let Some(s) = weather_suffix {
-        line1_spans.push(Span::styled(s, Style::default().fg(theme::VERY_DIM)));
+        spans.push(Span::styled(s, Style::default().fg(theme::VERY_DIM)));
     }
-    let line1 = Line::from(line1_spans);
+    if q_pad > 0 {
+        spans.push(Span::raw(" ".repeat(q_pad)));
+    }
 
-    // Line 2: metadata
-    let vol = format_volume(m.volume);
-    let (prices_str, prices_color) = format_prices(m);
-    let end_info = format_end(m.end_date.as_deref());
-    let cat = market_category(m);
+    spans.push(Span::styled("  · ", Style::default().fg(theme::VERY_DIM)));
+    spans.push(Span::styled(
+        pad_right(prices_str, max_prices),
+        Style::default().fg(prices_color),
+    ));
 
-    let mut spans: Vec<Span> = vec![
-        Span::raw("  "),
-        Span::styled(vol, Style::default().fg(theme::DIM)),
-    ];
-    if !prices_str.is_empty() {
+    spans.push(Span::styled("  · ", Style::default().fg(theme::VERY_DIM)));
+    spans.push(Span::styled(
+        pad_left(vol_str, max_vol),
+        Style::default().fg(theme::DIM),
+    ));
+
+    spans.push(Span::styled("  · ", Style::default().fg(theme::VERY_DIM)));
+    spans.push(Span::styled(
+        pad_left(end_str, max_ends),
+        Style::default().fg(end_color),
+    ));
+
+    spans.push(Span::styled("  · ", Style::default().fg(theme::VERY_DIM)));
+    spans.push(Span::styled(
+        pad_right(cat_str, max_cat),
+        Style::default().fg(cat_color),
+    ));
+
+    if !badges.is_empty() {
         spans.push(Span::styled("  · ", Style::default().fg(theme::VERY_DIM)));
-        spans.push(Span::styled(prices_str, Style::default().fg(prices_color)));
-    }
-    if let Some((end_str, end_color)) = end_info {
-        spans.push(Span::styled("  · ", Style::default().fg(theme::VERY_DIM)));
-        spans.push(Span::styled(end_str, Style::default().fg(end_color)));
-    }
-    if let Some(cat_str) = cat {
-        spans.push(Span::styled("  · ", Style::default().fg(theme::VERY_DIM)));
-        spans.push(Span::styled(
-            cat_str,
-            Style::default().fg(category_color(cat_str)),
-        ));
-    }
-    if !positions.is_empty() {
-        spans.push(Span::styled("  · ", Style::default().fg(theme::VERY_DIM)));
-        for (i, (badge, badge_color)) in positions.into_iter().enumerate() {
+        for (i, (badge, badge_color)) in badges.into_iter().enumerate() {
             if i > 0 {
                 spans.push(Span::styled("  ", Style::default().fg(theme::VERY_DIM)));
             }
@@ -272,9 +388,7 @@ fn build_item(
         }
     }
 
-    let line2 = Line::from(spans);
-
-    ListItem::new(vec![line1, line2])
+    ListItem::new(Line::from(spans))
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -374,14 +488,4 @@ fn format_end(end_date: Option<&str>) -> Option<(String, Color)> {
     };
 
     Some((label, color))
-}
-
-fn truncate(s: &str, max: usize) -> String {
-    if s.chars().count() <= max {
-        s.to_string()
-    } else {
-        let mut t: String = s.chars().take(max - 1).collect();
-        t.push('…');
-        t
-    }
 }

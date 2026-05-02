@@ -6,6 +6,7 @@ pub mod screens {
     pub mod order;
     pub mod positions;
     pub mod setup;
+    pub mod util;
     pub mod viewer;
 }
 
