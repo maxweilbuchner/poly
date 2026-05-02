@@ -191,7 +191,7 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
                         .unwrap_or_default();
                     format!("  {}·{}{}", loc.icao, loc.country, local)
                 });
-            let (prices_str, prices_color) = format_prices(m);
+            let (cells, prices_color) = price_cells(m);
             let vol_str = format_volume(m.volume);
             let (end_str, end_color) = format_end(m.end_date.as_deref())
                 .unwrap_or_else(|| (String::new(), theme::VERY_DIM));
@@ -200,7 +200,7 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
                 question: m.question.clone(),
                 weather_suffix,
                 starred: app.watchlist.contains(&m.condition_id),
-                prices_str,
+                cells,
                 prices_color,
                 vol_str,
                 end_str,
@@ -212,12 +212,17 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
         })
         .collect();
 
-    let max_prices = mrows
+    const LABEL_CAP: usize = 8;
+    let max_label = mrows
         .iter()
-        .map(|r| r.prices_str.chars().count())
+        .flat_map(|r| r.cells.iter().map(|c| c.label.chars().count()))
         .max()
-        .unwrap_or(0)
-        .max("Prices".len());
+        .unwrap_or(3)
+        .min(LABEL_CAP)
+        .max("Yes".len());
+    let max_pct = 4; // "100%" / " 95%" / "  5%"
+    let cell_w = max_label + 1 + max_pct; // label + ":" + pct
+    let prices_col_w = (2 * cell_w + 2).max("Prices".len());
     let max_vol = mrows
         .iter()
         .map(|r| r.vol_str.chars().count())
@@ -243,7 +248,7 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
     //   + "  · "(4) + max_vol + "  · "(4) + max_ends + "  · "(4) + max_cat
     let fixed = 2 /* highlight */ + 2 /* gutter */ + 1 /* gutter→q gap */
         + 4 /* q→prices spacer */ + 3 * 4 /* bullet separators */
-        + max_prices + max_vol + max_ends + max_cat;
+        + prices_col_w + max_vol + max_ends + max_cat;
     let q_avail = (area.width as usize)
         .saturating_sub(2) // borders
         .saturating_sub(fixed);
@@ -272,7 +277,7 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
         ),
         Span::raw("    "),
         Span::styled(
-            pad_right("Prices".to_string(), max_prices),
+            pad_right("Prices".to_string(), prices_col_w),
             Style::default().fg(theme::DIM),
         ),
         Span::raw("    "),
@@ -296,7 +301,7 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
 
     let items: Vec<ListItem> = mrows
         .into_iter()
-        .map(|r| build_row(r, q_width, max_prices, max_vol, max_ends, max_cat))
+        .map(|r| build_row(r, q_width, max_label, max_pct, max_vol, max_ends, max_cat))
         .collect();
 
     let list = List::new(items)
@@ -311,11 +316,16 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
     f.render_stateful_widget(list, content_chunks[2], &mut app.market_list_state);
 }
 
+struct PriceCell {
+    label: String,
+    pct: String,
+}
+
 struct MRow {
     question: String,
     weather_suffix: Option<String>,
     starred: bool,
-    prices_str: String,
+    cells: Vec<PriceCell>,
     prices_color: Color,
     vol_str: String,
     end_str: String,
@@ -328,7 +338,8 @@ struct MRow {
 fn build_row(
     r: MRow,
     q_width: usize,
-    max_prices: usize,
+    max_label: usize,
+    max_pct: usize,
     max_vol: usize,
     max_ends: usize,
     max_cat: usize,
@@ -337,7 +348,7 @@ fn build_row(
         question,
         weather_suffix,
         starred,
-        prices_str,
+        cells,
         prices_color,
         vol_str,
         end_str,
@@ -384,10 +395,24 @@ fn build_row(
 
     // Plain spacer (no orphan bullet) between Market and Prices.
     spans.push(Span::raw("    "));
-    spans.push(Span::styled(
-        pad_right(prices_str, max_prices),
-        Style::default().fg(prices_color),
-    ));
+    let cell_w = max_label + 1 + max_pct;
+    for i in 0..2 {
+        if i > 0 {
+            spans.push(Span::raw("  "));
+        }
+        match cells.get(i) {
+            Some(cell) => {
+                let label = pad_right(truncate(&cell.label, max_label), max_label);
+                let pct = pad_left(cell.pct.clone(), max_pct);
+                spans.push(Span::styled(label, Style::default().fg(prices_color)));
+                spans.push(Span::styled(":", Style::default().fg(theme::VERY_DIM)));
+                spans.push(Span::styled(pct, Style::default().fg(prices_color)));
+            }
+            None => {
+                spans.push(Span::raw(" ".repeat(cell_w)));
+            }
+        }
+    }
 
     spans.push(Span::styled("  · ", Style::default().fg(theme::VERY_DIM)));
     spans.push(Span::styled(
@@ -422,24 +447,22 @@ fn format_volume(v: f64) -> String {
     }
 }
 
-fn format_prices(m: &Market) -> (String, Color) {
-    match m.outcomes.len() {
-        0 => (String::new(), theme::CYAN),
-        1 => {
-            let p = m.outcomes[0].price;
-            (format!("{:.0}%", p * 100.0), prob_color(p))
-        }
-        _ => {
-            let primary_price = m.outcomes[0].price;
-            let pairs: Vec<String> = m
-                .outcomes
-                .iter()
-                .take(4)
-                .map(|o| format!("{}:{:.0}%", truncate(&o.name, 4), o.price * 100.0))
-                .collect();
-            (pairs.join("  "), prob_color(primary_price))
-        }
-    }
+fn price_cells(m: &Market) -> (Vec<PriceCell>, Color) {
+    let color = m
+        .outcomes
+        .first()
+        .map(|o| prob_color(o.price))
+        .unwrap_or(theme::CYAN);
+    let cells = m
+        .outcomes
+        .iter()
+        .take(2)
+        .map(|o| PriceCell {
+            label: o.name.clone(),
+            pct: format!("{:.0}%", o.price * 100.0),
+        })
+        .collect();
+    (cells, color)
 }
 
 /// Color based on probability of the primary outcome.
