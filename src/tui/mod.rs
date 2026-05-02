@@ -475,7 +475,8 @@ mod tests {
         let s = SortMode::Volume;
         assert_eq!(s.next(), SortMode::EndDate);
         assert_eq!(s.next().next(), SortMode::Probability);
-        assert_eq!(s.next().next().next(), SortMode::Volume);
+        assert_eq!(s.next().next().next(), SortMode::LocalTime);
+        assert_eq!(s.next().next().next().next(), SortMode::Volume);
     }
 
     #[test]

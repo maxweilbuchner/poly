@@ -52,6 +52,7 @@ pub enum SortMode {
     Volume,
     EndDate,
     Probability,
+    LocalTime,
 }
 
 impl SortMode {
@@ -59,7 +60,8 @@ impl SortMode {
         match self {
             SortMode::Volume => SortMode::EndDate,
             SortMode::EndDate => SortMode::Probability,
-            SortMode::Probability => SortMode::Volume,
+            SortMode::Probability => SortMode::LocalTime,
+            SortMode::LocalTime => SortMode::Volume,
         }
     }
     pub fn label(&self) -> &'static str {
@@ -67,6 +69,7 @@ impl SortMode {
             SortMode::Volume => "vol",
             SortMode::EndDate => "end date",
             SortMode::Probability => "prob",
+            SortMode::LocalTime => "local time",
         }
     }
 }
@@ -674,6 +677,21 @@ impl App {
                     pb.total_cmp(&pa)
                 });
             }
+            SortMode::LocalTime => {
+                // Weather markets first, ordered by minutes-of-day at their
+                // resolution station; everything else falls to the bottom
+                // sorted by volume desc.
+                indices.sort_by(|&a, &b| {
+                    let ka = sort_key_local_time(&self.markets[a]);
+                    let kb = sort_key_local_time(&self.markets[b]);
+                    match (ka, kb) {
+                        (Some(ma), Some(mb)) => ma.cmp(&mb),
+                        (Some(_), None) => std::cmp::Ordering::Less,
+                        (None, Some(_)) => std::cmp::Ordering::Greater,
+                        (None, None) => self.markets[b].volume.total_cmp(&self.markets[a].volume),
+                    }
+                });
+            }
         }
 
         self.filtered_indices = indices;
@@ -701,6 +719,23 @@ impl App {
 
 /// Infers a display category for a market from its question + slug.
 /// The Gamma API no longer populates `category`/`tags` on market list endpoints.
+/// Minutes-since-airport-local-midnight for a weather market's resolution
+/// station, or `None` if not a weather market with a known ICAO/tz.
+fn sort_key_local_time(m: &crate::types::Market) -> Option<u32> {
+    use chrono::Timelike;
+    if market_category(m) != Some("Weather") {
+        return None;
+    }
+    let icao = crate::weather::weather_location(m)?.icao;
+    if icao.is_empty() {
+        return None;
+    }
+    let airport = crate::weather::lookup_airport(&icao)?;
+    let tz: chrono_tz::Tz = airport.tz.parse().ok()?;
+    let now = chrono::Utc::now().with_timezone(&tz);
+    Some(now.hour() * 60 + now.minute())
+}
+
 pub(crate) fn market_category(m: &crate::types::Market) -> Option<&'static str> {
     market_category_from_parts(&m.question, &m.slug)
 }
