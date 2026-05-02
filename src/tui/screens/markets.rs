@@ -177,9 +177,11 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
     }
 
     // ── Pre-pass: format every row's columns and measure widths ──────────────
+    // Skip markets whose close time has already passed — they're awaiting
+    // resolution and don't belong in a "live markets" list.
     let mrows: Vec<MRow> = filtered
         .iter()
-        .map(|m| {
+        .filter_map(|m| {
             let weather_suffix: Option<String> = market_category(m)
                 .filter(|c| *c == "Weather")
                 .and_then(|_| weather_location(m))
@@ -191,28 +193,37 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
                         .unwrap_or_default();
                     format!("  {}·{}{}", loc.icao, loc.country, local)
                 });
-            let (cells, prices_color) = price_cells(m);
+            let cells = price_cells(m);
             let vol_str = format_volume(m.volume);
-            let (end_str, end_color) = format_end(m.end_date.as_deref())
-                .unwrap_or_else(|| (String::new(), theme::VERY_DIM));
-            let cat = market_category(m).unwrap_or("");
-            MRow {
+            let vol_color = volume_color(m.volume);
+            let end = format_end(m.end_date.as_deref());
+            if matches!(end.as_ref(), Some((s, _)) if s == "ended") {
+                return None;
+            }
+            let (end_str, end_color) = end.unwrap_or_else(|| ("—".to_string(), theme::VERY_DIM));
+            let cat_raw = market_category(m).unwrap_or("");
+            let (cat_str, cat_color) = if cat_raw.is_empty() {
+                ("—".to_string(), theme::VERY_DIM)
+            } else {
+                (cat_raw.to_string(), category_color(cat_raw))
+            };
+            Some(MRow {
                 question: m.question.clone(),
                 weather_suffix,
                 starred: app.watchlist.contains(&m.condition_id),
                 cells,
-                prices_color,
                 vol_str,
+                vol_color,
                 end_str,
                 end_color,
-                cat_str: cat.to_string(),
-                cat_color: category_color(cat),
+                cat_str,
+                cat_color,
                 held: held_color.get(&m.condition_id).copied(),
-            }
+            })
         })
         .collect();
 
-    const LABEL_CAP: usize = 8;
+    const LABEL_CAP: usize = 10;
     let max_label = mrows
         .iter()
         .flat_map(|r| r.cells.iter().map(|c| c.label.chars().count()))
@@ -240,7 +251,7 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
         .map(|r| r.cat_str.chars().count())
         .max()
         .unwrap_or(0)
-        .max("Cat".len());
+        .max("Category".len());
 
     // Row layout (rendered inside the bordered list):
     //   highlight "▸ "(2) + gutter "★●"(2) + " "(1) + q_width
@@ -292,7 +303,7 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
         ),
         Span::raw("    "),
         Span::styled(
-            pad_right("Cat".to_string(), max_cat),
+            pad_right("Category".to_string(), max_cat),
             Style::default().fg(theme::DIM),
         ),
     ]);
@@ -319,6 +330,7 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
 struct PriceCell {
     label: String,
     pct: String,
+    color: Color,
 }
 
 struct MRow {
@@ -326,8 +338,8 @@ struct MRow {
     weather_suffix: Option<String>,
     starred: bool,
     cells: Vec<PriceCell>,
-    prices_color: Color,
     vol_str: String,
+    vol_color: Color,
     end_str: String,
     end_color: Color,
     cat_str: String,
@@ -349,8 +361,8 @@ fn build_row(
         weather_suffix,
         starred,
         cells,
-        prices_color,
         vol_str,
+        vol_color,
         end_str,
         end_color,
         cat_str,
@@ -404,9 +416,9 @@ fn build_row(
             Some(cell) => {
                 let label = pad_right(truncate(&cell.label, max_label), max_label);
                 let pct = pad_left(cell.pct.clone(), max_pct);
-                spans.push(Span::styled(label, Style::default().fg(prices_color)));
+                spans.push(Span::styled(label, Style::default().fg(cell.color)));
                 spans.push(Span::styled(":", Style::default().fg(theme::VERY_DIM)));
-                spans.push(Span::styled(pct, Style::default().fg(prices_color)));
+                spans.push(Span::styled(pct, Style::default().fg(cell.color)));
             }
             None => {
                 spans.push(Span::raw(" ".repeat(cell_w)));
@@ -417,7 +429,7 @@ fn build_row(
     spans.push(Span::styled("  · ", Style::default().fg(theme::VERY_DIM)));
     spans.push(Span::styled(
         pad_left(vol_str, max_vol),
-        Style::default().fg(theme::DIM),
+        Style::default().fg(vol_color),
     ));
 
     spans.push(Span::styled("  · ", Style::default().fg(theme::VERY_DIM)));
@@ -447,22 +459,28 @@ fn format_volume(v: f64) -> String {
     }
 }
 
-fn price_cells(m: &Market) -> (Vec<PriceCell>, Color) {
-    let color = m
-        .outcomes
-        .first()
-        .map(|o| prob_color(o.price))
-        .unwrap_or(theme::CYAN);
-    let cells = m
-        .outcomes
+fn price_cells(m: &Market) -> Vec<PriceCell> {
+    m.outcomes
         .iter()
         .take(2)
         .map(|o| PriceCell {
             label: o.name.clone(),
             pct: format!("{:.0}%", o.price * 100.0),
+            color: prob_color(o.price),
         })
-        .collect();
-    (cells, color)
+        .collect()
+}
+
+/// Brighten the volume cell as the market gets bigger so high-volume rows
+/// jump out at a glance. Log-step thresholds, not a true gradient.
+fn volume_color(v: f64) -> Color {
+    if v >= 10_000.0 {
+        theme::TEXT
+    } else if v >= 100.0 {
+        theme::DIM
+    } else {
+        theme::VERY_DIM
+    }
 }
 
 /// Color based on probability of the primary outcome.
