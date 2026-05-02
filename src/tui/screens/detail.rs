@@ -136,8 +136,12 @@ fn render_header(f: &mut Frame, area: Rect, app: &App) {
             if crate::tui::market_category(m) == Some("Weather") {
                 if let Some(loc) = crate::weather::weather_location(m) {
                     if !loc.icao.is_empty() {
+                        let local = crate::weather::lookup_airport(&loc.icao)
+                            .and_then(crate::weather::local_time_now)
+                            .map(|t| format!(" · {}", t))
+                            .unwrap_or_default();
                         q_spans.push(Span::styled(
-                            format!("  {}·{}", loc.icao, loc.country),
+                            format!("  {}·{}{}", loc.icao, loc.country, local),
                             Style::default().fg(theme::VERY_DIM),
                         ));
                     }

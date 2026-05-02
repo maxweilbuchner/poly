@@ -207,7 +207,13 @@ fn build_item(
         .filter(|c| *c == "Weather")
         .and_then(|_| weather_location(m))
         .filter(|loc| !loc.icao.is_empty())
-        .map(|loc| format!("  {}·{}", loc.icao, loc.country));
+        .map(|loc| {
+            let local = crate::weather::lookup_airport(&loc.icao)
+                .and_then(crate::weather::local_time_now)
+                .map(|t| format!(" · {}", t))
+                .unwrap_or_default();
+            format!("  {}·{}{}", loc.icao, loc.country, local)
+        });
 
     let suffix_w = weather_suffix
         .as_deref()
