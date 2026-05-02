@@ -95,7 +95,7 @@ fn render_summary(f: &mut Frame, area: Rect, app: &App) {
     labels.push(("Cost", theme::DIM));
     values.push((format!("${:.2}", cost_basis), theme::TEXT, false));
 
-    labels.push(("Unrealized", theme::DIM));
+    labels.push(("Unrealized Profit", theme::DIM));
     values.push((
         format!("{}${:.4}", sign(total_unreal), total_unreal.abs()),
         pnl_color(total_unreal),
