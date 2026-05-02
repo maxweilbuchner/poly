@@ -97,7 +97,7 @@ fn render_summary(f: &mut Frame, area: Rect, app: &App) {
 
     labels.push(("Unrealized", theme::DIM));
     values.push((
-        format!("{}{:.4}", sign(total_unreal), total_unreal),
+        format!("{}${:.4}", sign(total_unreal), total_unreal.abs()),
         pnl_color(total_unreal),
         true,
     ));
@@ -105,13 +105,13 @@ fn render_summary(f: &mut Frame, area: Rect, app: &App) {
     if total_real != 0.0 {
         labels.push(("Realized", theme::DIM));
         values.push((
-            format!("{}{:.4}", sign(total_real), total_real),
+            format!("{}${:.4}", sign(total_real), total_real.abs()),
             pnl_color(total_real),
             true,
         ));
     }
 
-    labels.push(("Return", theme::DIM));
+    labels.push(("Unrealized Return", theme::DIM));
     values.push((
         format!("{}{:.1}%", sign(return_pct), return_pct),
         pnl_color(return_pct),
