@@ -276,7 +276,8 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
         })
         .max()
         .unwrap_or(20);
-    let q_width = q_avail.min(max_q_content + 2).max(20);
+    const Q_MAX: usize = 60;
+    let q_width = q_avail.min(max_q_content + 2).clamp(20, Q_MAX);
 
     // ── Header row ────────────────────────────────────────────────────────────
     // Indent = highlight(2) + gutter(2) + gap(1) = 5 chars to align with question.
@@ -413,11 +414,12 @@ fn build_row(
     match lead {
         Some(l) => {
             let label = pad_right(truncate(&l.label, max_label), max_label);
-            let bar = render_bar(l.prob, BAR_W);
+            let (filled, empty) = bar_parts(l.prob, BAR_W);
             let pct = pad_left(l.pct.clone(), 4);
             spans.push(Span::styled(label, Style::default().fg(l.color)));
             spans.push(Span::raw("  "));
-            spans.push(Span::styled(bar, Style::default().fg(l.color)));
+            spans.push(Span::styled(filled, Style::default().fg(l.color)));
+            spans.push(Span::styled(empty, Style::default().fg(theme::VERY_DIM)));
             spans.push(Span::raw("  "));
             spans.push(Span::styled(
                 pct,
@@ -477,8 +479,9 @@ fn lead_cell(m: &Market) -> Option<LeadCell> {
 }
 
 /// Horizontal probability bar with eighth-cell precision.
-/// `width` is the total cell width; output is exactly `width` columns wide.
-fn render_bar(p: f64, width: usize) -> String {
+/// Returns (filled, empty) so each can be styled separately. The two strings
+/// concatenate to exactly `width` columns.
+fn bar_parts(p: f64, width: usize) -> (String, String) {
     let p = p.clamp(0.0, 1.0);
     let total_eighths = (p * width as f64 * 8.0).round() as usize;
     let full = total_eighths / 8;
@@ -493,16 +496,11 @@ fn render_bar(p: f64, width: usize) -> String {
         7 => "▉",
         _ => "",
     };
-    let mut s = String::new();
-    for _ in 0..full {
-        s.push('█');
-    }
-    s.push_str(partial_char);
+    let mut filled = "█".repeat(full);
+    filled.push_str(partial_char);
     let used = full + if partial > 0 { 1 } else { 0 };
-    for _ in used..width {
-        s.push(' ');
-    }
-    s
+    let empty = "░".repeat(width.saturating_sub(used));
+    (filled, empty)
 }
 
 /// Brighten the volume cell as the market gets bigger so high-volume rows
