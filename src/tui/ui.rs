@@ -244,12 +244,11 @@ fn render_close_confirm(f: &mut Frame, area: Rect, app: &App) {
         ]));
     }
     if let Some(p) = pnl {
-        let sign = if p >= 0.0 { "+" } else { "" };
         let color = if p >= 0.0 { theme::GREEN } else { theme::RED };
         lines.push(Line::from(vec![
             Span::styled("  P&L        ", Style::default().fg(theme::VERY_DIM)),
             Span::styled(
-                format!("{}{:.4}", sign, p),
+                crate::tui::format_signed_pnl(p),
                 Style::default().fg(color).add_modifier(Modifier::BOLD),
             ),
         ]));

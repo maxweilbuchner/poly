@@ -736,6 +736,20 @@ fn sort_key_local_time(m: &crate::types::Market) -> Option<u32> {
     Some(now.hour() * 60 + now.minute())
 }
 
+/// Format a signed PnL amount with 4 decimals. Values that round to zero
+/// render as `±0.0000` so a tiny-negative number doesn't display as the
+/// confusing `+-0.0000` (which happens when sign is computed on the raw
+/// value but `{:.4}` then prints `-0.0000`).
+pub(crate) fn format_signed_pnl(v: f64) -> String {
+    if v.abs() < 0.00005 {
+        "±0.0000".to_string()
+    } else if v >= 0.0 {
+        format!("+{:.4}", v)
+    } else {
+        format!("{:.4}", v)
+    }
+}
+
 pub(crate) fn market_category(m: &crate::types::Market) -> Option<&'static str> {
     market_category_from_parts(&m.question, &m.slug)
 }

@@ -375,14 +375,14 @@ fn build_viewer_items(
         .iter()
         .map(|p| {
             let value = p.size * p.current_price;
-            let pnl_sign = if p.unrealized_pnl >= 0.0 { "+" } else { "" };
+            let pnl_str = crate::tui::format_signed_pnl(p.unrealized_pnl);
             VRow {
                 question: truncate(&p.market_question, q_width),
                 outcome: p.outcome.clone(),
                 size_str: format!("{:.2}", p.size),
                 price_str: format!("@{:.4}", p.current_price),
                 value_str: format!("${:.2}", value),
-                pnl_str: format!("{}{:.4}", pnl_sign, p.unrealized_pnl),
+                pnl_str,
                 pnl_color: if p.unrealized_pnl >= 0.0 {
                     theme::GREEN
                 } else {

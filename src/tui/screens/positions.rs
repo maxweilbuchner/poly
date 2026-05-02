@@ -297,7 +297,7 @@ fn build_position_items(
         .iter()
         .zip(end_dates.iter())
         .map(|(p, ed)| {
-            let pnl_sign = if p.unrealized_pnl >= 0.0 { "+" } else { "" };
+            let pnl_str = crate::tui::format_signed_pnl(p.unrealized_pnl);
             let (status, status_color) = compute_status(p, ed.as_deref());
             PRow {
                 question: p.market_question.clone(),
@@ -305,7 +305,7 @@ fn build_position_items(
                 size_num: format!("{:.2}", p.size),
                 avg_str: format!("{:.4}", p.avg_price),
                 cur_str: format!("{:.4}", p.current_price),
-                pnl_str: format!("{}{:.4}", pnl_sign, p.unrealized_pnl),
+                pnl_str,
                 pnl_color: if p.unrealized_pnl >= 0.0 {
                     theme::GREEN
                 } else {
