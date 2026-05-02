@@ -235,10 +235,14 @@ fn render_market_list(f: &mut Frame, area: Rect, app: &mut App) {
         .unwrap_or(0)
         .max("Cat".len());
 
-    // borders(2) + highlight_symbol "▸ "(2) + content indent "  "(2) + 4 sep groups of 4
-    let fixed = 2 + max_prices + 4 + max_vol + 4 + max_ends + 4 + max_cat;
+    // Row layout (rendered inside the bordered list):
+    //   highlight "▸ "(2) + indent "  "(2) + q_width + 4× sep "  · "(4 each)
+    //   + max_prices + max_vol + max_ends + max_cat
+    // Subtract borders(2) from area.width to get the inner width.
+    let fixed = 2 /* highlight */ + 2 /* indent */ + 4 * 4 /* separators */
+        + max_prices + max_vol + max_ends + max_cat;
     let q_width = (area.width as usize)
-        .saturating_sub(6)
+        .saturating_sub(2) // borders
         .saturating_sub(fixed)
         .max(20);
 
